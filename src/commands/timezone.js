@@ -15,17 +15,31 @@ module.exports = {
     .addSubcommand((sub) =>
       sub
         .setName('set')
-        .setDescription('Register your timezone')
+        .setDescription('Register your timezone, or assign one to another member')
         .addStringOption((opt) =>
           opt
             .setName('timezone')
-            .setDescription('Your IANA timezone, e.g. America/New_York or Europe/London')
+            .setDescription('The IANA timezone, e.g. America/New_York or Europe/London')
             .setRequired(true)
             .setAutocomplete(true)
         )
+        .addUserOption((opt) =>
+          opt
+            .setName('user')
+            .setDescription('Assign this timezone to another member instead of yourself (requires Manage Server)')
+            .setRequired(false)
+        )
     )
     .addSubcommand((sub) =>
-      sub.setName('remove').setDescription('Remove your registered timezone')
+      sub
+        .setName('remove')
+        .setDescription('Remove a registered timezone')
+        .addUserOption((opt) =>
+          opt
+            .setName('user')
+            .setDescription("Remove another member's timezone instead of your own (requires Manage Server)")
+            .setRequired(false)
+        )
     )
     .addSubcommand((sub) =>
       sub
@@ -58,6 +72,17 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'set') {
+      const target = interaction.options.getUser('user') || interaction.user;
+      const isSelf = target.id === interaction.user.id;
+
+      if (!isSelf && !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+        await interaction.reply({
+          content: '❌ You need the **Manage Server** permission to set another member\'s timezone.',
+          ephemeral: true,
+        });
+        return;
+      }
+
       const timezone = interaction.options.getString('timezone', true);
       if (!isValidTimezone(timezone)) {
         await interaction.reply({
@@ -67,9 +92,10 @@ module.exports = {
         return;
       }
 
-      db.setUserTimezone(interaction.guildId, interaction.user.id, timezone);
+      db.setUserTimezone(interaction.guildId, target.id, timezone);
+      const who = isSelf ? 'Your' : `<@${target.id}>'s`;
       await interaction.reply({
-        content: `✅ Your timezone is set to \`${timezone}\` (currently ${formatTimeInZone(timezone)}).`,
+        content: `✅ ${who} timezone is set to \`${timezone}\` (currently ${formatTimeInZone(timezone)}).`,
         ephemeral: true,
       });
 
@@ -83,9 +109,21 @@ module.exports = {
     }
 
     if (sub === 'remove') {
-      const removed = db.removeUserTimezone(interaction.guildId, interaction.user.id);
+      const target = interaction.options.getUser('user') || interaction.user;
+      const isSelf = target.id === interaction.user.id;
+
+      if (!isSelf && !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+        await interaction.reply({
+          content: '❌ You need the **Manage Server** permission to remove another member\'s timezone.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const removed = db.removeUserTimezone(interaction.guildId, target.id);
+      const who = isSelf ? 'Your' : `<@${target.id}>'s`;
       await interaction.reply({
-        content: removed ? '✅ Your timezone has been removed.' : "You didn't have a timezone registered.",
+        content: removed ? `✅ ${who} timezone has been removed.` : `${who} timezone wasn't registered.`,
         ephemeral: true,
       });
 

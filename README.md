@@ -6,9 +6,15 @@ grouped by timezone.
 
 ## Features
 
-- `/timezone set <timezone>` — register your own IANA timezone (autocomplete
-  suggests matches as you type, e.g. `America/New_York`, `Europe/London`).
-- `/timezone remove` — remove your registered timezone.
+- `/timezone set <timezone> [user]` — register your own IANA timezone
+  (autocomplete suggests matches as you type, e.g. `America/New_York`,
+  `Europe/London`). Pass `user` to assign a timezone to someone else instead
+  — this requires the **Manage Server** permission, so typically only the
+  admin doing the assigning can use it. This is the intended workflow if
+  you'd rather assign every dev's timezone yourself instead of asking each
+  person to self-register.
+- `/timezone remove [user]` — remove a registered timezone; same
+  Manage-Server gate applies when targeting someone else.
 - `/timezone view [user]` — check your own or another member's current local
   time on demand.
 - `/timezone setchannel <channel>` — (requires **Manage Server**) pick the
@@ -66,9 +72,12 @@ comfortably supporting a few hundred registered members per server.
    npm start
    ```
 
-6. In your server, run `/timezone setchannel #your-channel` (as an admin),
-   then have members run `/timezone set` to register themselves. The embed
-   in that channel will keep itself up to date automatically.
+6. In your server, run `/timezone setchannel #your-channel` (as an admin) to
+   pick where the live embed appears. Then, as the admin, run
+   `/timezone set timezone:<tz> user:@dev` once per dev to assign their
+   timezone (or let members run `/timezone set` themselves if you'd rather
+   not do it manually for everyone). The embed in that channel keeps itself
+   up to date automatically — no need to re-run anything after that.
 
 ## Notes
 
