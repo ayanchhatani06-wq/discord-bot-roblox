@@ -1,0 +1,20 @@
+{
+  "name": "discord-timezone-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for registering member timezones and keeping a live-updating time embed in a channel.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "node-cron": "^4.6.0"
+  }
+}
