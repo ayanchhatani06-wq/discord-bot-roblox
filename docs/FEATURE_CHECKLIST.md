@@ -5,7 +5,7 @@ unless it is implemented **and** covered by tests.
 
 Status key: ✅ done · 🟡 partial (stated exactly) · ⬜ not started
 
-Last updated: stages 1, 2 and 4 complete (231 tests passing). Website scope
+Last updated: stages 1, 2, 4 and 10 complete (252 tests passing). Website scope
 revised: it is the studio's public site (services, portfolio, quote request),
 not only an internal dashboard.
 
@@ -156,14 +156,14 @@ not only an internal dashboard.
 
 | Item | Status |
 | --- | --- |
-| Submission versions with a marked latest approved version | 🟡 versions built; approved-version marker in stage 10 |
-| Configurable delivery checklists per service | 🟡 per-department checklists built; delivery-specific in stage 10 |
-| Check required files supplied, without claiming quality checks | 🟡 partial |
-| Internal source links separate from client-authorized files | 🟡 release gate built in stage 1; per-file rights in stage 10 |
-| Record who authorized delivery, which version, and when | ⬜ stage 10 |
-| Release according to configured delivery conditions | ⬜ stage 10 |
-| Searchable archive filtered by project, artist, asset type, permission | ⬜ stage 10 (candidate for the website) |
-| Portfolio rights: staff/studio use, start date, client restrictions | ⬜ stage 10 |
+| Submission versions with a marked latest approved version | ✅ |
+| Configurable delivery checklists per service | ✅ |
+| Check required files supplied, without claiming quality checks | ✅ |
+| Internal source links separate from client-authorized files | ✅ |
+| Record who authorized delivery, which version, and when | ✅ |
+| Release according to configured delivery conditions | ✅ |
+| Searchable archive filtered by project, artist, asset type, permission | ✅ (also feeds the website) |
+| Portfolio rights: staff/studio use, start date, client restrictions | ✅ |
 
 ## 11. Issues, revisions, and support
 
@@ -191,7 +191,7 @@ not only an internal dashboard.
 | Item | Status |
 | --- | --- |
 | Access checked on every command and button | ✅ already built |
-| Access checked on search results, attachments and client answers | 🟡 client answers done; archive search in stage 10 |
+| Access checked on search results, attachments and client answers | ✅ |
 | Clients see only their own projects and client-safe information | ✅ |
 | Internal pay, staff feedback and private discussion never client-visible | ✅ |
 | Persistent storage, duplicate protection, audit trail | ✅ already built |
@@ -214,7 +214,7 @@ client login that must also work for clients who are not in the Discord server.
 | --- | --- |
 | Public pages: services, portfolio, about, contact | ⬜ final stage |
 | Quote request form feeding the same enquiry pipeline | 🟡 pipeline ready; web form pending |
-| Portfolio populated only from assets the client permitted | ⬜ blocked on §10 portfolio rights |
+| Portfolio populated only from assets the client permitted | 🟡 source of truth built (publishablePortfolio); web page pending |
 | Separate web process, read-only on a curated subset | ⬜ final stage |
 | Reverse proxy and TLS for a real domain | ⬜ needs a domain from the owner |
 | Client login via Discord OAuth2 | ⬜ final stage |

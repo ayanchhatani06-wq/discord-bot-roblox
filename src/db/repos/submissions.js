@@ -9,6 +9,7 @@ function addSubmission(db, guildId, taskId, {
   kind,
   notes = null,
   links = [],
+  internalLinks = [],
   checklist = [],
   submittedBy,
 }) {
@@ -17,9 +18,12 @@ function addSubmission(db, guildId, taskId, {
     const version = row.latest + 1;
 
     const submission = db.prepare(`
-      INSERT INTO submissions (task_id, version, kind, notes, links_json, checklist_json, submitted_by, submitted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *
-    `).get(taskId, version, kind, notes, JSON.stringify(links), JSON.stringify(checklist), submittedBy, Date.now());
+      INSERT INTO submissions (task_id, version, kind, notes, links_json, internal_links_json, checklist_json, submitted_by, submitted_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *
+    `).get(
+      taskId, version, kind, notes, JSON.stringify(links), JSON.stringify(internalLinks),
+      JSON.stringify(checklist), submittedBy, Date.now()
+    );
 
     recordAudit(db, {
       guildId, actorUserId: submittedBy, action: `submission.${kind}`,
@@ -51,6 +55,16 @@ function getSubmission(db, submissionId) {
 function links(submission) {
   try {
     const parsed = JSON.parse(submission?.links_json || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Source and working files. Never released to a client. */
+function internalLinks(submission) {
+  try {
+    const parsed = JSON.parse(submission?.internal_links_json || '[]');
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -158,6 +172,7 @@ module.exports = {
   latestSubmission,
   getSubmission,
   links,
+  internalLinks,
   checklist,
   markClientVisible,
   addReview,

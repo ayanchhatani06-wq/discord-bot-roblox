@@ -8,6 +8,7 @@ const tasksRepo = require('../db/repos/tasks');
 const submissionsRepo = require('../db/repos/submissions');
 const configRepo = require('../db/repos/config');
 const projectsRepo = require('../db/repos/projects');
+const assetsRepo = require('../db/repos/assets');
 const { publishDashboard } = require('../commands/clients');
 const { contextFor } = require('../services/actor');
 const { notifyUser } = require('../services/notify');
@@ -79,6 +80,9 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       // is what keeps internal working files off the client dashboard.
       if (submission) {
         submissionsRepo.markClientVisible(db, guildId, submission.id, interaction.user.id);
+        // Releases the deliverables only; source files stay internal whatever
+        // happens to the submission around them.
+        assetsRepo.releaseSubmissionAssets(db, submission.id);
       }
 
       return tasksRepo.applyTransition(db, guildId, task.id, 'review_ready_for_client', {

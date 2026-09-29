@@ -10,6 +10,7 @@ const {
 const tasksRepo = require('../db/repos/tasks');
 const submissionsRepo = require('../db/repos/submissions');
 const configRepo = require('../db/repos/config');
+const assetsRepo = require('../db/repos/assets');
 const { contextFor } = require('../services/actor');
 const { notifyUser } = require('../services/notify');
 const { register, customId } = require('./router');
@@ -44,6 +45,15 @@ function submissionModal(taskId, indices) {
           .setStyle(TextInputStyle.Paragraph)
           .setRequired(true)
           .setMaxLength(1500)
+      ),
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('internal')
+          .setLabel('Source / working files (never sent to client)')
+          .setPlaceholder('Your .blend, .psd, project files — kept internal.')
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(false)
+          .setMaxLength(800)
       ),
       new ActionRowBuilder().addComponents(
         new TextInputBuilder()
@@ -112,6 +122,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
   if (action === 'modal') {
     const indices = args[1] ? args[1].split('.').filter((part) => part !== '').map(Number) : [];
     const links = extractLinks(interaction.fields.getTextInputValue('links'));
+    const internalLinks = extractLinks(interaction.fields.getTextInputValue('internal'));
     const notes = interaction.fields.getTextInputValue('notes').trim() || null;
 
     if (links.length === 0) {
@@ -127,20 +138,33 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       included: indices.length === 0 ? true : indices.includes(index),
     }));
 
+    const department = configRepo.getDepartment(db, guildId, task.department_id);
+
     const result = db.transaction(() => {
       const submission = submissionsRepo.addSubmission(db, guildId, task.id, {
         kind: 'final',
         notes,
         links,
+        internalLinks,
         checklist,
         submittedBy: interaction.user.id,
+      });
+
+      // Each link becomes an archive asset, with source files marked as such so
+      // they can never be released to a client by accident.
+      assetsRepo.recordSubmissionAssets(db, guildId, {
+        submission,
+        task,
+        deliverableLinks: links,
+        internalLinks,
+        assetType: department?.key ?? null,
       });
 
       const updated = tasksRepo.applyTransition(db, guildId, task.id, 'submit_final', {
         actorUserId: interaction.user.id,
         patch: { last_progress_at: Date.now() },
         guardKey: `submit:${task.id}:v${submission.version}`,
-        detail: `Submission v${submission.version} with ${links.length} link(s)`,
+        detail: `Submission v${submission.version} with ${links.length} deliverable link(s) and ${internalLinks.length} source file(s)`,
       });
 
       return { submission, updated };
@@ -151,7 +175,6 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       `${links.length} link(s) recorded. Your group leader reviews it next — client approval comes after that.`
     ));
 
-    const department = configRepo.getDepartment(db, guildId, task.department_id);
     if (task.leader_user_id) {
       await notifyUser(interaction.client, db, guildId, task.leader_user_id, {
         embeds: [new EmbedBuilder()
