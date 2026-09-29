@@ -11,6 +11,7 @@ const escalationsRepo = require('../db/repos/escalations');
 const planningRepo = require('../db/repos/planning');
 const paymentsRepo = require('../db/repos/payments');
 const paymentState = require('./paymentState');
+const budget = require('./budget');
 const allocationFlow = require('./allocationFlow');
 const delivery = require('./delivery');
 const { TASK_STATES, ACTIVE_STATES, stateLabel } = require('../domain/taskState');
@@ -43,12 +44,14 @@ function buildMyDesk(db, guildId, userId, { now = Date.now() } = {}) {
   for (const task of tasksRepo.listTasksForArtist(db, guildId, userId, {
     states: [TASK_STATES.CLIENT_APPROVED, TASK_STATES.AWAITING_CLIENT, ...ACTIVE_STATES],
   })) {
-    if (task.artist_pay_minor === null || !task.artist_pay_currency) continue;
-    const remaining = paymentState.remainingForArtist(db, task);
-    if (remaining > 0) {
-      owed.push({ minor: remaining, currency: task.artist_pay_currency });
+    // Their own agreed figure, which on a shared task is their contributor
+    // line rather than the task total.
+    const entry = paymentState.owedToContributor(db, task, userId);
+    if (!entry) continue;
+    if (entry.remainingMinor > 0) {
+      owed.push({ minor: entry.remainingMinor, currency: entry.currency });
       if (task.payment_state === 'payable' || task.payment_state === 'partially_paid') {
-        payable.push({ task, remaining });
+        payable.push({ task, remaining: entry.remainingMinor, currency: entry.currency });
       }
     }
   }
@@ -278,7 +281,8 @@ function buildOwnerDesk(db, guildId, { now = Date.now() } = {}) {
 
   const pending = paymentState.pendingPayouts(db, guildId);
   const owedArtists = pending.payable
-    .map((task) => ({ minor: paymentState.remainingForArtist(db, task) || 0, currency: task.artist_pay_currency }))
+    .flatMap((task) => paymentState.owedOnTask(db, task))
+    .map((entry) => ({ minor: entry.remainingMinor, currency: entry.currency }))
     .filter((entry) => entry.minor > 0 && entry.currency);
   const owedShares = allocationFlow.outstandingAllocations(db, guildId)
     .map((row) => ({ minor: row.outstanding_minor, currency: row.currency }));
@@ -286,16 +290,7 @@ function buildOwnerDesk(db, guildId, { now = Date.now() } = {}) {
 
   // A job is a budget exception when what the artists are paid meets or beats
   // what the client pays, in the same currency.
-  const budgetExceptions = [];
-  for (const project of projects) {
-    if (project.client_amount_minor === null || !project.client_currency) continue;
-    const tasks = tasksRepo.listTasksForProject(db, project.id)
-      .filter((task) => task.state !== TASK_STATES.CANCELLED && task.artist_pay_currency === project.client_currency);
-    const committed = tasks.reduce((sum, task) => sum + (task.artist_pay_minor || 0), 0);
-    if (committed >= project.client_amount_minor) {
-      budgetExceptions.push({ project, committed });
-    }
-  }
+  const budgetExceptions = budget.projectsOverBudget(db, guildId);
 
   const workload = new Map();
   for (const task of tasksRepo.listTasksInStates(db, guildId, ACTIVE_STATES)) {
@@ -365,7 +360,9 @@ function buildOwnerDesk(db, guildId, { now = Date.now() } = {}) {
       name: `⚠️ Budget exceptions (${budgetExceptions.length})`,
       value: truncate(budgetExceptions.map((entry) =>
         `**${entry.project.code}** — committed ${formatAmount(entry.committed, entry.project.client_currency)} ` +
-        `against a client payment of ${formatAmount(entry.project.client_amount_minor, entry.project.client_currency)}`
+        `against a client payment of ${formatAmount(entry.project.client_amount_minor, entry.project.client_currency)}` +
+        // A decision you already made is shown, not re-asked.
+        `${entry.project.budget_override_by ? ' _(you allowed this)_' : ''}`
       )),
       inline: false,
     });

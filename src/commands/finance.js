@@ -5,6 +5,7 @@ const paymentsRepo = require('../db/repos/payments');
 const configRepo = require('../db/repos/config');
 const { contextFor } = require('../services/actor');
 const allocationFlow = require('../services/allocationFlow');
+const budget = require('../services/budget');
 const paymentState = require('../services/paymentState');
 const { notifyUser } = require('../services/notify');
 const { CAPABILITIES, assertCan, can } = require('../domain/permissions');
@@ -37,8 +38,9 @@ module.exports = {
     .addSubcommand((sub) =>
       sub
         .setName('pay')
-        .setDescription("Record a payout to the task's artist")
+        .setDescription("Record a payout to someone who worked on the task")
         .addStringOption((opt) => opt.setName('task').setDescription('Task code').setRequired(true).setAutocomplete(true))
+        .addUserOption((opt) => opt.setName('person').setDescription('Who was paid (needed when several people share the task)').setRequired(false))
         .addStringOption((opt) => opt.setName('amount').setDescription('Amount paid (defaults to the whole outstanding balance)').setRequired(false))
         .addStringOption((opt) => opt.setName('method').setDescription('How it was paid').setRequired(false))
         .addStringOption((opt) => opt.setName('reference').setDescription('Non-sensitive reference (never a gift card code)').setRequired(false))
@@ -89,6 +91,25 @@ module.exports = {
         .setName('balance')
         .setDescription('What a staff member is owed and has been paid')
         .addUserOption((opt) => opt.setName('member').setDescription('Staff member').setRequired(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('budget')
+        .setDescription('What a project has committed in pay against what the client pays')
+        .addStringOption((opt) => opt.setName('project').setDescription('Project code').setRequired(true).setAutocomplete(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('budget-override')
+        .setDescription('Deliberately allow pay above the recorded client payment on a project')
+        .addStringOption((opt) => opt.setName('project').setDescription('Project code').setRequired(true).setAutocomplete(true))
+        .addStringOption((opt) => opt.setName('reason').setDescription('Why, for the record').setRequired(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('budget-restore')
+        .setDescription('Put the budget guard back on a project')
+        .addStringOption((opt) => opt.setName('project').setDescription('Project code').setRequired(true).setAutocomplete(true))
     ),
 
   async autocomplete(interaction) {
@@ -117,6 +138,73 @@ module.exports = {
     const { db, guildId, config, actor } = contextFor(interaction);
     const sub = interaction.options.getSubcommand();
     const userId = interaction.user.id;
+
+    if (sub === 'budget' || sub === 'budget-override' || sub === 'budget-restore') {
+      // Budget is a money decision, so it sits behind the same capability as
+      // the ledger rather than behind project editing.
+      assertCan(actor, CAPABILITIES.FINANCE_VIEW_ALL);
+
+      const project = projectsRepo.getProjectByCode(db, guildId, interaction.options.getString('project', true));
+      if (!project) {
+        await interaction.reply(priv('❌ No project with that code.'));
+        return;
+      }
+
+      if (sub === 'budget-override') {
+        assertCan(actor, CAPABILITIES.PAYMENT_RECORD);
+        const reason = interaction.options.getString('reason', true);
+        budget.setBudgetOverride(db, guildId, project.id, { actorUserId: userId, reason });
+        await interaction.reply(priv(
+          `✅ Pay on **${project.code}** may now exceed the recorded client payment.\n` +
+          `Reason recorded: ${reason}\n` +
+          `Put the guard back with \`/finance budget-restore project:${project.code}\`.`
+        ));
+        return;
+      }
+
+      if (sub === 'budget-restore') {
+        assertCan(actor, CAPABILITIES.PAYMENT_RECORD);
+        budget.clearBudgetOverride(db, guildId, project.id, userId);
+        await interaction.reply(priv(`✅ The budget guard is back on **${project.code}**.`));
+        return;
+      }
+
+      const committed = budget.committedByCurrency(db, guildId, project.id);
+      const lines = [];
+
+      if (project.client_amount_minor === null || !project.client_currency) {
+        lines.push('_No client amount is recorded on this project, so there is nothing to measure against._');
+      } else {
+        const inBudgetCurrency = committed.get(project.client_currency) || 0;
+        const remaining = project.client_amount_minor - inBudgetCurrency;
+        lines.push(
+          `Client pays: **${formatAmount(project.client_amount_minor, project.client_currency)}**`,
+          `Committed in pay: **${formatAmount(inBudgetCurrency, project.client_currency)}**`,
+          remaining >= 0
+            ? `Left to allocate: **${formatAmount(remaining, project.client_currency)}**`
+            : `⚠️ Over by **${formatAmount(-remaining, project.client_currency)}**`
+        );
+      }
+
+      // Commitments in another currency are listed, never converted.
+      const others = [...committed.entries()].filter(([code]) => code !== project.client_currency);
+      if (others.length > 0) {
+        lines.push(
+          '',
+          `Also committed, and not measured against that budget because there is no conversion rate:`,
+          ...others.map(([code, minor]) => `• ${formatAmount(minor, code)}`)
+        );
+      }
+
+      if (project.budget_override_by) {
+        lines.push('', `⚠️ The guard is off: <@${project.budget_override_by}> allowed over-budget pay — ${project.budget_override_reason || 'no reason recorded'}.`);
+      }
+
+      await interaction.reply(priv({
+        embeds: [new EmbedBuilder().setTitle(`Budget · ${project.code}`).setColor(0xfaa61a).setDescription(lines.join('\n'))],
+      }));
+      return;
+    }
 
     if (sub === 'client-receipt') {
       assertCan(actor, CAPABILITIES.CLIENT_RECEIPT_RECORD);
@@ -233,19 +321,24 @@ module.exports = {
         name: `Artist pay owed (${pending.payable.length})`,
         value: pending.payable.length === 0
           ? '_nothing payable right now_'
-          : pending.payable.map((task) => {
-              const remaining = paymentState.remainingForArtist(db, task);
-              return `**${task.code}** <@${task.artist_user_id}> — ${formatAmount(remaining, task.artist_pay_currency)}${task.payment_state === 'partially_paid' ? ' (part paid)' : ''}`;
-            }).join('\n').slice(0, 1024),
+          : pending.payable.flatMap((task) =>
+              paymentState.owedOnTask(db, task)
+                .filter((entry) => entry.remainingMinor > 0)
+                .map((entry) =>
+                  `**${task.code}** <@${entry.userId}> — ${formatAmount(entry.remainingMinor, entry.currency)}${entry.paidMinor > 0 ? ' (part paid)' : ''}`)
+            ).join('\n').slice(0, 1024) || '_nothing payable right now_',
         inline: false,
       });
 
       if (pending.awaitingClientMoney.length > 0) {
         embed.addFields({
           name: `Approved but the client has not paid (${pending.awaitingClientMoney.length})`,
-          value: pending.awaitingClientMoney.map((task) =>
-            `**${task.code}** <@${task.artist_user_id}> — ${task.artist_pay_minor === null ? 'no pay set' : formatAmount(task.artist_pay_minor, task.artist_pay_currency)}`
-          ).join('\n').slice(0, 1024),
+          value: pending.awaitingClientMoney.map((task) => {
+            const owed = paymentState.owedOnTask(db, task);
+            return owed.length === 0
+              ? `**${task.code}** — no pay set`
+              : `**${task.code}** ${owed.map((entry) => `<@${entry.userId}> ${formatAmount(entry.agreedMinor, entry.currency)}`).join(', ')}`;
+          }).join('\n').slice(0, 1024),
           inline: false,
         });
       }
@@ -269,13 +362,16 @@ module.exports = {
 
       const member = interaction.options.getUser('member', true);
       const paid = paymentsRepo.payoutTotalsForPayee(db, guildId, member.id);
+      // Their own line on each task, whether they are the sole artist or one
+      // of several contributors.
       const owedRows = paymentState.pendingPayouts(db, guildId).payable
-        .filter((task) => task.artist_user_id === member.id);
+        .map((task) => ({ task, owed: paymentState.owedToContributor(db, task, member.id) }))
+        .filter((row) => row.owed && row.owed.remainingMinor > 0);
       const owedSplits = allocationFlow.outstandingAllocations(db, guildId)
         .filter((row) => row.recipient_user_id === member.id);
 
       const owedAmounts = [
-        ...owedRows.map((task) => ({ minor: paymentState.remainingForArtist(db, task), currency: task.artist_pay_currency })),
+        ...owedRows.map((row) => ({ minor: row.owed.remainingMinor, currency: row.owed.currency })),
         ...owedSplits.map((row) => ({ minor: row.outstanding_minor, currency: row.currency })),
       ].filter((entry) => entry.minor > 0);
 
@@ -289,7 +385,7 @@ module.exports = {
           {
             name: 'Made up of',
             value: [
-              ...owedRows.map((task) => `**${task.code}** artist pay — ${formatAmount(paymentState.remainingForArtist(db, task), task.artist_pay_currency)}`),
+              ...owedRows.map((row) => `**${row.task.code}** work pay — ${formatAmount(row.owed.remainingMinor, row.owed.currency)}`),
               ...owedSplits.map((row) => `**${row.task_code}** ${row.recipient_kind} share — ${formatAmount(row.outstanding_minor, row.currency)}`),
             ].join('\n').slice(0, 1024) || '_nothing outstanding_',
             inline: false,
@@ -399,26 +495,47 @@ module.exports = {
     if (sub === 'pay') {
       assertCan(actor, CAPABILITIES.PAYMENT_RECORD);
 
-      if (!task.artist_user_id || task.artist_pay_minor === null) {
-        await interaction.reply(priv(`❌ **${task.code}** has no artist or no agreed pay.`));
+      // One task can now carry several people on their own terms, so the
+      // payout is always against one person's figure, never the task's.
+      const owed = paymentState.owedOnTask(db, task);
+      if (owed.length === 0) {
+        await interaction.reply(priv(`❌ **${task.code}** has nobody with agreed pay on it.`));
         return;
       }
 
-      const remaining = paymentState.remainingForArtist(db, task);
+      const requested = interaction.options.getUser('person');
+      if (!requested && owed.length > 1) {
+        await interaction.reply(priv([
+          `**${task.code}** has ${owed.length} people on it, so name who was paid:`,
+          ...owed.map((entry) => `• <@${entry.userId}> — outstanding ${formatAmount(entry.remainingMinor, entry.currency)}`),
+          '',
+          `Run it again as \`/finance pay task:${task.code} person:@them\`.`,
+        ].join('\n')));
+        return;
+      }
+
+      const payeeUserId = requested ? requested.id : owed[0].userId;
+      const entry = owed.find((row) => row.userId === payeeUserId);
+      if (!entry) {
+        await interaction.reply(priv(`❌ <@${payeeUserId}> has no agreed pay on **${task.code}**.`));
+        return;
+      }
+
+      const remaining = entry.remainingMinor;
       if (remaining === 0) {
-        await interaction.reply(priv(`**${task.code}** is already fully paid.`));
+        await interaction.reply(priv(`<@${payeeUserId}> is already fully paid on **${task.code}**.`));
         return;
       }
 
       const amountText = interaction.options.getString('amount');
-      const amountMinor = amountText ? parseAmount(amountText, task.artist_pay_currency) : remaining;
+      const amountMinor = amountText ? parseAmount(amountText, entry.currency) : remaining;
 
       // Refuses to record more than is owed, which catches a mistyped amount
       // before it becomes a wrong record.
       if (amountMinor > remaining) {
         await interaction.reply(priv(
-          `❌ That is more than is outstanding on **${task.code}**.\n` +
-          `Outstanding: **${formatAmount(remaining, task.artist_pay_currency)}**. ` +
+          `❌ That is more than is outstanding to <@${payeeUserId}> on **${task.code}**.\n` +
+          `Outstanding: **${formatAmount(remaining, entry.currency)}**. ` +
           'Change the agreed pay first if the figure itself is wrong.'
         ));
         return;
@@ -432,17 +549,17 @@ module.exports = {
         return;
       }
 
-      const { created, payment } = paymentsRepo.recordPayment(db, guildId, {
+      const { created } = paymentsRepo.recordPayment(db, guildId, {
         direction: paymentsRepo.DIRECTIONS.PAYOUT,
         projectId: task.project_id,
         taskId: task.id,
-        payeeUserId: task.artist_user_id,
+        payeeUserId,
         amountMinor,
-        currency: task.artist_pay_currency,
+        currency: entry.currency,
         methodLabel: interaction.options.getString('method'),
         reference: interaction.options.getString('reference'),
         recordedBy: userId,
-        idempotencyKey: `payout:${task.id}:${task.artist_user_id}:${interaction.id}`,
+        idempotencyKey: `payout:${task.id}:${payeeUserId}:${interaction.id}`,
       });
 
       if (!created) {
@@ -451,20 +568,23 @@ module.exports = {
       }
 
       const updated = paymentState.recomputeTaskPaymentState(db, guildId, task.id, userId, 'Payout recorded');
-      const stillOwed = paymentState.remainingForArtist(db, updated);
+      const stillOwed = paymentState.owedToContributor(db, updated, payeeUserId).remainingMinor;
+      const taskOutstanding = paymentState.settlementOf(db, updated).outstanding;
 
       await interaction.reply(priv([
-        `✅ Recorded **${formatAmount(amountMinor, task.artist_pay_currency)}** paid to <@${task.artist_user_id}> for **${task.code}**.`,
+        `✅ Recorded **${formatAmount(amountMinor, entry.currency)}** paid to <@${payeeUserId}> for **${task.code}**.`,
         stillOwed > 0
-          ? `Still owed: **${formatAmount(stillOwed, task.artist_pay_currency)}** (marked ${updated.payment_state.replace(/_/g, ' ')}).`
-          : 'That settles this task.',
+          ? `Still owed to them: **${formatAmount(stillOwed, entry.currency)}** (task marked ${updated.payment_state.replace(/_/g, ' ')}).`
+          : (taskOutstanding > 0
+            ? 'They are settled; others on this task are still owed.'
+            : 'That settles this task.'),
         '_Recorded only — the bot does not move money._',
       ].join('\n')));
 
-      await notifyUser(interaction.client, db, guildId, task.artist_user_id, {
+      await notifyUser(interaction.client, db, guildId, payeeUserId, {
         content:
-          `💰 A payment of **${formatAmount(amountMinor, task.artist_pay_currency)}** for **${task.code} · ${task.title}** has been recorded.` +
-          `${stillOwed > 0 ? `\nStill outstanding: ${formatAmount(stillOwed, task.artist_pay_currency)}.` : ''}` +
+          `💰 A payment of **${formatAmount(amountMinor, entry.currency)}** for **${task.code} · ${task.title}** has been recorded.` +
+          `${stillOwed > 0 ? `\nStill outstanding: ${formatAmount(stillOwed, entry.currency)}.` : ''}` +
           '\nCheck your own record any time with `/work earnings`.',
       }).catch(() => null);
       return;

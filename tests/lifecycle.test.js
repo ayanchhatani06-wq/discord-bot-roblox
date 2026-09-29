@@ -138,8 +138,8 @@ test('compensation is recorded separately from the agreed artist pay', () => {
 
   const fresh = tasksRepo.getTask(db, GUILD, task.id);
   // Compensation must not look like progress towards the agreed fee.
-  assert.equal(paymentState.paidToArtist(db, fresh), 0);
-  assert.equal(paymentState.remainingForArtist(db, fresh), 2500);
+  assert.equal(paymentState.owedToContributor(db, fresh, ARTIST).paidMinor, 0);
+  assert.equal(paymentState.owedToContributor(db, fresh, ARTIST).remainingMinor, 2500);
 
   const paid = paymentsRepo.payoutTotalsForPayee(db, GUILD, ARTIST);
   assert.equal(paid.get('USD'), 800, 'but it still counts as money they received');

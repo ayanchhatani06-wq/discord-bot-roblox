@@ -124,13 +124,13 @@ not only an internal dashboard.
 
 | Item | Status |
 | --- | --- |
-| Multiple contributors per deliverable with defined responsibilities | ⬜ stage 7 |
-| Owner-approved separate compensation per contribution | ⬜ stage 7 |
-| Each contributor sees only their own terms | ⬜ stage 7 |
-| Client revenue, artist pay, leader/finder shares, bonuses, studio allocations kept distinct | 🟡 all but bonuses built |
-| Prevent allocations silently exceeding the configured budget | 🟡 budget exceptions surfaced on the Owner Desk; hard refusal in stage 7 |
-| Configurable bonus milestones (e.g. every 10 approved videos) | ⬜ stage 7 |
-| Milestones flagged for owner approval, no double counting | ⬜ stage 7 |
+| Multiple contributors per deliverable with defined responsibilities | ✅ (`/contrib add`) |
+| Owner-approved separate compensation per contribution | ✅ (leader proposes with `/contrib pay`, owner approves) |
+| Each contributor sees only their own terms | ✅ (`/contrib list` hides colleagues' figures from non-finance staff) |
+| Client revenue, artist pay, leader/finder shares, bonuses, studio allocations kept distinct | ✅ |
+| Prevent allocations silently exceeding the configured budget | ✅ (refused outright; `/finance budget-override` is the only way past, and it is recorded) |
+| Configurable bonus milestones (e.g. every 10 approved videos) | ✅ (`/bonus rule-set`) |
+| Milestones flagged for owner approval, no double counting | ✅ (milestone index is unique per rule and person) |
 
 ## 8. Staff onboarding and trials
 
@@ -231,7 +231,7 @@ client login that must also work for clients who are not in the Discord server.
 4. **Enquiries and quotes** — §4
 5. **Client records and repeat orders** — §5
 6. **Task planning: templates, dependencies, blockers, extensions** — §6
-7. **Multi-contributor pay, budget guards, bonus milestones** — §7
+7. **Multi-contributor pay, budget guards, bonus milestones** — §7 ✅ done
 8. **Onboarding, trials, backup leaders, offboarding** — §8
 9. **The three desks and role-based help** — §9
 10. **Files, delivery authorization, archive, portfolio rights** — §10

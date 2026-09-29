@@ -8,6 +8,7 @@ const { contextFor } = require('../services/actor');
 const { taskEmbed, queueEmbed, taskSummaryLine, formatPay } = require('../services/taskView');
 const { withdrawOffer, describeTerms } = require('../services/offerFlow');
 const { notifyUser } = require('../services/notify');
+const budget = require('../services/budget');
 const { CAPABILITIES, assertCan, can, canViewTaskFinance, isAssignedArtist, PermissionError } = require('../domain/permissions');
 const { ACTIVE_STATES, TASK_STATES, stateLabel } = require('../domain/taskState');
 const { parseAmount, formatAmount, isSupportedCurrency, CURRENCIES } = require('../domain/money');
@@ -401,6 +402,16 @@ module.exports = {
         return;
       }
 
+      const check = budget.checkBudget(db, guildId, task, { amountMinor, currency });
+      if (!check.ok) {
+        await interaction.reply(priv(
+          `❌ ${budget.describeBudgetFailure(check)}\n\n` +
+          `Lower the figure, raise the recorded client payment, or allow it deliberately with ` +
+          `\`/finance budget-override project:${check.project.code} reason:...\`.`
+        ));
+        return;
+      }
+
       const { task: updated, requiresAcknowledgement } = tasksRepo.approvePay(db, guildId, task.id, {
         amountMinor, currency, actorUserId: userId,
       });
@@ -439,6 +450,16 @@ module.exports = {
         amountMinor = task.pay_proposed_minor;
       } else {
         await interaction.reply(priv(`❌ **${task.code}** has no proposed pay. Give an amount: \`/task approve-pay task:${task.code} amount:25\`.`));
+        return;
+      }
+
+      const check = budget.checkBudget(db, guildId, task, { amountMinor, currency });
+      if (!check.ok) {
+        await interaction.reply(priv(
+          `❌ ${budget.describeBudgetFailure(check)}\n\n` +
+          `Lower the figure, raise the recorded client payment, or allow it deliberately with ` +
+          `\`/finance budget-override project:${check.project.code} reason:...\`.`
+        ));
         return;
       }
 

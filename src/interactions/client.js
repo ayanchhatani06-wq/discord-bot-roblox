@@ -17,6 +17,7 @@ const clientReport = require('../services/clientReport');
 const dashboard = require('../services/clientDashboard');
 const quoteFlow = require('../services/quoteFlow');
 const paymentState = require('../services/paymentState');
+const bonusFlow = require('../services/bonusFlow');
 const { notifyUser } = require('../services/notify');
 const { register, customId } = require('./router');
 const { TASK_STATES } = require('../domain/taskState');
@@ -570,10 +571,19 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       }).catch(() => null);
     }
 
+    // Approval can complete a bonus milestone. It is only flagged: nothing is
+    // owed until the owner decides, and the client is never shown any of it.
+    const earned = bonusFlow.evaluateForTask(db, guildId, afterPayment || task, {
+      actorUserId: interaction.user.id,
+    });
+
     const config = configRepo.getConfig(db, guildId);
     if (config?.owner_user_id) {
       await notifyUser(interaction.client, db, guildId, config.owner_user_id, {
-        content: `✅ Client approved **${task.code} · ${task.title}** (v${submission.version}). Payment state: ${afterPayment?.payment_state.replace(/_/g, ' ')}.`,
+        content: `✅ Client approved **${task.code} · ${task.title}** (v${submission.version}). Payment state: ${afterPayment?.payment_state.replace(/_/g, ' ')}.` +
+          (earned.length > 0
+            ? `\n🏅 ${earned.map(({ award, rule }) => `<@${award.user_id}> reached: ${rule.label}`).join('\n🏅 ')}\nDecide with \`/bonus pending\`.`
+            : ''),
       }).catch(() => null);
     }
     return;

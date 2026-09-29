@@ -33,7 +33,8 @@ function buildWeeklySummary(db, guildId, { now = Date.now(), windowMs = 7 * DAY_
 
   const pending = paymentState.pendingPayouts(db, guildId);
   const owedAmounts = pending.payable
-    .map((task) => ({ minor: paymentState.remainingForArtist(db, task) || 0, currency: task.artist_pay_currency }))
+    .flatMap((task) => paymentState.owedOnTask(db, task))
+    .map((entry) => ({ minor: entry.remainingMinor, currency: entry.currency }))
     .filter((entry) => entry.minor > 0 && entry.currency);
   const owedShares = allocationFlow.outstandingAllocations(db, guildId)
     .map((row) => ({ minor: row.outstanding_minor, currency: row.currency }));

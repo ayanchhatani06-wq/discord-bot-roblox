@@ -11,6 +11,7 @@ const configRepo = require('../db/repos/config');
 const submissionsRepo = require('../db/repos/submissions');
 const { contextFor } = require('../services/actor');
 const { recomputeTaskPaymentState } = require('../services/paymentState');
+const bonusFlow = require('../services/bonusFlow');
 const { notifyUser } = require('../services/notify');
 const { CAPABILITIES, assertCan, can } = require('../domain/permissions');
 const { TASK_STATES, stateLabel } = require('../domain/taskState');
@@ -326,6 +327,12 @@ module.exports = {
         ? recomputeTaskPaymentState(db, guildId, task.id, userId, 'Client approved the work')
         : updated;
 
+      // Approval is also what can complete a bonus milestone. Nothing becomes
+      // owed here: milestones are only flagged for the owner to decide.
+      const earned = approving
+        ? bonusFlow.evaluateForTask(db, guildId, afterPayment, { actorUserId: userId })
+        : [];
+
       const project = projectsRepo.getProject(db, guildId, task.project_id);
       const lines = [
         approving
@@ -341,6 +348,10 @@ module.exports = {
             : `💰 Payment stays **pending**: the client payment for ${project?.code} has not been recorded as received yet. ` +
               'Record it with `/finance client-receipt`, or override with `/finance mark-payable`.'
         );
+
+        for (const { award, rule } of earned) {
+          lines.push(`🏅 <@${award.user_id}> reached a milestone: ${rule.label}. Waiting on you — \`/bonus pending\`.`);
+        }
       } else {
         lines.push('The task is back with the artist.');
         if (beyondScope) {

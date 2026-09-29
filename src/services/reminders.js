@@ -215,11 +215,11 @@ function sweepGuild(db, guildId, { now = Date.now() } = {}) {
 
     const pending = paymentState.pendingPayouts(db, guildId);
     for (const task of pending.payable) {
-      const remaining = paymentState.remainingForArtist(db, task);
-      if (!remaining) continue;
+      const outstanding = paymentState.owedOnTask(db, task).filter((entry) => entry.remainingMinor > 0);
+      if (outstanding.length === 0) continue;
       batch.add(
         config.owner_user_id, KINDS.APPROVED_UNPAID, 'task', task.id,
-        `**${task.code}** — <@${task.artist_user_id}> is owed ${formatAmount(remaining, task.artist_pay_currency)}. ` +
+        `**${task.code}** — ${outstanding.map((entry) => `<@${entry.userId}> is owed ${formatAmount(entry.remainingMinor, entry.currency)}`).join('; ')}. ` +
         `Record it with \`/finance pay task:${task.code}\`.`
       );
     }

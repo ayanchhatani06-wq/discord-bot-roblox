@@ -1,31 +1,67 @@
 const tasksRepo = require('../db/repos/tasks');
 const projectsRepo = require('../db/repos/projects');
+const contributorsRepo = require('../db/repos/contributors');
 const { TASK_STATES } = require('../domain/taskState');
 
 const { PAYMENT_STATES } = tasksRepo;
 
 /**
- * What has actually been paid to the artist for this task.
- *
- * Allocation payouts (finder, leader, mod, owner shares) are excluded: the
- * task's payment state tracks the artist's agreed amount, and the split lines
- * are settled separately.
+ * What one person is owed on one task, whether they are the single artist or
+ * one of several contributors. Their own terms only: nobody sees anyone
+ * else's figure through this.
  */
-function paidToArtist(db, task) {
-  if (!task.artist_user_id || !task.artist_pay_currency) return 0;
+function owedToContributor(db, task, userId) {
+  const contributor = contributorsRepo.getContributor(db, task.id, userId);
 
-  const row = db.prepare(`
+  const agreed = contributor && !contributor.removed_at
+    ? { minor: contributor.pay_minor, currency: contributor.pay_currency }
+    : (task.artist_user_id === userId
+      ? { minor: task.artist_pay_minor, currency: task.artist_pay_currency }
+      : null);
+
+  if (!agreed || agreed.minor === null || !agreed.currency) return null;
+
+  const paid = db.prepare(`
     SELECT COALESCE(SUM(amount_minor), 0) AS total FROM payments
     WHERE task_id = ? AND direction = 'payout' AND payee_user_id = ?
       AND allocation_kind IS NULL AND currency = ?
-  `).get(task.id, task.artist_user_id, task.artist_pay_currency);
+  `).get(task.id, userId, agreed.currency).total;
 
-  return row.total;
+  return {
+    agreedMinor: agreed.minor,
+    currency: agreed.currency,
+    paidMinor: paid,
+    remainingMinor: Math.max(0, agreed.minor - paid),
+  };
 }
 
-function remainingForArtist(db, task) {
-  if (task.artist_pay_minor === null) return null;
-  return Math.max(0, task.artist_pay_minor - paidToArtist(db, task));
+/** Everyone owed something on this task, for the owner's payout view. */
+function owedOnTask(db, task) {
+  const contributors = contributorsRepo.listForTask(db, task.id);
+  const people = contributors.length > 0
+    ? contributors.map((row) => row.user_id)
+    : (task.artist_user_id ? [task.artist_user_id] : []);
+
+  return people
+    .map((userId) => ({ userId, ...(owedToContributor(db, task, userId) || {}) }))
+    .filter((entry) => entry.currency);
+}
+
+/**
+ * Whether everyone on the task has been paid in full. With several
+ * contributors the task is only settled when the last of them is.
+ */
+function settlementOf(db, task) {
+  const owed = owedOnTask(db, task);
+  if (owed.length === 0) return { known: false, anyPaid: false, allSettled: false, outstanding: 0 };
+
+  const outstanding = owed.reduce((sum, entry) => sum + entry.remainingMinor, 0);
+  const agreed = owed.reduce((sum, entry) => sum + entry.agreedMinor, 0);
+  const anyPaid = owed.some((entry) => entry.paidMinor > 0);
+
+  // A task that owes nobody anything is not "paid" — nothing was ever due, so
+  // it keeps following the ordinary payable/pending rules instead.
+  return { known: true, anyPaid, allSettled: agreed > 0 && outstanding === 0, outstanding, agreed };
 }
 
 /**
@@ -36,12 +72,10 @@ function remainingForArtist(db, task) {
  * for deposits, and the override is respected here.
  */
 function computePaymentState(db, guildId, task) {
-  const paid = paidToArtist(db, task);
+  const settlement = settlementOf(db, task);
 
-  if (task.artist_pay_minor !== null && paid >= task.artist_pay_minor && task.artist_pay_minor > 0) {
-    return PAYMENT_STATES.PAID;
-  }
-  if (paid > 0) return PAYMENT_STATES.PARTIALLY_PAID;
+  if (settlement.known && settlement.allSettled) return PAYMENT_STATES.PAID;
+  if (settlement.anyPaid) return PAYMENT_STATES.PARTIALLY_PAID;
   if (task.payable_override_by) return PAYMENT_STATES.PAYABLE;
   if (task.state !== TASK_STATES.CLIENT_APPROVED) return PAYMENT_STATES.PENDING_CLIENT_PAYMENT;
 
@@ -96,8 +130,9 @@ function pendingPayouts(db, guildId) {
 
 module.exports = {
   PAYMENT_STATES,
-  paidToArtist,
-  remainingForArtist,
+  owedToContributor,
+  owedOnTask,
+  settlementOf,
   computePaymentState,
   recomputeTaskPaymentState,
   recomputeProjectPaymentStates,

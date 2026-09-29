@@ -67,7 +67,18 @@ stores who wrote it down and when.
 
 **Money.** Payment status is tracked separately from production status.
 Approved work can sit unpaid. Splits of the leftover pool go to the client
-finder, the department leader who did the work, a mod, and you.
+finder, the department leader who did the work, a mod, and you. Pay that would
+commit more than the client is paying is refused rather than warned about; you
+can override it deliberately, and the override is recorded.
+
+**Shared work.** Several people can work on one deliverable, each with a stated
+responsibility and their own separately agreed pay. Nobody is counted twice,
+nobody sees a colleague's rate, and the task is only settled once everybody on
+it has been paid.
+
+**Bonus milestones.** Rules such as *every 10 approved animations* are counted
+from client-approved work only. A reached milestone is flagged for your
+approval and never becomes owed by itself.
 
 **Chasing.** Configurable reminders for unanswered offers, upcoming and overdue
 deadlines, work with no recent progress, submissions awaiting review, work
@@ -192,6 +203,7 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/work submit task:` | Submit finished work (checklist, then links) |
 | `/work history task:` | Submissions, reviews and client decisions on a task |
 | `/work earnings` | Your own pay and payment history, private to you |
+| `/bonus mine` | Your progress towards milestone bonuses, and your awards |
 | `/task mine` | Your offers and current assignments |
 
 ### Group leaders (in departments they lead)
@@ -201,6 +213,9 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/task queue [department:]` | Unassigned work, with a button to choose an artist per task |
 | `/task assign task:` | Pick the artist and send the offer |
 | `/task pay task: amount:` | Propose a figure for the owner to approve |
+| `/contrib add task: person: responsibility:` | Put a second person on a task |
+| `/contrib pay task: person: amount:` | Propose what that person is paid |
+| `/contrib list task:` | Who is on a task and what each is owed |
 | `/task edit task:` | Change title, brief, deadline, formats, deliverables, revisions |
 | `/task withdraw task:` | Take back an unanswered offer |
 | `/review queue` | Work awaiting your internal review |
@@ -220,12 +235,17 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/task pay` / `/task approve-pay` | Set or approve agreed pay |
 | `/review client task: decision:` | Record what the client decided |
 | `/finance client-receipt project: amount:` | Record money received from a client |
-| `/finance pay task:` | Record a payout to the artist |
+| `/finance pay task: [person:]` | Record a payout to somebody who worked on the task |
 | `/finance pay-split task: share:` | Record a finder / leader / mod / owner share |
 | `/finance splits task:` | See how a task's pool divides |
 | `/finance set-pool task: amount: currency:` | Enter the pool by hand when currencies differ |
 | `/finance mark-payable task: reason:` | Make approved work payable before the client pays |
 | `/finance ledger` / `outstanding` / `balance member:` | Money views |
+| `/finance budget project:` | Committed pay against what the client pays |
+| `/finance budget-override project: reason:` | Deliberately allow over-budget pay, on the record |
+| `/finance budget-restore project:` | Put the guard back |
+| `/bonus rule-set key: label: threshold: amount:` | A milestone rule, e.g. every 10 approved animations |
+| `/bonus pending` / `approve id:` / `decline id: reason:` / `pay id:` | Decide and record bonuses |
 | `/manage cancel task: reason:` | Cancel, preserving history |
 | `/manage compensate task: member: amount:` | Pay for work done on cancelled or moved work |
 | `/manage flags` | Everything waiting on a decision from you |
@@ -242,7 +262,7 @@ The artist's agreed pay is never reduced by a split. What gets divided is what
 is **left over** on that task:
 
 ```
-pool = the task's share of the client payment  −  the artist's agreed pay
+pool = the task's share of the client payment  −  what everyone on that task is paid
 ```
 
 Then the pool divides by your configured percentages — by default finder 20%,
@@ -258,6 +278,55 @@ the department leader who did the work 20%, mod 10%, you 50%.
 | You | 50% | $7.50 |
 
 The artist still receives their full $25.
+
+### Shared work
+
+More than one person can work on a single deliverable. `/contrib add` puts them
+on the task with a stated responsibility, and each person's pay is agreed
+**separately** — a leader proposes, you approve, exactly as for a sole artist.
+
+Three things follow from that, deliberately:
+
+- **Nobody is counted twice.** The moment a second person joins, the original
+  artist is copied into a contributor row carrying their existing agreed figure.
+  From then on the contributor rows are the truth, and the task's own pay column
+  is no longer added on top of them.
+- **Nobody sees anyone else's rate.** `/contrib list` shows full figures to you
+  and to the department's leader; everybody else sees their own figure and only
+  "pay agreed" against their colleagues.
+- **The task is paid when the last person is paid.** `/finance pay` asks which
+  person the payout is for, and the task stays *partially paid* until everybody
+  on it is settled.
+
+Removing somebody with `/contrib remove` stops them counting towards the task's
+cost but keeps their record and any payments already made to them.
+
+### The budget guard
+
+Pay that would commit more than the client is paying for a project is
+**refused**, not merely flagged. You have three honest ways past it:
+
+1. lower the figure,
+2. record more client money (`/finance client-receipt` and the project amount),
+3. or decide deliberately to take the loss —
+   `/finance budget-override project: reason:`, which is recorded against the
+   project and shown wherever the budget is.
+
+`/finance budget project:` shows committed pay against the client payment at any
+time. Pay in a currency the client did not use is listed separately and **not**
+measured against the budget, because there is no conversion rate to measure it
+with.
+
+### Bonus milestones
+
+`/bonus rule-set` creates a rule such as *every 10 approved animations earns
+$20*, optionally limited to one department. Only client-approved work counts,
+and a task counts once per person however they contributed to it.
+
+When a milestone is reached the bot **flags it for you and stops**. Nothing is
+owed until `/bonus approve`, and nothing is recorded as paid until `/bonus pay`.
+Each milestone is indexed, so re-running the check — or two approvals landing at
+the same moment — cannot award the same milestone twice.
 
 ### Multi-department projects
 
@@ -448,6 +517,9 @@ only discover you needed after losing them.
 | The bot loses permission to a channel | That board or notification is skipped and logged; nothing else stops |
 | A deadline is typed in a DST gap | Refused with an explanation instead of being silently shifted |
 | A task changes hands mid-work | The original artist's submissions are kept and the task is flagged for a compensation decision |
+| A second person joins a task that already has agreed pay | The first artist is copied into a contributor row on their existing terms, so the two records can never both be counted |
+| Two people on one task are paid in different currencies | The split pool is left uncomputed and says so, rather than converting; enter it by hand with `/finance set-pool` |
+| The same bonus milestone is evaluated twice | The second award is rejected by a unique key on rule, person and milestone |
 
 ---
 
@@ -457,12 +529,14 @@ only discover you needed after losing them.
 npm test
 ```
 
-177 tests covering money parsing and per-currency totals, split exactness
+310 tests covering money parsing and per-currency totals, split exactness
 (including the worked $40/$25 example, the mixed-currency refusal and
 below-cost jobs), every legal and illegal task transition, repeat-click
 rejection, permission scoping, DST and quiet-hours edge cases, reminder
-escalation order, persistence across restarts, and duplicate payment
-prevention.
+escalation order, persistence across restarts, duplicate payment prevention,
+client access boundaries, portfolio rights, task dependencies, shared work
+(no double counting when a task gains a second person), the budget refusal and
+its override, and bonus milestones that cannot be awarded twice.
 
 ---
 

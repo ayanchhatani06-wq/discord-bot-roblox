@@ -1,6 +1,7 @@
 const tasksRepo = require('../db/repos/tasks');
 const projectsRepo = require('../db/repos/projects');
 const configRepo = require('../db/repos/config');
+const contributorsRepo = require('../db/repos/contributors');
 const paymentsRepo = require('../db/repos/payments');
 const { recordAudit } = require('../db/repos/core');
 const {
@@ -54,15 +55,30 @@ function computePool(db, guildId, task) {
   const project = projectsRepo.getProject(db, guildId, task.project_id);
   if (!project) return { ok: false, reason: 'no_client_amount' };
 
+  // Checked before anything else so the reported reason is the real one: a task
+  // paying people in two currencies has no single cost, and there is no rate to
+  // reconcile them with.
+  const cost = contributorsRepo.costByCurrency(db, task);
+  if (cost.size > 1) return { ok: false, reason: 'currency_mismatch' };
+  const [costCurrency, costMinor] = cost.size === 1 ? [...cost.entries()][0] : [null, null];
+
+  // A task's artist cost is the sum of everyone on it, so a shared deliverable
+  // is weighted by what it actually costs rather than by one person's figure.
   const siblings = tasksRepo.listTasksForProject(db, project.id)
     .filter((row) => row.state !== 'cancelled')
-    .map((row) => ({
-      id: row.id,
-      artistPayMinor: row.artist_pay_minor,
-      artistPayCurrency: row.artist_pay_currency,
-      clientPriceMinor: row.client_price_minor,
-      clientPriceCurrency: row.client_price_currency,
-    }));
+    .map((row) => {
+      const rowCost = contributorsRepo.costByCurrency(db, row);
+      const [currency, minor] = rowCost.size === 1 ? [...rowCost.entries()][0] : [null, null];
+      return {
+        id: row.id,
+        // Several currencies on one task cannot be summed, so it is left
+        // unpriced and reported rather than approximated.
+        artistPayMinor: minor,
+        artistPayCurrency: currency,
+        clientPriceMinor: row.client_price_minor,
+        clientPriceCurrency: row.client_price_currency,
+      };
+    });
 
   const slices = computeTaskClientSlices({
     clientAmountMinor: project.client_amount_minor,
@@ -76,8 +92,8 @@ function computePool(db, guildId, task) {
   const pool = computeTaskPool({
     sliceMinor: slice.sliceMinor,
     sliceCurrency: slice.currency,
-    artistPayMinor: task.artist_pay_minor,
-    artistPayCurrency: task.artist_pay_currency,
+    artistPayMinor: costMinor,
+    artistPayCurrency: costCurrency ?? slice.currency,
   });
 
   if (!pool.ok) return pool;

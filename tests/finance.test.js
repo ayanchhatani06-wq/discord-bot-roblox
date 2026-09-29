@@ -215,7 +215,7 @@ test('payments progress the task from payable to partly paid to paid', () => {
   });
   let updated = paymentState.recomputeTaskPaymentState(db, GUILD, task.id, OWNER);
   assert.equal(updated.payment_state, 'partially_paid');
-  assert.equal(paymentState.remainingForArtist(db, updated), 1500);
+  assert.equal(paymentState.owedToContributor(db, updated, ARTIST).remainingMinor, 1500);
 
   paymentsRepo.recordPayment(db, GUILD, {
     direction: 'payout', projectId: project.id, taskId: task.id, payeeUserId: ARTIST,
@@ -223,7 +223,7 @@ test('payments progress the task from payable to partly paid to paid', () => {
   });
   updated = paymentState.recomputeTaskPaymentState(db, GUILD, task.id, OWNER);
   assert.equal(updated.payment_state, 'paid');
-  assert.equal(paymentState.remainingForArtist(db, updated), 0);
+  assert.equal(paymentState.owedToContributor(db, updated, ARTIST).remainingMinor, 0);
   db.close();
 });
 
@@ -244,7 +244,7 @@ test('the same payment cannot be recorded twice', () => {
   assert.equal(first.created, true);
   assert.equal(second.created, false);
   assert.equal(second.payment.id, first.payment.id);
-  assert.equal(paymentState.paidToArtist(db, tasksRepo.getTask(db, GUILD, task.id)), 2500, 'paid once, not twice');
+  assert.equal(paymentState.owedToContributor(db, tasksRepo.getTask(db, GUILD, task.id), ARTIST).paidMinor, 2500, 'paid once, not twice');
   db.close();
 });
 
@@ -262,7 +262,7 @@ test('a genuinely separate instalment is still allowed', () => {
     amountMinor: 1000, currency: 'USD', recordedBy: OWNER, idempotencyKey: 'instalment-2',
   });
 
-  assert.equal(paymentState.paidToArtist(db, tasksRepo.getTask(db, GUILD, task.id)), 2000);
+  assert.equal(paymentState.owedToContributor(db, tasksRepo.getTask(db, GUILD, task.id), ARTIST).paidMinor, 2000);
   db.close();
 });
 
@@ -279,8 +279,8 @@ test('share payouts do not count towards the artist balance', () => {
   });
 
   const fresh = tasksRepo.getTask(db, GUILD, task.id);
-  assert.equal(paymentState.paidToArtist(db, fresh), 0);
-  assert.equal(paymentState.remainingForArtist(db, fresh), 2500);
+  assert.equal(paymentState.owedToContributor(db, fresh, ARTIST).paidMinor, 0);
+  assert.equal(paymentState.owedToContributor(db, fresh, ARTIST).remainingMinor, 2500);
   db.close();
 });
 

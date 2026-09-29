@@ -10,6 +10,7 @@ const tasksRepo = require('../db/repos/tasks');
 const projectsRepo = require('../db/repos/projects');
 const configRepo = require('../db/repos/config');
 const submissionsRepo = require('../db/repos/submissions');
+const paymentState = require('../services/paymentState');
 const planningRepo = require('../db/repos/planning');
 const { contextFor } = require('../services/actor');
 const { taskEmbed } = require('../services/taskView');
@@ -96,12 +97,17 @@ module.exports = {
     const userId = interaction.user.id;
 
     if (sub === 'earnings') {
+      // Their own line on every task they worked on, sole artist or not.
+      // Contributor terms win where they exist, so nothing is listed twice.
       const rows = db.prepare(`
-        SELECT t.code, t.title, t.artist_pay_minor, t.artist_pay_currency, t.payment_state, t.state
+        SELECT DISTINCT t.id, t.code, t.title, t.payment_state, t.state, t.created_at
         FROM tasks t
-        WHERE t.guild_id = ? AND t.artist_user_id = ? AND t.artist_pay_minor IS NOT NULL
+        LEFT JOIN task_contributors c ON c.task_id = t.id AND c.removed_at IS NULL
+        WHERE t.guild_id = ? AND (t.artist_user_id = ? OR c.user_id = ?)
         ORDER BY t.created_at DESC LIMIT 25
-      `).all(guildId, userId);
+      `).all(guildId, userId, userId)
+        .map((row) => ({ ...row, owed: paymentState.owedToContributor(db, row, userId) }))
+        .filter((row) => row.owed);
 
       const payments = db.prepare(`
         SELECT p.amount_minor, p.currency, p.method_label, p.recorded_at, t.code
@@ -117,7 +123,8 @@ module.exports = {
           rows.length === 0
             ? 'No tasks with agreed pay yet.'
             : rows.map((row) =>
-                `**${row.code}** ${row.title}\n┗ ${formatAmount(row.artist_pay_minor, row.artist_pay_currency)} · ${row.payment_state.replace(/_/g, ' ')}`
+                `**${row.code}** ${row.title}\n┗ ${formatAmount(row.owed.agreedMinor, row.owed.currency)} · ${row.payment_state.replace(/_/g, ' ')}` +
+                `${row.owed.remainingMinor > 0 && row.owed.paidMinor > 0 ? ` · ${formatAmount(row.owed.remainingMinor, row.owed.currency)} still owed` : ''}`
               ).join('\n').slice(0, 2000)
         );
 
