@@ -98,7 +98,10 @@ and what is owed.
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) → **New Application**.
 2. **Bot** tab → **Reset Token** → copy it. This is your `DISCORD_TOKEN`; treat it like a password.
-3. **Bot** tab → **Privileged Gateway Intents** → enable **Server Members Intent**.
+3. **Bot** tab → **Privileged Gateway Intents** → enable **Server Members Intent**,
+   and **Message Content Intent** if you want the bot to quote client replies.
+   Without Message Content everything still works: the bot knows a client wrote
+   and pauses their automated messages, it just cannot include what they said.
    This is required: a staff directory has to know when somebody leaves the
    server, otherwise the boards keep listing people who are gone.
    *Presence* and *Message Content* are **not** needed.
@@ -260,6 +263,11 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/people offboard preview person:` / `start` | What somebody leaves behind |
 | `/procedure set key: title: body:` | Write a procedure everyone acknowledges |
 | `/procedure who key:` | Who has read the current version |
+| `/outreach template-set` / `template-approve` | Write and approve client message wording |
+| `/outreach queue` / `history client:` | What is waiting to send, and what was sent |
+| `/outreach prefs client:` | Opt-in, weekly limit, pause, follow-up owner |
+| `/outreach replies` / `handled id:` | Clients waiting on an answer |
+| `/outreach offer project:` | Queue the approved cross-service offer |
 | `/studio …` | All configuration |
 
 ---
@@ -337,6 +345,45 @@ When a milestone is reached the bot **flags it for you and stops**. Nothing is
 owed until `/bonus approve`, and nothing is recorded as paid until `/bonus pay`.
 Each milestone is indexed, so re-running the check — or two approvals landing at
 the same moment — cannot award the same milestone twice.
+
+### Talking to clients
+
+The bot sends clients only wording **you wrote and approved**. A template is a
+draft until `/outreach template-approve`, and rewriting an approved one takes
+the approval away again, so nothing goes out in words nobody signed off.
+
+Templates are filled from a closed list of placeholders (`/outreach
+placeholders`) read straight from records. An invented placeholder is refused
+when you write the template; a placeholder with nothing recorded behind it stops
+the message entirely rather than sending a sentence with a gap in it.
+
+Messages are raised by things that actually happened — an order linked to a
+client, the first task accepted, a preview passing internal review, work
+released, a client silent for days, an order delivered a week ago. Each is
+deduplicated by the event rather than by when the sweep ran, so re-reviewing the
+same submission says nothing new. Previews and deliveries are held for an hour
+and folded into one message, so an 18-item bulk order does not become 18 pings.
+
+Before anything sends, and **again at the moment of sending**, the bot checks:
+
+| Rule | Effect |
+| --- | --- |
+| An unresolved problem is open | Nothing automated goes out, transactional included — they should hear from a person |
+| The client wrote in and nobody has answered | Everything pauses, and queued promotional messages are cancelled |
+| Promotional, and they never opted in | Refused |
+| Promotional, and they asked to stop | Refused, whatever the opt-in flag still says |
+| Promotional, and the weekly limit is reached | Refused, counting what actually arrived, not what was queued |
+| Explicitly paused | Refused until it lapses |
+
+The guards run twice on purpose: a client can complain between a chase being
+scheduled and it falling due, and the later fact is the one that should win.
+
+Everything sent, held back or failed is on the record — `/outreach queue` and
+`/outreach history`. A send that fails is marked failed with the reason, never
+silently dropped.
+
+Noticing a client reply needs Discord's **Message Content** intent. Without it
+the bot still knows somebody wrote and still pauses, it just cannot quote them.
 
 ### Procedures, trials and leaving
 
@@ -574,7 +621,7 @@ only discover you needed after losing them.
 npm test
 ```
 
-331 tests covering money parsing and per-currency totals, split exactness
+354 tests covering money parsing and per-currency totals, split exactness
 (including the worked $40/$25 example, the mixed-currency refusal and
 below-cost jobs), every legal and illegal task transition, repeat-click
 rejection, permission scoping, DST and quiet-hours edge cases, reminder
@@ -583,7 +630,9 @@ client access boundaries, portfolio rights, task dependencies, shared work
 (no double counting when a task gains a second person), the budget refusal and
 its override, bonus milestones that cannot be awarded twice, version-bound procedure
 acknowledgements, trial state rules, stand-in leadership windows, and
-offboarding reports.
+offboarding reports, template approval and placeholder safety, message
+deduplication and digesting, and every client-messaging guard including the
+re-check at send time.
 
 ---
 
@@ -614,7 +663,15 @@ dashboard reuse them later without a rewrite.
 
 Things this bot does **not** do, by design:
 
-- It does not talk to clients. Client decisions are recorded by staff.
+- It does not write its own words to clients. It sends only wording you wrote
+  and approved, filled from records — there is no model behind it, so it cannot
+  invent a date, a price or a promise. A template with a value missing does not
+  send at all.
+- It does not decide for clients. Approvals come from the client's own dashboard
+  buttons or are recorded by staff; the bot never marks work approved itself.
+- It does not read your server. The only messages it looks at are ones written
+  by an authorised client account in that client's own project channel, and it
+  keeps a short excerpt rather than the conversation.
 - It does not move money. It records payments that happened elsewhere.
 - It does not convert between currencies.
 - It does not auto-assign work, and it does not stop a leader from choosing

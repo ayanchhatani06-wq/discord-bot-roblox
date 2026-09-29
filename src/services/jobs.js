@@ -3,10 +3,16 @@ const configRepo = require('../db/repos/config');
 const boardScheduler = require('./boardScheduler');
 const { runSweep } = require('./reminders');
 const { postWeeklySummary } = require('./summary');
+const clientMessaging = require('./clientMessaging');
+const messageTriggers = require('./messageTriggers');
 const { pruneGuards } = require('../db/repos/core');
 
 const REMINDER_CRON = '*/10 * * * *';
 const HOUSEKEEPING_CRON = '30 4 * * *';
+// Queued client messages are sent on their own beat, separate from the sweep
+// that queues them, so a burst still goes out under the same rate limits.
+const OUTBOX_CRON = '*/5 * * * *';
+const CLIENT_SWEEP_CRON = '15 10 * * *';
 
 const summaryTasks = new Map();
 
@@ -81,6 +87,30 @@ function startAll(client, db) {
     }
   }, 'housekeeping');
 
+  safeSchedule(OUTBOX_CRON, async () => {
+    for (const config of configRepo.listConfiguredGuilds(db)) {
+      try {
+        const result = await clientMessaging.processQueue(client, db, config.guild_id);
+        if (result.failed > 0) {
+          console.warn(`${result.failed} client message(s) could not be sent in guild ${config.guild_id}.`);
+        }
+      } catch (error) {
+        console.error(`Client outbox failed for guild ${config.guild_id}:`, error);
+      }
+    }
+  }, 'client outbox');
+
+  // Once a day, and only queueing: nothing is sent from here.
+  safeSchedule(CLIENT_SWEEP_CRON, () => {
+    for (const config of configRepo.listConfiguredGuilds(db)) {
+      try {
+        messageTriggers.sweep(db, config.guild_id);
+      } catch (error) {
+        console.error(`Client follow-up sweep failed for guild ${config.guild_id}:`, error);
+      }
+    }
+  }, 'client follow-up sweep');
+
   const summaries = scheduleAllSummaries(client, db);
   console.log(`Jobs started: boards, reminders every 10 minutes, ${summaries} weekly summary schedule(s).`);
 }
@@ -90,4 +120,4 @@ function stopAll() {
   summaryTasks.clear();
 }
 
-module.exports = { REMINDER_CRON, startAll, stopAll, scheduleSummaryFor, scheduleAllSummaries, summaryTasks };
+module.exports = { REMINDER_CRON, OUTBOX_CRON, CLIENT_SWEEP_CRON, startAll, stopAll, scheduleSummaryFor, scheduleAllSummaries, summaryTasks };

@@ -6,6 +6,7 @@ const clientsRepo = require('../db/repos/clients');
 const { contextFor } = require('../services/actor');
 const delivery = require('../services/delivery');
 const { notifyUser } = require('../services/notify');
+const messageTriggers = require('../services/messageTriggers');
 const { publishDashboard } = require('./clients');
 const { CAPABILITIES, assertCan, can } = require('../domain/permissions');
 const { stateLabel } = require('../domain/taskState');
@@ -201,6 +202,12 @@ module.exports = {
       if (project?.client_id && project.client_channel_id) {
         publishDashboard(interaction, db, guildId, projectsRepo.getProject(db, guildId, project.id))
           .catch((error) => console.error('Dashboard refresh after delivery failed:', error));
+
+        messageTriggers.delivered(db, guildId, project, {
+          taskId: task.id,
+          version: result.task.delivered_version,
+          queuedBy: userId,
+        });
       }
 
       for (const recipient of new Set([task.artist_user_id, task.leader_user_id].filter(Boolean))) {

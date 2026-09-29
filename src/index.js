@@ -6,6 +6,7 @@ const { getDatabase } = require('./db');
 const router = require('./interactions/router');
 const boardScheduler = require('./services/boardScheduler');
 const jobs = require('./services/jobs');
+const clientReplyWatch = require('./services/clientReplyWatch');
 const { replyPrivate } = require('./utils/reply');
 
 if (!process.env.DISCORD_TOKEN) {
@@ -16,7 +17,17 @@ if (!process.env.DISCORD_TOKEN) {
 // GuildMembers is a privileged intent (enable it on the Bot tab of the
 // developer portal). A staff directory has to know when somebody leaves the
 // server, otherwise the boards keep listing people who are gone.
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+// GuildMessages lets the bot notice that a client wrote in their own channel.
+// MessageContent is what lets it quote them; it is privileged, and without it
+// everything still works — staff are told somebody wrote, just not what.
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
 client.commands = new Collection();
 
 function loadDirectory(directory, onFile) {
@@ -44,6 +55,16 @@ client.once('ready', () => {
   console.log(`Commands: ${[...client.commands.keys()].join(', ') || 'none'}`);
   console.log(`Component namespaces: ${router.registeredNamespaces().join(', ') || 'none'}`);
   jobs.startAll(client, db);
+});
+
+// The only reason the bot reads messages at all: a client writing in their own
+// channel should stop the automation and fetch a person.
+client.on('messageCreate', async (message) => {
+  try {
+    await clientReplyWatch.handleMessage(client, getDatabase(), message);
+  } catch (error) {
+    console.error('Could not handle a message in a client channel:', error);
+  }
 });
 
 client.on('interactionCreate', async (interaction) => {

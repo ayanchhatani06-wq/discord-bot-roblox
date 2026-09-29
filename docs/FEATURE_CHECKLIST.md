@@ -72,16 +72,16 @@ not only an internal dashboard.
 
 | Item | Status |
 | --- | --- |
-| Configurable automatic messages (confirmation, production start, previews, delivery, chase) | ⬜ stage 3 |
-| Digest for bulk orders instead of per-item spam | ⬜ stage 3 |
-| Post-delivery check-ins and review requests | ⬜ stage 3 |
-| Repeat-order reminders | ⬜ stage 3 |
-| Cross-service offers (rigging after modelling, VFX with animation) | ⬜ stage 3 |
-| Owner-approved templates only | ⬜ stage 3 |
-| Promotional opt-in, easy stop, configured send limit | ⬜ stage 3 |
-| Pause offers during complaints or delivery problems | ⬜ stage 3 |
-| Client reply pauses the sequence and notifies staff | ⬜ stage 3 |
-| Sent-message history, duplicate prevention, failures flagged | ⬜ stage 3 |
+| Configurable automatic messages (confirmation, production start, previews, delivery, chase) | ✅ (`/outreach template-set`, attached to events) |
+| Digest for bulk orders instead of per-item spam | ✅ (previews and deliveries are held briefly and folded into one message) |
+| Post-delivery check-ins and review requests | ✅ (daily sweep, 7 and 14 days after the last delivery) |
+| Repeat-order reminders | ✅ (opted-in past clients with nothing live, at most once a quarter) |
+| Cross-service offers (rigging after modelling, VFX with animation) | ✅ (`/outreach offer`, owner-triggered per order) |
+| Owner-approved templates only | ✅ (a draft never sends; rewriting withdraws the approval) |
+| Promotional opt-in, easy stop, configured send limit | ✅ (`/outreach prefs`; a recorded stop beats a stale opt-in) |
+| Pause offers during complaints or delivery problems | ✅ (an unresolved problem blocks every automated message, not just offers) |
+| Client reply pauses the sequence and notifies staff | ✅ (queued promotional messages are cancelled; the follow-up owner is told) |
+| Sent-message history, duplicate prevention, failures flagged | ✅ (`/outreach history` and `queue`; the dedupe key is a database constraint) |
 
 ## 4. New enquiries and quotes
 
@@ -101,7 +101,7 @@ not only an internal dashboard.
 | Order history per client | ✅ |
 | Project preferences and recurring requirements | ⬜ stage 5 |
 | Approved communication contacts | ✅ |
-| Follow-up preferences | ⬜ stage 3 |
+| Follow-up preferences | ✅ (`/outreach prefs`: opt-in, weekly limit, pause, follow-up owner) |
 | Duplicate a previous order as a draft | ⬜ stage 5 |
 | Confirm new scope, price and deadline on duplication | ⬜ stage 5 |
 | Finder attribution, agreed compensation, follow-up ownership | 🟡 finder share and per-client attribution built; follow-up ownership in stage 5 |
@@ -227,7 +227,7 @@ client login that must also work for clients who are not in the Discord server.
 
 1. **Client identity, dashboard and version-bound approvals** — §1, §2, client parts of §13
 2. **Client issues and staff escalation** — §11 (needs stage 1)
-3. **Client messaging automation** — §3 (needs stages 1–2)
+3. **Client messaging automation** — §3 (needs stages 1–2) ✅ done
 4. **Enquiries and quotes** — §4
 5. **Client records and repeat orders** — §5
 6. **Task planning: templates, dependencies, blockers, extensions** — §6

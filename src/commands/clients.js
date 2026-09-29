@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ChannelType, PermissionFlagsBits } = require('discord.js');
 const clientsRepo = require('../db/repos/clients');
+const messageTriggers = require('../services/messageTriggers');
 const projectsRepo = require('../db/repos/projects');
 const { contextFor } = require('../services/actor');
 const clientReport = require('../services/clientReport');
@@ -388,9 +389,18 @@ module.exports = {
         clientChannelId: channel ? channel.id : undefined,
       });
 
+      // This is the first moment there is somebody to write to about the
+      // order, so it is where the confirmation message is raised.
+      const confirmation = messageTriggers.orderConfirmed(
+        db, guildId, projectsRepo.getProject(db, guildId, project.id), { queuedBy: userId }
+      );
+
       const accounts = clientsRepo.listAccounts(db, client.id);
       await interaction.reply(priv([
         `✅ **${project.code}** is now ${client.display_name}'s order.`,
+        confirmation.ok && confirmation.created
+          ? '📨 Your approved confirmation message is queued for their channel.'
+          : null,
         channel ? `Their channel: <#${channel.id}>.` : 'No client channel set — add one to post their dashboard there.',
         accounts.length === 0
           ? '⚠️ This client has no authorized Discord accounts yet, so nobody can open the dashboard. Add one with `/clients add-account`.'

@@ -12,6 +12,7 @@ const assetsRepo = require('../db/repos/assets');
 const { publishDashboard } = require('../commands/clients');
 const { contextFor } = require('../services/actor');
 const { notifyUser } = require('../services/notify');
+const messageTriggers = require('../services/messageTriggers');
 const { reviewPanel } = require('../commands/review');
 const { register, customId } = require('./router');
 const { CAPABILITIES, assertCan } = require('../domain/permissions');
@@ -99,6 +100,14 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       publishDashboard(interaction, db, guildId, project).catch((error) =>
         console.error('Client dashboard refresh failed:', error)
       );
+
+      // Queues the studio's approved "a preview is ready" message, if there is
+      // one. Held briefly so a batch of items becomes a single message.
+      messageTriggers.previewReady(db, guildId, project, {
+        taskId: updated.id,
+        submissionId: submission?.id ?? 'none',
+        queuedBy: interaction.user.id,
+      });
     }
 
     await interaction.update({

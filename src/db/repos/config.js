@@ -18,6 +18,7 @@ const DEFAULT_DEPARTMENTS = [
 ];
 
 const CONFIG_COLUMNS = [
+  'studio_name', 'studio_tagline',
   'owner_user_id', 'owner_role_id', 'manager_role_id', 'staff_board_channel_id',
   'audit_log_channel_id', 'fallback_channel_id', 'summary_channel_id',
   'board_refresh_minutes', 'offer_reminder_hours', 'stale_progress_days',

@@ -11,6 +11,7 @@ const tasksRepo = require('../db/repos/tasks');
 const projectsRepo = require('../db/repos/projects');
 const configRepo = require('../db/repos/config');
 const { acceptOffer, declineOffer, describeTerms } = require('../services/offerFlow');
+const messageTriggers = require('../services/messageTriggers');
 const { register, customId } = require('./router');
 const { discordTimestamp } = require('../utils/time');
 const { priv } = require('../utils/reply');
@@ -106,6 +107,12 @@ register(NAMESPACE, async (interaction, { action, args }) => {
     const task = result.task;
     const project = projectsRepo.getProject(db, guildId, task.project_id);
     const department = configRepo.getDepartment(db, guildId, task.department_id);
+
+    // Somebody accepting the first task is the moment work actually starts on
+    // the order. Deduplicated per project, so later acceptances say nothing.
+    if (project?.client_id) {
+      messageTriggers.productionStarted(db, guildId, project, { queuedBy: interaction.user.id });
+    }
     const terms = offersRepo.terms(result.offer);
 
     await settleMessage(interaction, {
