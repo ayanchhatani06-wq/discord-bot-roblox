@@ -3,6 +3,8 @@ const configRepo = require('../db/repos/config');
 const { contextFor } = require('../services/actor');
 const { refreshGuildBoards } = require('../services/staffBoard');
 const boardScheduler = require('../services/boardScheduler');
+const { buildPanel: buildSetupPanel } = require('../interactions/setup');
+const { createSampleProject, listSampleProjects, removeSampleData } = require('../services/sampleData');
 const { CAPABILITIES, ALL_CAPABILITIES, assertCan, isOwner } = require('../domain/permissions');
 const { RECIPIENT_KINDS } = require('../domain/allocations');
 const { CURRENCIES } = require('../domain/money');
@@ -107,7 +109,20 @@ module.exports = {
         .addStringOption((opt) => opt.setName('capability').setDescription('Which capability').setRequired(true).setAutocomplete(true))
     )
     .addSubcommand((sub) => sub.setName('capabilities').setDescription('Show which roles hold which capabilities'))
-    .addSubcommand((sub) => sub.setName('refresh').setDescription('Rebuild the staff boards now')),
+    .addSubcommand((sub) => sub.setName('refresh').setDescription('Rebuild the staff boards now'))
+    .addSubcommand((sub) =>
+      sub
+        .setName('sample')
+        .setDescription('Create or remove a demonstration project showing the whole workflow')
+        .addStringOption((opt) =>
+          opt.setName('action').setDescription('Create or remove').setRequired(true).addChoices(
+            { name: 'Create sample project', value: 'create' },
+            { name: 'Remove sample data', value: 'remove' }
+          )
+        )
+        .addUserOption((opt) => opt.setName('leader').setDescription('Stand-in group leader (defaults to you)').setRequired(false))
+        .addUserOption((opt) => opt.setName('artist').setDescription('Stand-in artist (defaults to you)').setRequired(false))
+    ),
 
   async autocomplete(interaction) {
     const focused = interaction.options.getFocused(true);
@@ -149,16 +164,16 @@ module.exports = {
       const created = configRepo.seedDefaultDepartments(db, guildId, userId);
       configRepo.markSetupComplete(db, guildId, userId);
 
+      // The wizard panel carries the remaining steps as controls, so nothing
+      // below needs to be typed from memory.
+      const panel = buildSetupPanel(db, guildId);
       await interaction.reply(priv({
         content:
-          `✅ Setup started. You are recorded as the studio owner.\n` +
-          `${created.length > 0 ? `Created ${created.length} departments: ${created.join(', ')}.` : 'Departments already existed, nothing created.'}\n\n` +
-          '**Next steps**\n' +
-          '1. `/studio channel purpose:Staff info board channel:#channel`\n' +
-          '2. `/studio channel purpose:DM fallback channel:#staff-notices`\n' +
-          '3. `/studio department key:modelling leader_role:@Modelling Lead member_role:@Modeller` (repeat per department)\n' +
-          '4. `/studio splits finder:20 leader:20 mod:10 owner:50`\n' +
-          '5. Ask staff to run `/profile me`\n',
+          '✅ You are recorded as the studio owner.\n' +
+          `${created.length > 0 ? `Created ${created.length} departments: ${created.join(', ')}.` : 'Departments already existed, so nothing was created.'}\n` +
+          'Work through the checklist below — the controls do each step for you.',
+        embeds: [panel.embed],
+        components: panel.components,
       }));
       return;
     }
@@ -425,6 +440,61 @@ module.exports = {
           ? `❌ Could not refresh: ${result.skipped.replace(/_/g, ' ')}.`
           : `✅ Rebuilt ${result.posted} board message(s).`
       );
+      return;
+    }
+
+    if (sub === 'sample') {
+      const mode = interaction.options.getString('action', true);
+
+      if (mode === 'remove') {
+        const removed = removeSampleData(db, guildId);
+        await interaction.reply(priv(
+          removed.removedProjects === 0
+            ? 'No sample data to remove.'
+            : `✅ Removed ${removed.removedProjects} sample project(s) and ${removed.removedTasks} sample task(s).`
+        ));
+        boardScheduler.invalidate(guildId);
+        return;
+      }
+
+      const existing = listSampleProjects(db, guildId);
+      if (existing.length > 0) {
+        await interaction.reply(priv(
+          `There is already a sample project (**${existing[0].code}**). ` +
+          'Remove it first with `/studio sample action:Remove sample data`.'
+        ));
+        return;
+      }
+
+      const result = createSampleProject(db, guildId, {
+        ownerId: userId,
+        leaderId: interaction.options.getUser('leader')?.id ?? userId,
+        artistId: interaction.options.getUser('artist')?.id ?? userId,
+      });
+
+      if (!result.ok) {
+        await interaction.reply(priv(
+          `❌ Could not build the sample: ${result.reason === 'no_departments' ? 'no departments exist yet — run `/studio setup` first' : result.reason}.`
+        ));
+        return;
+      }
+
+      await interaction.reply(priv([
+        `✅ Created **${result.project.code}** with ${result.taskCount} sample tasks, one in each stage of the workflow.`,
+        '',
+        '**Try these, in this order:**',
+        `• \`/task queue\` — ${result.showcase.queued} is waiting for an artist, and one task is blocked until you approve its pay`,
+        `• \`/task approve-pay task:${result.showcase.payProposed}\` — a leader has proposed a figure`,
+        `• \`/task view task:${result.showcase.offered}\` — offered, waiting on an answer`,
+        `• \`/review queue\` — ${result.showcase.inReview} is waiting for internal review`,
+        `• \`/review client task:${result.showcase.inReview}\` — record a client decision (after passing review)`,
+        `• \`/finance splits task:${result.showcase.finished}\` — see the pool divided`,
+        `• \`/finance ledger\` and \`/summary now\` — the money and management views`,
+        '',
+        'Nobody was DMed about these: sample tasks are set up directly, not offered for real.',
+        'Remove it all with `/studio sample action:Remove sample data`.',
+      ].join('\n')));
+      boardScheduler.invalidate(guildId);
     }
   },
 };
