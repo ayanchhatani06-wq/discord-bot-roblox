@@ -10,6 +10,7 @@ const staffRepo = require('../db/repos/staff');
 const configRepo = require('../db/repos/config');
 const { contextFor } = require('../services/actor');
 const { candidateWarnings, sendOffer } = require('../services/offerFlow');
+const { checkTaskReadiness, describeReadiness } = require('../services/readiness');
 const { candidateDescription, formatPay } = require('../services/taskView');
 const { register, customId } = require('./router');
 const { CAPABILITIES, assertCan } = require('../domain/permissions');
@@ -71,8 +72,13 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       await interaction.reply(priv(`❌ **${task.code}** is ${stateLabel(task.state)} and is not waiting for an artist.`));
       return;
     }
-    if (!tasksRepo.isPayApproved(task)) {
-      await interaction.reply(priv(`❌ **${task.code}** cannot be offered until the owner approves the pay.`));
+    // Checked before anyone is picked, so an incomplete task is caught before
+    // an artist is asked to accept terms that do not exist yet.
+    const readiness = checkTaskReadiness(db, guildId, task);
+    if (!readiness.ok) {
+      await interaction.reply(priv(
+        `❌ **${task.code}** is not ready to offer.\n${describeReadiness(readiness)}`
+      ));
       return;
     }
 
@@ -104,7 +110,11 @@ register(NAMESPACE, async (interaction, { action, args }) => {
     const staff = staffRepo.getStaff(db, guildId, artistUserId);
 
     if (action === 'choose') {
-      const warnings = candidateWarnings(db, guildId, { staff, department });
+      const readiness = checkTaskReadiness(db, guildId, task);
+      const warnings = [
+        ...candidateWarnings(db, guildId, { staff, department }),
+        ...readiness.warnings,
+      ];
       if (warnings.length > 0) {
         // Warn and require a second, explicit click rather than blocking.
         await interaction.update({

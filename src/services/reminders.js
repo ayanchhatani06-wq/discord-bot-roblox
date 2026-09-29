@@ -4,6 +4,7 @@ const tasksRepo = require('../db/repos/tasks');
 const offersRepo = require('../db/repos/offers');
 const remindersRepo = require('../db/repos/reminders');
 const paymentState = require('./paymentState');
+const planningRepo = require('../db/repos/planning');
 const { notifyUser } = require('./notify');
 const { TASK_STATES, ACTIVE_STATES } = require('../domain/taskState');
 const { formatAmount } = require('../domain/money');
@@ -21,6 +22,8 @@ const REPEAT_INTERVAL = {
   [KINDS.AWAITING_REVIEW]: DAY_MS,
   [KINDS.AWAITING_CLIENT]: 3 * DAY_MS,
   [KINDS.APPROVED_UNPAID]: 3 * DAY_MS,
+  [KINDS.DEPENDENCY_READY]: 7 * DAY_MS,
+  [KINDS.BLOCKER_OPEN]: 2 * DAY_MS,
   [KINDS.AWAY_RETURNED]: 3 * DAY_MS,
 };
 
@@ -117,6 +120,8 @@ const HEADINGS = {
   [KINDS.AWAITING_REVIEW]: '🔍 Waiting for your internal review',
   [KINDS.AWAITING_CLIENT]: '📤 Waiting on a client decision',
   [KINDS.APPROVED_UNPAID]: '💰 Approved work with payouts outstanding',
+  [KINDS.DEPENDENCY_READY]: '🔗 Ready for you to start',
+  [KINDS.BLOCKER_OPEN]: '🚧 Blockers still open',
   [KINDS.AWAY_RETURNED]: '👋 Back from being away?',
 };
 
@@ -220,7 +225,20 @@ function sweepGuild(db, guildId, { now = Date.now() } = {}) {
     }
   }
 
-  // 8. People whose away date has passed, asked rather than switched for them.
+  // 8. A prerequisite has become ready: tell the team waiting on it, once.
+  for (const dependency of planningRepo.newlyReadyDependencies(db, guildId)) {
+    const recipient = dependency.down_artist || dependency.down_leader;
+    const added = batch.add(
+      recipient, KINDS.DEPENDENCY_READY, 'dependency', dependency.id,
+      `**${dependency.up_code}** ${dependency.up_title} has passed review, so **${dependency.down_code}** ` +
+      `${dependency.down_title} can start.${dependency.note ? `\n_${dependency.note}_` : ''}`
+    );
+    // Marked whether or not it was due, so a prerequisite cannot be announced
+    // twice; the batch itself will not re-add an entry it has already sent.
+    if (added) planningRepo.markDependencyNotified(db, dependency.id);
+  }
+
+  // 9. People whose away date has passed, asked rather than switched for them.
   for (const staff of staffRepo.listReturnedFromAway(db, guildId, now)) {
     batch.add(
       staff.user_id, KINDS.AWAY_RETURNED, 'staff', staff.user_id,

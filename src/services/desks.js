@@ -8,6 +8,7 @@ const submissionsRepo = require('../db/repos/submissions');
 const clientsRepo = require('../db/repos/clients');
 const enquiriesRepo = require('../db/repos/enquiries');
 const escalationsRepo = require('../db/repos/escalations');
+const planningRepo = require('../db/repos/planning');
 const paymentsRepo = require('../db/repos/payments');
 const paymentState = require('./paymentState');
 const allocationFlow = require('./allocationFlow');
@@ -88,6 +89,17 @@ function buildMyDesk(db, guildId, userId, { now = Date.now() } = {}) {
     embed.addFields({
       name: `🔁 Changes requested (${revisions.length})`,
       value: truncate(revisions.map((task) => `**${task.code}** ${task.title} — resubmit with \`/work submit\``)),
+      inline: false,
+    });
+  }
+
+  const myBlockers = planningRepo.listOpenBlockers(db, guildId).filter((row) => row.raised_by === userId);
+  if (myBlockers.length > 0) {
+    embed.addFields({
+      name: `🚧 Your open blockers (${myBlockers.length})`,
+      value: truncate(myBlockers.map((row) =>
+        `**${row.code}** ${row.title} — raised ${discordTimestamp(row.created_at, 'R')}\n┗ ${row.reason.slice(0, 120)}`
+      )),
       inline: false,
     });
   }
@@ -198,6 +210,22 @@ function buildGroupDesk(db, guildId, department, { now = Date.now() } = {}) {
     });
   }
 
+  const blockers = planningRepo.listOpenBlockers(db, guildId, { departmentId: department.id });
+  const extensions = planningRepo.listDeadlineRequests(db, guildId, { status: 'pending', departmentId: department.id });
+
+  if (blockers.length > 0 || extensions.length > 0) {
+    embed.addFields({
+      name: `🚧 Blocked and waiting on you (${blockers.length + extensions.length})`,
+      value: truncate([
+        ...blockers.map((row) => `🚧 **${row.code}** <@${row.raised_by}> — ${row.reason.slice(0, 100)}`),
+        ...extensions.map((row) =>
+          `📅 **${row.code}** <@${row.requested_by}> asks for ${discordTimestamp(row.requested_deadline, 'd')} (#${row.id})`
+        ),
+      ]),
+      inline: false,
+    });
+  }
+
   embed.addFields({
     name: '👥 Capacity',
     value: truncate(staffRows.slice(0, 12).map((staff) => {
@@ -241,6 +269,9 @@ function buildOwnerDesk(db, guildId, { now = Date.now() } = {}) {
 
   const undecidedIssues = clientsRepo.listRequests(db, guildId, { status: 'open', limit: 50 })
     .filter((request) => request.kind === 'delivery_issue' && !request.decision);
+  const openBlockers = planningRepo.listOpenBlockers(db, guildId);
+  const deadlineRequests = planningRepo.listDeadlineRequests(db, guildId, { status: 'pending' });
+  const atRisk = planningRepo.downstreamAtRisk(db, guildId);
   const openEscalations = escalationsRepo.list(db, guildId, { status: 'open', limit: 25 });
   const awaitingClient = tasksRepo.listTasksInStates(db, guildId, [TASK_STATES.AWAITING_CLIENT]);
   const pendingDelivery = delivery.undeliveredApproved(db, guildId);
@@ -279,6 +310,8 @@ function buildOwnerDesk(db, guildId, { now = Date.now() } = {}) {
     flagged.length > 0 ? `${flagged.length} task(s) flagged for scope or compensation — \`/manage flags\`` : null,
     openEscalations.length > 0 ? `${openEscalations.length} staff concern(s) — \`/escalate list\`` : null,
     pendingDelivery.length > 0 ? `${pendingDelivery.length} approved item(s) not yet released — \`/deliver pending\`` : null,
+    openBlockers.length > 0 ? `${openBlockers.length} blocker(s) stopping work — \`/plan blockers\`` : null,
+    deadlineRequests.length > 0 ? `${deadlineRequests.length} deadline request(s) — \`/plan extensions\`` : null,
   ].filter(Boolean);
 
   const embed = new EmbedBuilder()
@@ -343,6 +376,16 @@ function buildOwnerDesk(db, guildId, { now = Date.now() } = {}) {
       name: `📤 Waiting on clients (${awaitingClient.length})`,
       value: truncate(awaitingClient.slice(0, 6).map((task) =>
         `**${task.code}** ${task.title} · since ${discordTimestamp(task.updated_at, 'R')}`
+      )),
+      inline: false,
+    });
+  }
+
+  if (atRisk.length > 0) {
+    embed.addFields({
+      name: `🔗 Waiting on late work (${atRisk.length})`,
+      value: truncate(atRisk.slice(0, 6).map((row) =>
+        `**${row.down_code}** ${row.down_title} waits on **${row.up_code}** (${stateLabel(row.up_state)})`
       )),
       inline: false,
     });

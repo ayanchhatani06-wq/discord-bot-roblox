@@ -10,6 +10,7 @@ const tasksRepo = require('../db/repos/tasks');
 const projectsRepo = require('../db/repos/projects');
 const configRepo = require('../db/repos/config');
 const submissionsRepo = require('../db/repos/submissions');
+const planningRepo = require('../db/repos/planning');
 const { contextFor } = require('../services/actor');
 const { taskEmbed } = require('../services/taskView');
 const { notifyUser } = require('../services/notify');
@@ -52,6 +53,21 @@ module.exports = {
         .setName('history')
         .setDescription('Submissions, reviews and client decisions on a task')
         .addStringOption((opt) => opt.setName('task').setDescription('Task code').setRequired(true).setAutocomplete(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('blocked')
+        .setDescription("Say you cannot continue, and why")
+        .addStringOption((opt) => opt.setName('task').setDescription('Task code').setRequired(true).setAutocomplete(true))
+        .addStringOption((opt) => opt.setName('reason').setDescription('What is stopping you').setRequired(true))
+        .addStringOption((opt) => opt.setName('link').setDescription('Screenshot or file showing the problem').setRequired(false))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('unblock')
+        .setDescription('Say a blocker you raised is resolved')
+        .addStringOption((opt) => opt.setName('task').setDescription('Task code').setRequired(true).setAutocomplete(true))
+        .addStringOption((opt) => opt.setName('note').setDescription('How it was resolved').setRequired(false))
     )
     .addSubcommand((sub) => sub.setName('earnings').setDescription('Your own pay and payment history (private)')),
 
@@ -192,6 +208,60 @@ module.exports = {
     // progress and submit are the artist's own actions on their own task.
     if (!isAssignedArtist(actor, task)) {
       throw new PermissionError('task.submit', `**${task.code}** is not assigned to you.`);
+    }
+
+    if (sub === 'blocked') {
+      const reason = interaction.options.getString('reason', true);
+      const link = interaction.options.getString('link');
+
+      const existing = planningRepo.openBlockersForTask(db, task.id)
+        .filter((row) => row.raised_by === userId);
+      if (existing.length > 0) {
+        await interaction.reply(priv(
+          `You already have an open blocker on **${task.code}** (#${existing[0].id}).\n` +
+          `> ${existing[0].reason.slice(0, 200)}\nClear it with \`/work unblock\` before raising another.`
+        ));
+        return;
+      }
+
+      const blocker = planningRepo.raiseBlocker(db, guildId, {
+        taskId: task.id, raisedBy: userId, reason, attachment: link,
+      });
+
+      await interaction.reply(priv(
+        `✅ Recorded blocker #${blocker.id} on **${task.code}**. Your leader has been told.\n` +
+        'The task is unchanged and still yours — this flags that you are stuck, it does not hand the work back.'
+      ));
+
+      for (const recipient of new Set([task.leader_user_id, configRepo.getConfig(db, guildId)?.owner_user_id].filter(Boolean))) {
+        await notifyUser(interaction.client, db, guildId, recipient, {
+          content:
+            `🚧 <@${userId}> is blocked on **${task.code} · ${task.title}**:\n> ${reason.slice(0, 600)}` +
+            `${link ? `\n${link}` : ''}\nClear it with \`/plan clear-blocker id:${blocker.id}\`.`,
+        }).catch(() => null);
+      }
+      return;
+    }
+
+    if (sub === 'unblock') {
+      const mine = planningRepo.openBlockersForTask(db, task.id).filter((row) => row.raised_by === userId);
+      if (mine.length === 0) {
+        await interaction.reply(priv(`You have no open blocker on **${task.code}**.`));
+        return;
+      }
+
+      planningRepo.clearBlocker(db, guildId, mine[0].id, {
+        actorUserId: userId, resolution: interaction.options.getString('note'),
+      });
+
+      await interaction.reply(priv(`✅ Blocker #${mine[0].id} on **${task.code}** cleared.`));
+
+      if (task.leader_user_id) {
+        await notifyUser(interaction.client, db, guildId, task.leader_user_id, {
+          content: `✅ <@${userId}> cleared their blocker on **${task.code} · ${task.title}**.`,
+        }).catch(() => null);
+      }
+      return;
     }
 
     if (sub === 'progress') {

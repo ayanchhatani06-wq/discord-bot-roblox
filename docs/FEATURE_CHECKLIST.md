@@ -5,7 +5,7 @@ unless it is implemented **and** covered by tests.
 
 Status key: ✅ done · 🟡 partial (stated exactly) · ⬜ not started
 
-Last updated: stages 1, 2, 4, 9 and 10 complete (265 tests passing). Website scope
+Last updated: stages 1, 2, 4, 6, 9 and 10 complete (287 tests passing). Website scope
 revised: it is the studio's public site (services, portfolio, quote request),
 not only an internal dashboard.
 
@@ -111,12 +111,12 @@ not only an internal dashboard.
 
 | Item | Status |
 | --- | --- |
-| Reusable task templates and batch creation | 🟡 bulk creation built; named templates in stage 6 |
-| Pre-offer completeness check (brief, references, pay, deadline, deliverables) | ⬜ stage 6 |
-| Dependencies (Model → Rig → Animation) | ⬜ stage 6 |
-| Notify the next group when required files are ready | ⬜ stage 6 |
-| Flag affected downstream deadlines without changing them | ⬜ stage 6 |
-| Artist "I'm Blocked" button with reason and attachment | ⬜ stage 6 |
+| Reusable task templates and batch creation | ✅ |
+| Pre-offer completeness check (brief, references, pay, deadline, deliverables) | ✅ |
+| Dependencies (Model → Rig → Animation) | ✅ |
+| Notify the next group when required files are ready | ✅ |
+| Flag affected downstream deadlines without changing them | ✅ |
+| Artist "I'm Blocked" button with reason and attachment | ✅ (`/work blocked`, surfaced on every desk) |
 | Deadline-extension requests preserving the previous date and approver | ⬜ stage 6 |
 | Capacity and workload views for leaders | ✅ (Group Desk) |
 

@@ -15,6 +15,8 @@ const KINDS = Object.freeze({
   AWAITING_REVIEW: 'awaiting_review',
   AWAITING_CLIENT: 'awaiting_client',
   APPROVED_UNPAID: 'approved_unpaid',
+  DEPENDENCY_READY: 'dependency_ready',
+  BLOCKER_OPEN: 'blocker_open',
   AWAY_RETURNED: 'away_returned',
 });
 
