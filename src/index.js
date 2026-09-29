@@ -2,7 +2,7 @@ require('dotenv').config();
 const path = require('node:path');
 const fs = require('node:fs');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const scheduler = require('./scheduler');
+const { getDatabase } = require('./db');
 
 if (!process.env.DISCORD_TOKEN) {
   console.error('Missing DISCORD_TOKEN in your .env file.');
@@ -12,17 +12,22 @@ if (!process.env.DISCORD_TOKEN) {
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 
-const commandsDir = path.join(__dirname, 'commands');
-for (const file of fs.readdirSync(commandsDir).filter((f) => f.endsWith('.js'))) {
-  const command = require(path.join(commandsDir, file));
-  client.commands.set(command.data.name, command);
+function loadCommands() {
+  const commandsDir = path.join(__dirname, 'commands');
+  if (!fs.existsSync(commandsDir)) return;
+  for (const file of fs.readdirSync(commandsDir).filter((f) => f.endsWith('.js'))) {
+    const command = require(path.join(commandsDir, file));
+    client.commands.set(command.data.name, command);
+  }
 }
 
+loadCommands();
+
 client.once('ready', () => {
-  console.log(`Logged in as ${client.user.tag}.`);
-  const intervalMinutes = Number(process.env.UPDATE_INTERVAL_MINUTES) || 1;
-  scheduler.start(client, intervalMinutes);
-  scheduler.refreshAll(client).catch((err) => console.error('Initial timezone embed refresh failed:', err));
+  // Opening the database here surfaces migration problems at start-up rather
+  // than on the first command someone runs.
+  getDatabase();
+  console.log(`Logged in as ${client.user.tag} with ${client.commands.size} command(s).`);
 });
 
 client.on('interactionCreate', async (interaction) => {
@@ -36,16 +41,17 @@ client.on('interactionCreate', async (interaction) => {
         return;
       }
       await command.execute(interaction);
-    } else if (interaction.isAutocomplete()) {
+    } else if (interaction.isAutocomplete() && command.autocomplete) {
       await command.autocomplete(interaction);
     }
   } catch (error) {
-    console.error(`Error handling interaction for /${interaction.commandName}:`, error);
-    if (interaction.isChatInputCommand() && (interaction.replied || interaction.deferred)) {
-      await interaction.followUp({ content: '❌ Something went wrong running that command.', ephemeral: true }).catch(() => {});
-    } else if (interaction.isChatInputCommand()) {
-      await interaction.reply({ content: '❌ Something went wrong running that command.', ephemeral: true }).catch(() => {});
-    }
+    console.error(`Error handling /${interaction.commandName}:`, error);
+    if (!interaction.isChatInputCommand()) return;
+    const body = { content: '❌ Something went wrong running that command.', ephemeral: true };
+    const respond = interaction.replied || interaction.deferred
+      ? interaction.followUp(body)
+      : interaction.reply(body);
+    await respond.catch(() => {});
   }
 });
 

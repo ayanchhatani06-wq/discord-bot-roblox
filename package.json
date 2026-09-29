@@ -1,12 +1,13 @@
 {
-  "name": "discord-timezone-bot",
-  "version": "1.0.0",
-  "description": "Discord bot for registering member timezones and keeping a live-updating time embed in a channel.",
+  "name": "studio-ops-bot",
+  "version": "0.1.0",
+  "description": "Discord operations bot for a creative production studio: staff directory, timezones, projects, task assignment, submissions, client approval records and payment tracking.",
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
     "start": "node src/index.js",
-    "deploy": "node src/deploy-commands.js"
+    "deploy": "node src/deploy-commands.js",
+    "test": "node --test tests/*.test.js"
   },
   "engines": {
     "node": ">=18.0.0"
