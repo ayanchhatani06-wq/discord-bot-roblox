@@ -5,6 +5,7 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { getDatabase } = require('./db');
 const router = require('./interactions/router');
 const boardScheduler = require('./services/boardScheduler');
+const jobs = require('./services/jobs');
 const { replyPrivate } = require('./utils/reply');
 
 if (!process.env.DISCORD_TOKEN) {
@@ -42,7 +43,7 @@ client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}.`);
   console.log(`Commands: ${[...client.commands.keys()].join(', ') || 'none'}`);
   console.log(`Component namespaces: ${router.registeredNamespaces().join(', ') || 'none'}`);
-  boardScheduler.start(client, db);
+  jobs.startAll(client, db);
 });
 
 client.on('interactionCreate', async (interaction) => {
