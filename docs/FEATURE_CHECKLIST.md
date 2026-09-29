@@ -5,7 +5,9 @@ unless it is implemented **and** covered by tests.
 
 Status key: ✅ done · 🟡 partial (stated exactly) · ⬜ not started
 
-Last updated: stage 1 complete (200 tests passing).
+Last updated: stages 1, 2 and 4 complete (231 tests passing). Website scope
+revised: it is the studio's public site (services, portfolio, quote request),
+not only an internal dashboard.
 
 ---
 
@@ -85,12 +87,12 @@ Last updated: stage 1 complete (200 tests passing).
 
 | Item | Status |
 | --- | --- |
-| Enquiry form (service, quantity, references, formats, deadline, budget, notes) | ⬜ stage 4 |
-| Routed to relevant leader and owner | ⬜ stage 4 |
-| Draft quote from configured templates | ⬜ stage 4 |
-| Owner approves all prices and delivery commitments before sending | ⬜ stage 4 |
-| Stages: New, Needs Information, Quote Prepared, Quote Sent, Accepted, Declined, Closed | ⬜ stage 4 |
-| Accepted quote becomes a project without re-entering the brief | ⬜ stage 4 |
+| Enquiry form (service, quantity, references, formats, deadline, budget, notes) | ✅ |
+| Routed to relevant leader and owner | ✅ |
+| Draft quote from configured templates | ✅ |
+| Owner approves all prices and delivery commitments before sending | ✅ |
+| Stages: New, Needs Information, Quote Prepared, Quote Sent, Accepted, Declined, Closed | ✅ |
+| Accepted quote becomes a project without re-entering the brief | ✅ |
 
 ## 5. Client records and repeat orders
 
@@ -167,11 +169,11 @@ Last updated: stage 1 complete (200 tests passing).
 
 | Item | Status |
 | --- | --- |
-| Client reports a delivery issue against a specific item | 🟡 record and routing built; client-facing flow in stage 2 |
-| Distinguish in-scope correction from additional work | 🟡 scope flagging built; issue flow in stage 11 |
-| Manager decides disputes; owner approves additional charges | 🟡 partial |
-| Private staff escalation route for assignment or pay concerns | ⬜ stage 11 |
-| Pause promotional messages while an issue is open | 🟡 the check exists; used once messaging lands in stage 3 |
+| Client reports a delivery issue against a specific item | ✅ |
+| Distinguish in-scope correction from additional work | ✅ |
+| Manager decides disputes; owner approves additional charges | ✅ |
+| Private staff escalation route for assignment or pay concerns | ✅ |
+| Pause promotional messages while an issue is open | 🟡 enforced in data; applied once messaging lands |
 | Decisions and feedback linked to the project, not scattered | ✅ already built |
 
 ## 12. Reports and useful automation
@@ -202,13 +204,22 @@ Last updated: stage 1 complete (200 tests passing).
 | Role-based help | ⬜ stage 9 |
 | Buttons and short forms over long command lists | 🟡 ongoing design rule |
 
-## Website interface
+## Website — the studio's public site
+
+Confirmed scope: public marketing site, hosted on the same box as the bot but
+as a **separate process**, quote-request only with no public prices, and a
+client login that must also work for clients who are not in the Discord server.
 
 | Item | Status |
 | --- | --- |
-| Discord OAuth2 login mapped to the existing capability model | ⬜ final stage |
-| Owner dashboard, archive search, automation rule builder with preview | ⬜ final stage |
-| Client-facing project view | ⬜ final stage |
+| Public pages: services, portfolio, about, contact | ⬜ final stage |
+| Quote request form feeding the same enquiry pipeline | 🟡 pipeline ready; web form pending |
+| Portfolio populated only from assets the client permitted | ⬜ blocked on §10 portfolio rights |
+| Separate web process, read-only on a curated subset | ⬜ final stage |
+| Reverse proxy and TLS for a real domain | ⬜ needs a domain from the owner |
+| Client login via Discord OAuth2 | ⬜ final stage |
+| Client login via email magic link, for clients not in Discord | ⬜ final stage — needs an email provider and DNS records |
+| Staff/owner dashboards, archive search, automation rule builder | ⬜ final stage |
 
 ---
 

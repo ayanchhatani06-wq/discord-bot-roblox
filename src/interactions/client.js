@@ -12,8 +12,10 @@ const tasksRepo = require('../db/repos/tasks');
 const projectsRepo = require('../db/repos/projects');
 const configRepo = require('../db/repos/config');
 const submissionsRepo = require('../db/repos/submissions');
+const enquiriesRepo = require('../db/repos/enquiries');
 const clientReport = require('../services/clientReport');
 const dashboard = require('../services/clientDashboard');
+const quoteFlow = require('../services/quoteFlow');
 const paymentState = require('../services/paymentState');
 const { notifyUser } = require('../services/notify');
 const { register, customId } = require('./router');
@@ -352,15 +354,13 @@ register(NAMESPACE, async (interaction, { action, args }) => {
     return;
   }
 
-  if (action === 'changesModal' || action === 'serviceModal' || action === 'managerModal') {
+  if (action === 'changesModal' || action === 'managerModal') {
     const kindByAction = {
       changesModal: 'change_request',
-      serviceModal: 'new_service',
       managerModal: 'contact_manager',
     };
     const headlineByAction = {
       changesModal: '🔁 A client has requested changes',
-      serviceModal: '➕ A client has asked about more work',
       managerModal: '📨 A client has a message for the manager',
     };
 
@@ -385,11 +385,100 @@ register(NAMESPACE, async (interaction, { action, args }) => {
   }
 
   if (action === 'service') {
-    await interaction.showModal(requestModal('serviceModal', project.id, {
-      title: 'Request another service',
-      label: 'What else would you like?',
-      placeholder: 'e.g. rigging for the models, or 3 more VFX. Quantities help.',
-    }));
+    // The full enquiry form rather than a free-text note, so a request for more
+    // work starts the same quote pipeline as any other enquiry.
+    await interaction.showModal(
+      new ModalBuilder()
+        .setCustomId(customId(NAMESPACE, 'enquiryModal', project.id))
+        .setTitle('Request another service')
+        .addComponents(
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('service')
+              .setLabel('What and how many?')
+              .setPlaceholder('e.g. 12 models, 4 vfx, 2 animations')
+              .setStyle(TextInputStyle.Short)
+              .setRequired(true)
+              .setMaxLength(300)
+          ),
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('references')
+              .setLabel('References and style (optional)')
+              .setStyle(TextInputStyle.Paragraph)
+              .setRequired(false)
+              .setMaxLength(800)
+          ),
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('formats')
+              .setLabel('Required formats or specs (optional)')
+              .setStyle(TextInputStyle.Short)
+              .setRequired(false)
+              .setMaxLength(300)
+          ),
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('deadline')
+              .setLabel('Desired deadline (optional)')
+              .setPlaceholder('YYYY-MM-DD, or describe it')
+              .setStyle(TextInputStyle.Short)
+              .setRequired(false)
+              .setMaxLength(60)
+          ),
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('budget')
+              .setLabel('Budget range and anything else (optional)')
+              .setStyle(TextInputStyle.Paragraph)
+              .setRequired(false)
+              .setMaxLength(600)
+          )
+        )
+    );
+    return;
+  }
+
+  if (action === 'enquiryModal') {
+    const service = interaction.fields.getTextInputValue('service').trim();
+    const references = interaction.fields.getTextInputValue('references').trim() || null;
+    const formats = interaction.fields.getTextInputValue('formats').trim() || null;
+    const deadlineText = interaction.fields.getTextInputValue('deadline').trim() || null;
+    const budget = interaction.fields.getTextInputValue('budget').trim() || null;
+
+    const parsed = quoteFlow.parseServiceRequest(db, guildId, service);
+    const enquiry = enquiriesRepo.createEnquiry(db, guildId, {
+      clientId: project.client_id,
+      raisedBy: interaction.user.id,
+      source: 'discord',
+      serviceRequest: service,
+      parsed: parsed.items,
+      referencesText: references,
+      formatsText: formats,
+      deadlineText,
+      budgetText: budget,
+      notes: `Raised from the dashboard of ${project.code}.`,
+    }, interaction.user.id);
+
+    await interaction.reply(priv(
+      `✅ Sent as enquiry **${enquiry.code}**.\n` +
+      'The studio will come back to you with a quote. Nothing is priced or committed until the owner approves it, ' +
+      'and your current order is unaffected.'
+    ));
+
+    const config = configRepo.getConfig(db, guildId);
+    const suggestion = quoteFlow.suggestLeaderRole(db, guildId, enquiry);
+    for (const staffId of new Set([config?.owner_user_id, project.manager_user_id].filter(Boolean))) {
+      await notifyUser(interaction.client, db, guildId, staffId, {
+        content:
+          `➕ **${enquiry.code}** — <@${interaction.user.id}> asked about more work on ${project.code}:\n` +
+          `> ${service}\n` +
+          `${parsed.items.length > 0 ? `Matched: ${parsed.items.map((item) => `${item.count} × ${item.departmentName}`).join(', ')}\n` : '⚠️ Could not match it to departments.\n'}` +
+          `${budget ? `Budget as stated: ${budget}\n` : ''}` +
+          `${suggestion ? `Mostly ${suggestion.departmentName}.\n` : ''}` +
+          `Draft a quote with \`/enquiry draft-quote enquiry:${enquiry.code}\`.`,
+      }).catch(() => null);
+    }
     return;
   }
 

@@ -3,7 +3,7 @@
  * the guard that makes repeated button clicks harmless.
  */
 
-const CODE_PREFIXES = { project: 'PRJ', task: 'TSK' };
+const CODE_PREFIXES = { project: 'PRJ', task: 'TSK', enquiry: 'ENQ' };
 
 /**
  * Allocates the next sequential code for a guild ("PRJ-0007").
