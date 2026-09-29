@@ -143,6 +143,17 @@ const TRANSITIONS = Object.freeze({
 
 const TERMINAL_STATES = Object.freeze([S.CANCELLED]);
 
+/**
+ * What counts towards an artist's workload: work they are holding right now,
+ * including an offer they have not answered yet.
+ */
+const ACTIVE_STATES = Object.freeze([
+  S.OFFERED, S.IN_PROGRESS, S.INTERNAL_REVIEW, S.REVISION_NEEDED,
+]);
+
+/** Work that is finished production-wise but may still be unpaid. */
+const DELIVERED_STATES = Object.freeze([S.AWAITING_CLIENT, S.CLIENT_APPROVED]);
+
 class TransitionError extends Error {
   constructor(message, code) {
     super(message);
@@ -202,6 +213,8 @@ module.exports = {
   STATE_LABELS,
   TRANSITIONS,
   TERMINAL_STATES,
+  ACTIVE_STATES,
+  DELIVERED_STATES,
   TransitionError,
   getTransition,
   canTransition,

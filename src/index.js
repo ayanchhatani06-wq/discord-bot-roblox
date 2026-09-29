@@ -3,56 +3,99 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { getDatabase } = require('./db');
+const router = require('./interactions/router');
+const boardScheduler = require('./services/boardScheduler');
+const { replyPrivate } = require('./utils/reply');
 
 if (!process.env.DISCORD_TOKEN) {
   console.error('Missing DISCORD_TOKEN in your .env file.');
   process.exit(1);
 }
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+// GuildMembers is a privileged intent (enable it on the Bot tab of the
+// developer portal). A staff directory has to know when somebody leaves the
+// server, otherwise the boards keep listing people who are gone.
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 client.commands = new Collection();
 
-function loadCommands() {
-  const commandsDir = path.join(__dirname, 'commands');
-  if (!fs.existsSync(commandsDir)) return;
-  for (const file of fs.readdirSync(commandsDir).filter((f) => f.endsWith('.js'))) {
-    const command = require(path.join(commandsDir, file));
-    client.commands.set(command.data.name, command);
+function loadDirectory(directory, onFile) {
+  if (!fs.existsSync(directory)) return;
+  for (const file of fs.readdirSync(directory).filter((f) => f.endsWith('.js'))) {
+    onFile(require(path.join(directory, file)), file);
   }
 }
 
-loadCommands();
+loadDirectory(path.join(__dirname, 'commands'), (command, file) => {
+  if (!command?.data?.name) {
+    console.warn(`Skipping ${file}: no command data exported.`);
+    return;
+  }
+  client.commands.set(command.data.name, command);
+});
+
+// Requiring each interactions module registers its component handlers with the
+// router as a side effect; router.js itself has nothing to register.
+loadDirectory(path.join(__dirname, 'interactions'), () => {});
 
 client.once('ready', () => {
-  // Opening the database here surfaces migration problems at start-up rather
-  // than on the first command someone runs.
-  getDatabase();
-  console.log(`Logged in as ${client.user.tag} with ${client.commands.size} command(s).`);
+  const db = getDatabase();
+  console.log(`Logged in as ${client.user.tag}.`);
+  console.log(`Commands: ${[...client.commands.keys()].join(', ') || 'none'}`);
+  console.log(`Component namespaces: ${router.registeredNamespaces().join(', ') || 'none'}`);
+  boardScheduler.start(client, db);
 });
 
 client.on('interactionCreate', async (interaction) => {
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
-
   try {
     if (interaction.isChatInputCommand()) {
+      const command = client.commands.get(interaction.commandName);
+      if (!command) return;
       if (!interaction.inGuild()) {
-        await interaction.reply({ content: 'This command only works inside a server.', ephemeral: true });
+        await replyPrivate(interaction, 'This command only works inside a server.');
         return;
       }
       await command.execute(interaction);
-    } else if (interaction.isAutocomplete() && command.autocomplete) {
-      await command.autocomplete(interaction);
+      return;
+    }
+
+    if (interaction.isAutocomplete()) {
+      const command = client.commands.get(interaction.commandName);
+      if (command?.autocomplete) await command.autocomplete(interaction);
+      return;
+    }
+
+    if (interaction.isButton() || interaction.isAnySelectMenu() || interaction.isModalSubmit()) {
+      if (!interaction.inGuild()) {
+        await replyPrivate(interaction, 'This control only works inside a server.');
+        return;
+      }
+      await router.route(interaction);
     }
   } catch (error) {
-    console.error(`Error handling /${interaction.commandName}:`, error);
-    if (!interaction.isChatInputCommand()) return;
-    const body = { content: '❌ Something went wrong running that command.', ephemeral: true };
-    const respond = interaction.replied || interaction.deferred
-      ? interaction.followUp(body)
-      : interaction.reply(body);
-    await respond.catch(() => {});
+    if (interaction.isAutocomplete()) {
+      console.error(`Autocomplete failed for /${interaction.commandName}:`, error);
+      return;
+    }
+    await router.reportError(interaction, error, `/${interaction.commandName || interaction.customId}`);
   }
 });
+
+const staffRepo = require('./db/repos/staff');
+
+client.on('guildMemberRemove', (member) => {
+  // Their profile is flagged, not deleted: submissions, approvals and payment
+  // records must survive somebody leaving.
+  try {
+    const db = getDatabase();
+    if (staffRepo.getStaff(db, member.guild.id, member.id)) {
+      staffRepo.markRemoved(db, member.guild.id, member.id);
+      boardScheduler.invalidate(member.guild.id);
+    }
+  } catch (error) {
+    console.error('Failed to mark departing member as removed:', error);
+  }
+});
+
+process.on('unhandledRejection', (error) => console.error('Unhandled promise rejection:', error));
 
 client.login(process.env.DISCORD_TOKEN);
