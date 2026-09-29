@@ -271,6 +271,13 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/clients add-requirement client:` | Something this client always asks for |
 | `/repeat from project:` | Start a repeat order from a past one |
 | `/repeat scope` / `price` / `deadline` / `create` | Confirm each term, then create it |
+| `/report overview` / `filter which:` | Nine filters phrased as plain questions |
+| `/report waiting project:` | Where an order's time actually went |
+| `/report person:` / `team` | A rounded picture of somebody's work — no score |
+| `/report payouts` / `attention` | Who is owed, and which orders have stalled |
+| `/automation set` / `preview` / `on` / `off` | Rules that watch for something and tell somebody |
+| `/backup now` / `verify` / `restore` | A copy you can restore from, and how to do it |
+| `/backup export what:` | Readable CSV — explicitly not a backup |
 | `/studio …` | All configuration |
 
 ---
@@ -348,6 +355,51 @@ When a milestone is reached the bot **flags it for you and stops**. Nothing is
 owed until `/bonus approve`, and nothing is recorded as paid until `/bonus pay`.
 Each milestone is indexed, so re-running the check — or two approvals landing at
 the same moment — cannot award the same milestone twice.
+
+### Reports, and two things they refuse to do
+
+`/report waiting project:<code>` splits an order's elapsed time into **time with
+us** and **time with the client**, reconstructed from the audit trail. A report
+that cannot tell those apart gets the wrong person blamed, so they are never
+added together.
+
+`/report person:` and `/report team` give a rounded picture — approved work, how
+much is in hand, on-time record measured only against deadlines that were
+actually agreed, revision rounds — and deliberately produce **no score**. There
+is no single number here to sort by, the team list is in name order, and it says
+so on the footer. A league table of task counts rewards whoever takes the small
+jobs.
+
+### Automation rules
+
+`/automation set` builds a rule out of two closed lists: something to watch for,
+and something to do. The action list is short on purpose — tell you, tell the
+task's leader, tell one named person, or flag the task. **No rule can change
+pay, approve work, offer a task or message a client.** A rule is not a script.
+
+Every new or changed rule starts **switched off**, and `/automation preview`
+shows exactly which tasks it would act on before you allow it. Each task is
+acted on once per rule, ever, so a daily rule never becomes a daily nag about
+the same thing.
+
+### Backups versus exports
+
+These are different things and the bot keeps saying so, because somebody who
+keeps only spreadsheets finds out on the worst possible day that they cannot put
+the studio back.
+
+- `/backup now` takes a **consistent copy of the database** using SQLite's own
+  online backup — not a file copy, which taken mid-write produces a file that
+  looks fine and is not. It then opens the result and runs an integrity check,
+  and tells you if that failed.
+- `/backup verify` opens a backup file and checks it is really a database. A
+  backup nobody has ever opened is a hope, not a backup.
+- `/backup export what:` gives readable CSV for a person or a spreadsheet, and
+  says on every single one that it is not a backup. **Payment references are
+  left out** of the export: one of them could be a gift card code, and a gift
+  card code in a spreadsheet is money lying in the open.
+- `/backup restore` prints the steps, including the one that silently corrupts a
+  restore if you miss it — moving the `-wal` file aside.
 
 ### Repeat orders
 
@@ -646,7 +698,7 @@ only discover you needed after losing them.
 npm test
 ```
 
-366 tests covering money parsing and per-currency totals, split exactness
+385 tests covering money parsing and per-currency totals, split exactness
 (including the worked $40/$25 example, the mixed-currency refusal and
 below-cost jobs), every legal and illegal task transition, repeat-click
 rejection, permission scoping, DST and quiet-hours edge cases, reminder
@@ -658,7 +710,9 @@ acknowledgements, trial state rules, stand-in leadership windows, and
 offboarding reports, template approval and placeholder safety, message
 deduplication and digesting, and every client-messaging guard including the
 re-check at send time, standing requirements, and repeat-order drafts that
-cannot become an order until scope, price and deadline are each confirmed.
+cannot become an order until scope, price and deadline are each confirmed,
+waiting-time attribution, automation rules that act once per task, CSV quoting,
+and backups that are verified by opening them.
 
 ---
 

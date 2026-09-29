@@ -181,10 +181,10 @@ not only an internal dashboard.
 | Item | Status |
 | --- | --- |
 | Scheduled summaries | ✅ already built |
-| Filters: deliverables, overdue, waiting time, unassigned, revisions, payouts, repeat orders, enquiries | ⬜ stage 12 |
-| Separate client-caused waiting from artist delay | ⬜ stage 12 |
-| Avoid ranking staff on task counts alone | ⬜ stage 12 (design rule) |
-| Owner-configurable automation rules with effect preview | ⬜ stage 12 (candidate for the website) |
+| Filters: deliverables, overdue, waiting time, unassigned, revisions, payouts, repeat orders, enquiries | ✅ (`/report filter`, nine filters phrased as plain questions) |
+| Separate client-caused waiting from artist delay | ✅ (`/report waiting`, reconstructed from the audit trail) |
+| Avoid ranking staff on task counts alone | ✅ (no score exists to sort by; the team list is in name order and says so) |
+| Owner-configurable automation rules with effect preview | ✅ (`/automation`; rules start off, a preview costs one command, and each task is acted on once per rule) |
 
 ## 13. Access, reliability, and ease of use
 
@@ -196,8 +196,8 @@ not only an internal dashboard.
 | Internal pay, staff feedback and private discussion never client-visible | ✅ |
 | Persistent storage, duplicate protection, audit trail | ✅ already built |
 | Scheduled-job recovery | ✅ reminder state survives restarts |
-| Backups and restore instructions | 🟡 documented; owner-controlled export in stage 13 |
-| Owner-controlled exports | ⬜ stage 13 |
+| Backups and restore instructions | ✅ (`/backup now`, `verify`, `restore`; uses SQLite's online backup, not a file copy) |
+| Owner-controlled exports | ✅ (`/backup export`; CSV, with payment references deliberately left out) |
 | Configurable notifications, quiet hours, batching | ✅ already built |
 | Recovery when a DM fails, a ticket closes, or a board is deleted | ✅ |
 | Setup wizard, demonstration project | ✅ already built |
@@ -235,6 +235,6 @@ client login that must also work for clients who are not in the Discord server.
 8. **Onboarding, trials, backup leaders, offboarding** — §8 ✅ done
 9. **The three desks and role-based help** — §9
 10. **Files, delivery authorization, archive, portfolio rights** — §10
-11. **Reports, filters and automation rules** — §12
-12. **Exports and restore tooling** — §13
+11. **Reports, filters and automation rules** — §12 ✅ done
+12. **Exports and restore tooling** — §13 ✅ done
 13. **Website interface** — reusing `db/repos` and `domain` unchanged

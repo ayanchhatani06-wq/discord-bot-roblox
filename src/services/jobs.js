@@ -5,6 +5,7 @@ const { runSweep } = require('./reminders');
 const { postWeeklySummary } = require('./summary');
 const clientMessaging = require('./clientMessaging');
 const messageTriggers = require('./messageTriggers');
+const automation = require('./automation');
 const { pruneGuards } = require('../db/repos/core');
 
 const REMINDER_CRON = '*/10 * * * *';
@@ -13,6 +14,7 @@ const HOUSEKEEPING_CRON = '30 4 * * *';
 // that queues them, so a burst still goes out under the same rate limits.
 const OUTBOX_CRON = '*/5 * * * *';
 const CLIENT_SWEEP_CRON = '15 10 * * *';
+const AUTOMATION_CRON = '40 10 * * *';
 
 const summaryTasks = new Map();
 
@@ -111,6 +113,17 @@ function startAll(client, db) {
     }
   }, 'client follow-up sweep');
 
+  // Only rules the owner switched on, and each task acted on once per rule.
+  safeSchedule(AUTOMATION_CRON, async () => {
+    for (const config of configRepo.listConfiguredGuilds(db)) {
+      try {
+        await automation.runAll(client, db, config.guild_id);
+      } catch (error) {
+        console.error(`Automation rules failed for guild ${config.guild_id}:`, error);
+      }
+    }
+  }, 'automation rules');
+
   const summaries = scheduleAllSummaries(client, db);
   console.log(`Jobs started: boards, reminders every 10 minutes, ${summaries} weekly summary schedule(s).`);
 }
@@ -120,4 +133,4 @@ function stopAll() {
   summaryTasks.clear();
 }
 
-module.exports = { REMINDER_CRON, OUTBOX_CRON, CLIENT_SWEEP_CRON, startAll, stopAll, scheduleSummaryFor, scheduleAllSummaries, summaryTasks };
+module.exports = { REMINDER_CRON, OUTBOX_CRON, CLIENT_SWEEP_CRON, AUTOMATION_CRON, startAll, stopAll, scheduleSummaryFor, scheduleAllSummaries, summaryTasks };
