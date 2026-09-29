@@ -9,6 +9,7 @@ const configRepo = require('../db/repos/config');
 const { contextFor } = require('../services/actor');
 const { buildProfileEmbed, buildProfileComponents, missingProfileFields, NAMESPACE } = require('../services/profileView');
 const { refreshGuildBoards } = require('../services/staffBoard');
+const { notifyLeadersOfAbsence } = require('../services/absence');
 const { register, customId } = require('./router');
 const {
   isValidTimezone,
@@ -277,8 +278,12 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       });
       refreshBoards(interaction, db);
 
+      const absence = await notifyLeadersOfAbsence(interaction.client, db, guildId, userId, { awayUntil, note });
+
       await showPanel(interaction, ctx,
-        '✅ Marked away. Your leader will be told about your active tasks — nothing is cancelled or reassigned automatically.'
+        `✅ Marked away.${absence.activeCount > 0
+          ? ` You are still holding ${absence.activeCount} task(s) and ${absence.notified.length} leader(s) have been told.`
+          : ''} Nothing is cancelled or reassigned automatically.`
       );
       return;
     }

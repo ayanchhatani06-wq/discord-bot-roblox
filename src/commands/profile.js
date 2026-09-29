@@ -4,6 +4,7 @@ const configRepo = require('../db/repos/config');
 const { contextFor, departmentFromRoles, roleIdsOf } = require('../services/actor');
 const { buildProfileEmbed, buildProfileComponents, missingProfileFields } = require('../services/profileView');
 const { refreshGuildBoards } = require('../services/staffBoard');
+const { notifyLeadersOfAbsence } = require('../services/absence');
 const { CAPABILITIES, assertCan } = require('../domain/permissions');
 const { isValidTimezone, searchTimezones, formatDateTimeInZone, parseDeadlineInput } = require('../utils/time');
 const { priv } = require('../utils/reply');
@@ -207,10 +208,18 @@ module.exports = {
       });
 
       const label = staffRepo.AVAILABILITY_LABELS[status];
-      await interaction.reply(priv(
-        `✅ Availability set to **${label}**.${awayUntil ? ` Back on <t:${Math.floor(awayUntil / 1000)}:D>.` : ''}\n` +
-        'Your group leader keeps your current tasks — nothing is cancelled or reassigned automatically.'
-      ));
+      let absence = { notified: [], activeCount: 0 };
+      if (status === staffRepo.AVAILABILITY.AWAY) {
+        absence = await notifyLeadersOfAbsence(interaction.client, db, guildId, interaction.user.id, { awayUntil, note });
+      }
+
+      await interaction.reply(priv([
+        `✅ Availability set to **${label}**.${awayUntil ? ` Back on <t:${Math.floor(awayUntil / 1000)}:D>.` : ''}`,
+        absence.activeCount > 0
+          ? `You are still holding ${absence.activeCount} task(s); ${absence.notified.length} leader(s) have been told.`
+          : null,
+        'Nothing is cancelled or reassigned automatically — your leader decides what happens to your work.',
+      ].filter((line) => line !== null).join('\n')));
       refreshBoardsInBackground(interaction, db);
       return;
     }
