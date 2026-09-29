@@ -48,6 +48,17 @@ function latestSubmission(db, taskId, { kind = null } = {}) {
   return db.prepare('SELECT * FROM submissions WHERE task_id = ? ORDER BY version DESC LIMIT 1').get(taskId) || null;
 }
 
+/** Recent submissions by one person, across every task they have worked on. */
+function listRecentByUser(db, guildId, userId, { limit = 10 } = {}) {
+  return db.prepare(`
+    SELECT s.*, t.code AS task_code, t.title AS task_title, t.state AS task_state
+    FROM submissions s
+    JOIN tasks t ON t.id = s.task_id
+    WHERE t.guild_id = ? AND s.submitted_by = ?
+    ORDER BY s.submitted_at DESC LIMIT ?
+  `).all(guildId, userId, limit);
+}
+
 function getSubmission(db, submissionId) {
   return db.prepare('SELECT * FROM submissions WHERE id = ?').get(submissionId) || null;
 }
@@ -170,6 +181,7 @@ module.exports = {
   addSubmission,
   listSubmissions,
   latestSubmission,
+  listRecentByUser,
   getSubmission,
   links,
   internalLinks,

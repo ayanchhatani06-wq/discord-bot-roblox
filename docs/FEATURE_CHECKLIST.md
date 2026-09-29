@@ -5,7 +5,7 @@ unless it is implemented **and** covered by tests.
 
 Status key: ✅ done · 🟡 partial (stated exactly) · ⬜ not started
 
-Last updated: stages 1, 2, 4 and 10 complete (252 tests passing). Website scope
+Last updated: stages 1, 2, 4, 9 and 10 complete (265 tests passing). Website scope
 revised: it is the studio's public site (services, portfolio, quote request),
 not only an internal dashboard.
 
@@ -118,7 +118,7 @@ not only an internal dashboard.
 | Flag affected downstream deadlines without changing them | ⬜ stage 6 |
 | Artist "I'm Blocked" button with reason and attachment | ⬜ stage 6 |
 | Deadline-extension requests preserving the previous date and approver | ⬜ stage 6 |
-| Capacity and workload views for leaders | 🟡 counts and local times built; fuller view in stage 6 |
+| Capacity and workload views for leaders | ✅ (Group Desk) |
 
 ## 7. Shared work and compensation
 
@@ -128,7 +128,7 @@ not only an internal dashboard.
 | Owner-approved separate compensation per contribution | ⬜ stage 7 |
 | Each contributor sees only their own terms | ⬜ stage 7 |
 | Client revenue, artist pay, leader/finder shares, bonuses, studio allocations kept distinct | 🟡 all but bonuses built |
-| Prevent allocations silently exceeding the configured budget | ⬜ stage 7 |
+| Prevent allocations silently exceeding the configured budget | 🟡 budget exceptions surfaced on the Owner Desk; hard refusal in stage 7 |
 | Configurable bonus milestones (e.g. every 10 approved videos) | ⬜ stage 7 |
 | Milestones flagged for owner approval, no double counting | ⬜ stage 7 |
 
@@ -148,9 +148,9 @@ not only an internal dashboard.
 
 | Item | Status |
 | --- | --- |
-| My Desk (offers, assignments, deadlines, blockers, revisions, history, earnings, controls) | 🟡 parts exist as separate commands; single desk in stage 9 |
-| Group Desk (unassigned, capacity, offers, reviews, blockers, client waits) | 🟡 as above |
-| Owner Desk (projects, decisions, workload, quotes, receipts, payouts, exceptions) | 🟡 as above |
+| My Desk (offers, assignments, deadlines, blockers, revisions, history, earnings, controls) | ✅ |
+| Group Desk (unassigned, capacity, offers, reviews, blockers, client waits) | ✅ |
+| Owner Desk (projects, decisions, workload, quotes, receipts, payouts, exceptions) | ✅ |
 
 ## 10. Files and delivery
 
@@ -201,7 +201,7 @@ not only an internal dashboard.
 | Configurable notifications, quiet hours, batching | ✅ already built |
 | Recovery when a DM fails, a ticket closes, or a board is deleted | ✅ |
 | Setup wizard, demonstration project | ✅ already built |
-| Role-based help | ⬜ stage 9 |
+| Role-based help | ✅ |
 | Buttons and short forms over long command lists | 🟡 ongoing design rule |
 
 ## Website — the studio's public site
