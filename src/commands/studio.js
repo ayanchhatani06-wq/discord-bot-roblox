@@ -5,7 +5,7 @@ const { refreshGuildBoards } = require('../services/staffBoard');
 const boardScheduler = require('../services/boardScheduler');
 const { buildPanel: buildSetupPanel } = require('../interactions/setup');
 const { createSampleProject, listSampleProjects, removeSampleData } = require('../services/sampleData');
-const { CAPABILITIES, ALL_CAPABILITIES, assertCan, isOwner } = require('../domain/permissions');
+const { CAPABILITIES, ALL_CAPABILITIES, assertCan, canClaimStudio } = require('../domain/permissions');
 const { RECIPIENT_KINDS } = require('../domain/allocations');
 const { CURRENCIES } = require('../domain/money');
 const { parseClockInput, formatClockMinutes } = require('../utils/time');
@@ -150,11 +150,24 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
     const userId = interaction.user.id;
 
-    // First run: the server owner can always claim the bot, otherwise nobody
-    // would hold config.manage and setup could never happen.
+    // First run: nobody holds config.manage yet, so somebody has to be able to
+    // claim the bot or setup could never happen at all.
+    //
+    // The Discord server owner always can. So can anybody Discord already
+    // trusts to manage the server, but only while the bot is unclaimed — a
+    // studio whose server was created by somebody else (a founder who is not
+    // the guild owner) would otherwise be locked out of its own bot forever.
+    // Once an owner is recorded, that door closes and the normal rules apply.
     if (sub === 'setup') {
-      const guildOwner = interaction.guild?.ownerId === userId;
-      if (!guildOwner && !isOwner({ userId, roleIds: ctx.roleIds, config })) {
+      const mayClaim = canClaimStudio({
+        userId,
+        guildOwnerId: interaction.guild?.ownerId ?? null,
+        managesServer: interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild) ?? false,
+        config,
+        roleIds: ctx.roleIds,
+      });
+
+      if (!mayClaim) {
         assertCan(actor, CAPABILITIES.CONFIG_MANAGE);
       }
 

@@ -9,6 +9,7 @@ const {
   isOwner,
   isAssignedArtist,
   canViewTaskFinance,
+  canClaimStudio,
 } = require('../src/domain/permissions');
 
 const MODELLING = { id: 1, key: 'modelling', leader_role_id: 'role-lead-model', member_role_id: 'role-model' };
@@ -146,4 +147,46 @@ test('a null actor is never permitted anything', () => {
   assert.equal(can(null, C.TASK_OFFER), false);
   assert.equal(canViewTaskFinance(null, { artist_user_id: 'x' }), false);
   assert.throws(() => assertCan(null, C.TASK_OFFER), PermissionError);
+});
+
+// ---------------------------------------------------------------------------
+// Claiming the studio on first run
+// ---------------------------------------------------------------------------
+
+test('the Discord server owner can always claim the studio', () => {
+  assert.equal(canClaimStudio({ userId: 'u1', guildOwnerId: 'u1', config: {} }), true);
+  assert.equal(canClaimStudio({ userId: 'u1', guildOwnerId: 'u1', config: { owner_user_id: 'someone-else' } }), true);
+});
+
+test('somebody who manages the server can claim it while it is unclaimed', () => {
+  // The case that locked a real studio out: a founder who did not create the
+  // Discord server, on a bot nobody has set up yet.
+  assert.equal(canClaimStudio({ userId: 'founder', guildOwnerId: 'somebody-else', managesServer: true, config: {} }), true);
+});
+
+test('managing the server is not enough once the studio has an owner', () => {
+  assert.equal(
+    canClaimStudio({ userId: 'founder', guildOwnerId: 'somebody-else', managesServer: true, config: { owner_user_id: 'owner-1' } }),
+    false,
+    'the first-run door shuts once somebody has claimed it'
+  );
+});
+
+test('the recorded owner can re-run setup', () => {
+  assert.equal(canClaimStudio({ userId: 'owner-1', guildOwnerId: 'somebody-else', config: { owner_user_id: 'owner-1' } }), true);
+});
+
+test('an ordinary member cannot claim the studio', () => {
+  assert.equal(canClaimStudio({ userId: 'artist-1', guildOwnerId: 'somebody-else', managesServer: false, config: {} }), false);
+  assert.equal(
+    canClaimStudio({ userId: 'artist-1', guildOwnerId: 'somebody-else', managesServer: false, config: { owner_user_id: 'owner-1' } }),
+    false
+  );
+});
+
+test('an owner role claims it even without Discord server permissions', () => {
+  assert.equal(
+    canClaimStudio({ userId: 'u1', guildOwnerId: 'somebody-else', roleIds: ['role-owner'], config: { owner_role_id: 'role-owner' } }),
+    true
+  );
 });

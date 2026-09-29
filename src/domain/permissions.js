@@ -181,9 +181,31 @@ function canViewTaskFinance(actor, task) {
   return isAssignedArtist(actor, task);
 }
 
+/**
+ * Who may run first-run setup and become the studio owner.
+ *
+ * Before setup nobody holds config.manage, so somebody has to be able to claim
+ * the bot or it could never be configured at all. Three ways in:
+ *
+ *  - the Discord server owner, always;
+ *  - anybody Discord already trusts to manage the server, but *only while the
+ *    bot is unclaimed* — a studio whose Discord server was created by somebody
+ *    else would otherwise be locked out of its own bot permanently;
+ *  - whoever already holds owner status, so setup can be re-run.
+ *
+ * The middle door shuts the moment an owner is recorded. It is a way to start,
+ * not a standing permission.
+ */
+function canClaimStudio({ userId, guildOwnerId = null, managesServer = false, config = {}, roleIds = [] }) {
+  if (guildOwnerId && guildOwnerId === userId) return true;
+  if (isOwner({ userId, roleIds, config })) return true;
+  return !config.owner_user_id && managesServer === true;
+}
+
 module.exports = {
   CAPABILITIES,
   ALL_CAPABILITIES,
+  canClaimStudio,
   DEPARTMENT_SCOPED,
   DEFAULT_LEADER_CAPABILITIES,
   DEFAULT_MANAGER_CAPABILITIES,

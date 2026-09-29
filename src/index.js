@@ -49,7 +49,7 @@ loadDirectory(path.join(__dirname, 'commands'), (command, file) => {
 // router as a side effect; router.js itself has nothing to register.
 loadDirectory(path.join(__dirname, 'interactions'), () => {});
 
-client.once('ready', () => {
+client.once('clientReady', () => {
   const db = getDatabase();
   console.log(`Logged in as ${client.user.tag}.`);
   console.log(`Commands: ${[...client.commands.keys()].join(', ') || 'none'}`);
