@@ -224,6 +224,41 @@ function resolveRequest(db, guildId, id, { status, resolution, actorUserId }) {
   return getRequest(db, guildId, id);
 }
 
+const ISSUE_DECISIONS = Object.freeze({
+  IN_SCOPE: 'in_scope',
+  ADDITIONAL_WORK: 'additional_work',
+  NO_FAULT: 'no_fault',
+});
+
+/**
+ * Records what a reported issue was judged to be.
+ *
+ * Kept separate from closing the request: "resolved" says the matter is
+ * finished, while the decision says whether it was a correction the studio owed
+ * or extra work that needs paying for. An additional-work decision carries who
+ * approved the charge, because only the owner may.
+ */
+function decideIssue(db, guildId, id, { decision, actorUserId, chargeApprovedBy = null, followUpTaskId = null, note = null }) {
+  if (!Object.values(ISSUE_DECISIONS).includes(decision)) {
+    throw new Error(`Unknown issue decision: ${decision}`);
+  }
+
+  db.prepare(`
+    UPDATE client_requests
+    SET decision = ?, decided_by = ?, decided_at = ?, charge_approved_by = ?, follow_up_task_id = ?,
+        status = CASE WHEN ? = 'no_fault' THEN 'resolved' ELSE 'in_progress' END,
+        resolution = COALESCE(?, resolution)
+    WHERE guild_id = ? AND id = ?
+  `).run(decision, actorUserId, Date.now(), chargeApprovedBy, followUpTaskId, decision, note, guildId, id);
+
+  recordAudit(db, {
+    guildId, actorUserId, action: 'client.issue.decide', entityType: 'client_request', entityId: id,
+    after: { decision, charge_approved_by: chargeApprovedBy, follow_up_task_id: followUpTaskId },
+    detail: note,
+  });
+  return getRequest(db, guildId, id);
+}
+
 /** Any open issue pauses promotional messaging for that client. */
 function hasOpenIssue(db, guildId, clientId) {
   const row = db.prepare(`
@@ -235,6 +270,8 @@ function hasOpenIssue(db, guildId, clientId) {
 }
 
 module.exports = {
+  ISSUE_DECISIONS,
+  decideIssue,
   createClient,
   getClient,
   listClients,

@@ -55,7 +55,7 @@ function dashboardEmbed(report) {
   return embed;
 }
 
-function dashboardComponents(projectId, { hasPreviews, canApprove }) {
+function dashboardComponents(projectId, { hasPreviews, canApprove, hasDelivered = false }) {
   return [
     new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -97,7 +97,13 @@ function dashboardComponents(projectId, { hasPreviews, canApprove }) {
         .setCustomId(customId(NAMESPACE, 'manager', projectId))
         .setLabel('Contact Manager')
         .setStyle(ButtonStyle.Secondary)
-        .setEmoji('📨')
+        .setEmoji('📨'),
+      new ButtonBuilder()
+        .setCustomId(customId(NAMESPACE, 'issue', projectId))
+        .setLabel('Report a Problem')
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji('⚠️')
+        .setDisabled(!hasDelivered)
     ),
   ];
 }

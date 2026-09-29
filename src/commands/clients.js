@@ -36,6 +36,7 @@ async function publishDashboard(interaction, db, guildId, project) {
     components: dashboard.dashboardComponents(project.id, {
       hasPreviews: report.previews.length > 0,
       canApprove: true,
+      hasDelivered: report.counts[clientReport.BUCKETS.APPROVED_BY_YOU] + report.counts[clientReport.BUCKETS.DELIVERED] > 0,
     }),
   };
 

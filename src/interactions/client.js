@@ -3,6 +3,7 @@ const {
   TextInputBuilder,
   TextInputStyle,
   ActionRowBuilder,
+  StringSelectMenuBuilder,
   EmbedBuilder,
 } = require('discord.js');
 const { getDatabase } = require('../db');
@@ -136,8 +137,116 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       components: dashboard.dashboardComponents(project.id, {
         hasPreviews: report.previews.length > 0,
         canApprove: access.canApprove,
+        hasDelivered: report.counts[clientReport.BUCKETS.APPROVED_BY_YOU] + report.counts[clientReport.BUCKETS.DELIVERED] > 0,
       }),
     }));
+    return;
+  }
+
+  if (action === 'issue') {
+    const report = clientReport.buildProjectReport(db, guildId, project);
+    // A problem can only be reported against something the client actually
+    // has: work they approved or that was delivered to them.
+    const reportable = tasksRepo.listTasksForProject(db, project.id).filter((task) =>
+      task.delivered_at || task.state === TASK_STATES.CLIENT_APPROVED
+    );
+
+    if (reportable.length === 0) {
+      await interaction.reply(priv(
+        'There is nothing delivered or approved on this order yet, so there is nothing to report a problem with. ' +
+        'Use **Request Changes** for work still in review, or **Contact Manager** for anything else.'
+      ));
+      return;
+    }
+
+    await interaction.reply(priv({
+      content: 'Which item has the problem?',
+      components: [new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(customId(NAMESPACE, 'issueItem', project.id))
+          .setPlaceholder('Choose the item')
+          .addOptions(reportable.slice(0, 25).map((task) => ({
+            label: task.title.slice(0, 100),
+            value: String(task.id),
+            description: (task.delivered_at ? 'delivered' : 'approved by you').slice(0, 100),
+          })))
+      )],
+    }));
+    return;
+  }
+
+  if (action === 'issueItem') {
+    const taskId = Number(interaction.values[0]);
+    await interaction.showModal(
+      new ModalBuilder()
+        .setCustomId(customId(NAMESPACE, 'issueModal', project.id, taskId))
+        .setTitle('Report a problem')
+        .addComponents(
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('body')
+              .setLabel('What is wrong with it?')
+              .setPlaceholder('What you received, what you expected, and how it differs.')
+              .setStyle(TextInputStyle.Paragraph)
+              .setRequired(true)
+              .setMaxLength(1500)
+          ),
+          new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+              .setCustomId('references')
+              .setLabel('Screenshots or links (optional)')
+              .setStyle(TextInputStyle.Paragraph)
+              .setRequired(false)
+              .setMaxLength(600)
+          )
+        )
+    );
+    return;
+  }
+
+  if (action === 'issueModal') {
+    const taskId = Number(args[1]);
+    const task = tasksRepo.getTask(db, guildId, taskId);
+    if (!task || task.project_id !== project.id) {
+      await interaction.reply(priv('❌ That item is not on this order.'));
+      return;
+    }
+
+    const body = interaction.fields.getTextInputValue('body').trim();
+    const references = interaction.fields.getTextInputValue('references').trim() || null;
+
+    const request = clientsRepo.createRequest(db, guildId, {
+      projectId: project.id,
+      taskId: task.id,
+      clientId: project.client_id,
+      raisedBy: interaction.user.id,
+      kind: 'delivery_issue',
+      body,
+      attachments: references,
+    });
+
+    await interaction.reply(priv(
+      `✅ Reported against **${task.title}**. The studio has been told.\n` +
+      'Someone will look at whether this is a correction we owe you or work beyond what was agreed, ' +
+      'and come back to you. Nothing on your order has changed yet.'
+    ));
+
+    await notifyStaffOfRequest(interaction, db, guildId, {
+      project,
+      request,
+      headline: `⚠️ A client has reported a problem with **${task.code} · ${task.title}**`,
+    });
+
+    // The leader of the department that produced it is told too, since they
+    // will usually be the one to judge whether it is in scope.
+    if (task.leader_user_id) {
+      await notifyUser(interaction.client, db, guildId, task.leader_user_id, {
+        content:
+          `⚠️ Problem reported on **${task.code} · ${task.title}**:\n> ${body.slice(0, 800)}\n` +
+          `${references ? `References: ${references}\n` : ''}` +
+          `Triage it with \`/issues decide id:${request.id}\`.`,
+      }).catch(() => null);
+    }
     return;
   }
 
