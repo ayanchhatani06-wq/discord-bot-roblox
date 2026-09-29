@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ChannelType, PermissionFlagsBits } = require('discord.js');
 const clientsRepo = require('../db/repos/clients');
+const clientRecordsRepo = require('../db/repos/clientRecords');
+const configRepo = require('../db/repos/config');
 const messageTriggers = require('../services/messageTriggers');
 const projectsRepo = require('../db/repos/projects');
 const { contextFor } = require('../services/actor');
@@ -142,7 +144,28 @@ module.exports = {
         .addStringOption((opt) => opt.setName('note').setDescription('What was done').setRequired(false))
         .addBooleanOption((opt) => opt.setName('tell_client').setDescription('Send the note to the client channel').setRequired(false))
     )
-    .addSubcommand((sub) => sub.setName('duplicates').setDescription('Possible duplicate client records')),
+    .addSubcommand((sub) => sub.setName('duplicates').setDescription('Possible duplicate client records'))
+    .addSubcommand((sub) =>
+      sub
+        .setName('requirements')
+        .setDescription('Standing requirements this client has on every order')
+        .addStringOption((opt) => opt.setName('client').setDescription('Client name').setRequired(true).setAutocomplete(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('add-requirement')
+        .setDescription('Record something this client always wants')
+        .addStringOption((opt) => opt.setName('client').setDescription('Client name').setRequired(true).setAutocomplete(true))
+        .addStringOption((opt) => opt.setName('label').setDescription('Short name, e.g. "Texture size"').setRequired(true))
+        .addStringOption((opt) => opt.setName('detail').setDescription('What it is, in full').setRequired(true))
+        .addStringOption((opt) => opt.setName('department').setDescription('Only relevant to one department?').setRequired(false).setAutocomplete(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('retire-requirement')
+        .setDescription('Stop showing a standing requirement (it is kept on the record)')
+        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /clients requirements').setRequired(true))
+    ),
 
   async autocomplete(interaction) {
     const focused = interaction.options.getFocused(true);
@@ -165,6 +188,12 @@ module.exports = {
         ? projectsRepo.searchProjects(db, guildId, query, 25)
         : projectsRepo.listProjects(db, guildId, { status: 'active', limit: 25 });
       await interaction.respond(matches.map((p) => ({ name: `${p.code} · ${p.name}`.slice(0, 100), value: p.code })));
+      return;
+    }
+
+    if (focused.name === 'department') {
+      await interaction.respond(configRepo.listDepartments(db, guildId).slice(0, 25)
+        .map((dept) => ({ name: dept.name.slice(0, 100), value: String(dept.id) })));
     }
   },
 
@@ -177,6 +206,63 @@ module.exports = {
     // sit behind project management rather than being open to all staff.
     const mayManage = can(actor, CAPABILITIES.PROJECT_EDIT) || actor.isOwner;
     if (!mayManage) assertCan(actor, CAPABILITIES.PROJECT_EDIT);
+
+    if (sub === 'requirements' || sub === 'add-requirement') {
+      const client = clientsRepo.getClient(db, guildId, Number(interaction.options.getString('client', true)));
+      if (!client) {
+        await interaction.reply(priv('❌ No client with that name.'));
+        return;
+      }
+
+      const departments = configRepo.listDepartments(db, guildId);
+      const departmentName = new Map(departments.map((dept) => [dept.id, dept.name]));
+
+      if (sub === 'add-requirement') {
+        const departmentRaw = interaction.options.getString('department');
+        const departmentId = departmentRaw ? Number(departmentRaw) : null;
+
+        if (departmentRaw && !departmentName.has(departmentId)) {
+          await interaction.reply(priv('❌ Pick a department from the list.'));
+          return;
+        }
+
+        const requirement = clientRecordsRepo.addRequirement(db, guildId, client.id, {
+          label: interaction.options.getString('label', true),
+          detail: interaction.options.getString('detail', true),
+          departmentId,
+        }, userId);
+
+        await interaction.reply(priv(
+          `✅ **#${requirement.id}** ${requirement.label} recorded for ${client.display_name}` +
+          `${departmentId ? ` (${departmentName.get(departmentId)} only)` : ' (every department)'}.\n` +
+          '_It shows on every order for this client from now on. Existing orders are not changed._'
+        ));
+        return;
+      }
+
+      const requirements = clientRecordsRepo.listRequirements(db, guildId, client.id, { includeInactive: true });
+      await interaction.reply(priv({
+        embeds: [new EmbedBuilder()
+          .setTitle(`Standing requirements · ${client.display_name}`)
+          .setColor(0x5865f2)
+          .setDescription(requirements.map((row) =>
+            `${row.active ? '🟢' : '⚪'} **#${row.id} ${row.label}**` +
+            `${row.department_id ? ` _(${departmentName.get(row.department_id) || 'a department'})_` : ''}\n` +
+            `┗ ${row.detail.slice(0, 300)}`
+          ).join('\n').slice(0, 4000) || '_Nothing recorded. Add one with `/clients add-requirement`._')],
+      }));
+      return;
+    }
+
+    if (sub === 'retire-requirement') {
+      const requirement = clientRecordsRepo.updateRequirement(
+        db, guildId, interaction.options.getInteger('id', true), { active: 0 }, userId
+      );
+      await interaction.reply(priv(requirement
+        ? `✅ **${requirement.label}** will no longer be shown. It stays on the record.`
+        : '❌ No requirement with that number.'));
+      return;
+    }
 
     if (sub === 'create') {
       const client = clientsRepo.createClient(db, guildId, {

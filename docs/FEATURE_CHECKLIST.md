@@ -99,12 +99,12 @@ not only an internal dashboard.
 | Item | Status |
 | --- | --- |
 | Order history per client | ✅ |
-| Project preferences and recurring requirements | ⬜ stage 5 |
+| Project preferences and recurring requirements | ✅ (`/clients add-requirement`; shown on the task and on the offer, not buried in the client record) |
 | Approved communication contacts | ✅ |
 | Follow-up preferences | ✅ (`/outreach prefs`: opt-in, weekly limit, pause, follow-up owner) |
-| Duplicate a previous order as a draft | ⬜ stage 5 |
-| Confirm new scope, price and deadline on duplication | ⬜ stage 5 |
-| Finder attribution, agreed compensation, follow-up ownership | 🟡 finder share and per-client attribution built; follow-up ownership in stage 5 |
+| Duplicate a previous order as a draft | ✅ (`/repeat from`; a draft is its own thing, invisible to queues, boards and the ledger) |
+| Confirm new scope, price and deadline on duplication | ✅ (each confirmed separately and stamped with who confirmed it; last time's price and deadline are never carried over) |
+| Finder attribution, agreed compensation, follow-up ownership | ✅ (finder carries across repeat orders; follow-up owner set with `/outreach prefs`) |
 | Flag possible duplicate client records | ✅ |
 
 ## 6. Better task planning
@@ -229,7 +229,7 @@ client login that must also work for clients who are not in the Discord server.
 2. **Client issues and staff escalation** — §11 (needs stage 1)
 3. **Client messaging automation** — §3 (needs stages 1–2) ✅ done
 4. **Enquiries and quotes** — §4
-5. **Client records and repeat orders** — §5
+5. **Client records and repeat orders** — §5 ✅ done
 6. **Task planning: templates, dependencies, blockers, extensions** — §6
 7. **Multi-contributor pay, budget guards, bonus milestones** — §7 ✅ done
 8. **Onboarding, trials, backup leaders, offboarding** — §8 ✅ done

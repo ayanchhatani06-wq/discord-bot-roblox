@@ -74,7 +74,7 @@ async function sendOffer(client, db, { guildId, task, artistUserId, offeredBy, g
   const department = configRepo.getDepartment(db, guildId, updatedTask.department_id);
 
   const delivery = await notifyUser(client, db, guildId, artistUserId, {
-    embeds: [offerEmbed({ task: updatedTask, project, department, guildName })],
+    embeds: [offerEmbed({ task: updatedTask, project, department, guildName, db, guildId })],
     components: offerComponents(offer.id),
   }, { fallbackNote: 'You have a task offer waiting.' });
 

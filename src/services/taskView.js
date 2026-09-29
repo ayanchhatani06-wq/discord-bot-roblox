@@ -1,5 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const tasksRepo = require('../db/repos/tasks');
+const clientRecordsRepo = require('../db/repos/clientRecords');
 const { stateLabel, TASK_STATES } = require('../domain/taskState');
 const { canViewTaskFinance } = require('../domain/permissions');
 const { formatAmount } = require('../domain/money');
@@ -58,7 +59,25 @@ function deliverablesText(task) {
  * The full task view. Pay is included only for people entitled to see it: the
  * owner, an explicit finance grant, or the artist looking at their own task.
  */
-function taskEmbed({ task, project, department, actor, includeFinance = null }) {
+/**
+ * A client's standing requirements, shown on the work itself.
+ *
+ * The point of recording "always 4K textures" once is that nobody has to
+ * remember it, so it appears on the task and on the offer rather than living
+ * in the client record where the artist would never look.
+ */
+function requirementsText(db, guildId, project, task) {
+  if (!db || !project?.client_id) return null;
+
+  const rows = clientRecordsRepo.requirementsForProject(db, guildId, project, {
+    departmentId: task?.department_id,
+  });
+  if (rows.length === 0) return null;
+
+  return rows.map((row) => `• **${row.label}** — ${row.detail}`).join('\n').slice(0, 1024);
+}
+
+function taskEmbed({ task, project, department, actor, includeFinance = null, db = null, guildId = null }) {
   const showFinance = includeFinance === null ? canViewTaskFinance(actor, task) : includeFinance;
 
   const embed = new EmbedBuilder()
@@ -79,6 +98,11 @@ function taskEmbed({ task, project, department, actor, includeFinance = null }) 
   if (task.formats) embed.addFields({ name: 'Formats', value: task.formats.slice(0, 1024), inline: true });
   if (task.tech_requirements) embed.addFields({ name: 'Technical requirements', value: task.tech_requirements.slice(0, 1024), inline: false });
   if (task.reference_links) embed.addFields({ name: 'References', value: task.reference_links.slice(0, 1024), inline: false });
+
+  const requirements = requirementsText(db, guildId, project, task);
+  if (requirements) {
+    embed.addFields({ name: 'This client always asks for', value: requirements, inline: false });
+  }
 
   embed.addFields({ name: 'Revision scope', value: revisionText(task), inline: true });
 
@@ -101,8 +125,10 @@ function taskEmbed({ task, project, department, actor, includeFinance = null }) 
  * What the chosen artist is shown. Always states the terms in full, because
  * accepting is a commitment to exactly these.
  */
-function offerEmbed({ task, project, department, guildName }) {
-  return new EmbedBuilder()
+function offerEmbed({ task, project, department, guildName, db = null, guildId = null }) {
+  const requirements = requirementsText(db, guildId, project, task);
+
+  const embed = new EmbedBuilder()
     .setTitle(`Task offer: ${task.code} · ${task.title}`)
     .setColor(0xfaa61a)
     .setDescription(
@@ -119,6 +145,13 @@ function offerEmbed({ task, project, department, guildName }) {
       { name: 'Your pay', value: formatPay(task), inline: true }
     )
     .setFooter({ text: 'Declining asks for a short reason and returns the task to your group leader.' });
+
+  // Shown before accepting, not after: these are part of what is being agreed.
+  if (requirements) {
+    embed.spliceFields(4, 0, { name: 'This client always asks for', value: requirements, inline: false });
+  }
+
+  return embed;
 }
 
 function offerComponents(offerId) {
@@ -177,6 +210,7 @@ function candidateDescription({ staff, activeCount, localTime, taskCap }) {
 }
 
 module.exports = {
+  requirementsText,
   STATE_COLOURS,
   PAYMENT_LABELS,
   TASK_STATES,

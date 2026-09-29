@@ -268,6 +268,9 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/outreach prefs client:` | Opt-in, weekly limit, pause, follow-up owner |
 | `/outreach replies` / `handled id:` | Clients waiting on an answer |
 | `/outreach offer project:` | Queue the approved cross-service offer |
+| `/clients add-requirement client:` | Something this client always asks for |
+| `/repeat from project:` | Start a repeat order from a past one |
+| `/repeat scope` / `price` / `deadline` / `create` | Confirm each term, then create it |
 | `/studio …` | All configuration |
 
 ---
@@ -345,6 +348,28 @@ When a milestone is reached the bot **flags it for you and stops**. Nothing is
 owed until `/bonus approve`, and nothing is recorded as paid until `/bonus pay`.
 Each milestone is indexed, so re-running the check — or two approvals landing at
 the same moment — cannot award the same milestone twice.
+
+### Repeat orders
+
+`/repeat from project:<code>` copies what a previous order **was** — its brief,
+its references, its list of items — and deliberately **not** what it cost or
+when it was due. Carrying last time's price silently into a new job is how a
+studio ends up honouring a figure it never agreed to.
+
+Scope, price and deadline are then confirmed one at a time, each stamped with
+who confirmed it, and the draft cannot become an order until all three are done.
+A draft lives in its own table rather than as a project with a flag, so nothing
+— queues, boards, the ledger, the client's dashboard — can see it by accident.
+
+When it is created, the relationship carries across (who found the client, who
+moderates them, who manages the work) but no pay is set on any task: that is
+still yours to agree per item.
+
+A client's **standing requirements** (`/clients add-requirement`) are recorded
+once and shown on the task and on the offer, where the artist actually looks,
+rather than sitting in the client record where nobody would find them. A
+requirement can be scoped to one department, so "always 4K textures" reaches the
+modellers without becoming noise for everybody else.
 
 ### Talking to clients
 
@@ -621,7 +646,7 @@ only discover you needed after losing them.
 npm test
 ```
 
-354 tests covering money parsing and per-currency totals, split exactness
+366 tests covering money parsing and per-currency totals, split exactness
 (including the worked $40/$25 example, the mixed-currency refusal and
 below-cost jobs), every legal and illegal task transition, repeat-click
 rejection, permission scoping, DST and quiet-hours edge cases, reminder
@@ -632,7 +657,8 @@ its override, bonus milestones that cannot be awarded twice, version-bound proce
 acknowledgements, trial state rules, stand-in leadership windows, and
 offboarding reports, template approval and placeholder safety, message
 deduplication and digesting, and every client-messaging guard including the
-re-check at send time.
+re-check at send time, standing requirements, and repeat-order drafts that
+cannot become an order until scope, price and deadline are each confirmed.
 
 ---
 

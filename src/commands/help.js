@@ -53,6 +53,8 @@ const SECTIONS = [
       ['`/clients create`', 'A client record with authorized accounts'],
       ['`/clients dashboard`', 'Post their dashboard in their channel'],
       ['`/clients preview`', 'See exactly what a client can see'],
+      ['`/clients requirements`', 'What this client always asks for'],
+      ['`/repeat from`', 'Start a repeat order from a past one'],
       ['`/enquiry new`', 'Record an enquiry that came in elsewhere'],
       ['`/enquiry draft-quote`', 'Draft a quote from your templates'],
       ['`/issues list`', 'Problems clients have reported'],

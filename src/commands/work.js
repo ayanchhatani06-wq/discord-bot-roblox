@@ -336,7 +336,7 @@ module.exports = {
           `**${task.code} · ${task.title}**\n` +
           'Tick every deliverable you are including, then continue. ' +
           'If something genuinely does not apply, ask your leader to change the deliverables list first.',
-        embeds: [taskEmbed({ task, project, department, actor, includeFinance: canViewTaskFinance(actor, task) })],
+        embeds: [taskEmbed({ task, project, department, actor, includeFinance: canViewTaskFinance(actor, task), db, guildId })],
         components: [new ActionRowBuilder().addComponents(
           new StringSelectMenuBuilder()
             .setCustomId(customId('submit', 'checklist', task.id))

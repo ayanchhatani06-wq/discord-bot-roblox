@@ -313,7 +313,7 @@ module.exports = {
         throw new PermissionError('task.view', 'You can only view tasks in a department you lead, or tasks assigned to you.');
       }
 
-      const embed = taskEmbed({ task, project, department, actor });
+      const embed = taskEmbed({ task, project, department, actor, db, guildId });
       const history = offersRepo.offerHistory(db, task.id);
       if (history.length > 0) {
         embed.addFields({
