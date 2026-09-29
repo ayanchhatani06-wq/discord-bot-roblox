@@ -66,6 +66,23 @@ function checklist(submission) {
   }
 }
 
+/**
+ * Releases one version to the client. Nothing is client-visible until a person
+ * does this, which is what keeps internal working files off the dashboard.
+ */
+function markClientVisible(db, guildId, submissionId, actorUserId) {
+  db.prepare(`
+    UPDATE submissions SET client_visible_at = ?, client_visible_by = ?
+    WHERE id = ? AND client_visible_at IS NULL
+  `).run(Date.now(), actorUserId, submissionId);
+
+  recordAudit(db, {
+    guildId, actorUserId, action: 'submission.release', entityType: 'submission', entityId: submissionId,
+    detail: 'Released to the client',
+  });
+  return getSubmission(db, submissionId);
+}
+
 /** An internal quality review by the group leader. Never a client decision. */
 function addReview(db, guildId, taskId, { submissionId = null, reviewerUserId, decision, notes = null }) {
   const review = db.prepare(`
@@ -142,6 +159,7 @@ module.exports = {
   getSubmission,
   links,
   checklist,
+  markClientVisible,
   addReview,
   listReviews,
   addClientDecision,

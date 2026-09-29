@@ -7,6 +7,8 @@ const {
 const tasksRepo = require('../db/repos/tasks');
 const submissionsRepo = require('../db/repos/submissions');
 const configRepo = require('../db/repos/config');
+const projectsRepo = require('../db/repos/projects');
+const { publishDashboard } = require('../commands/clients');
 const { contextFor } = require('../services/actor');
 const { notifyUser } = require('../services/notify');
 const { reviewPanel } = require('../commands/review');
@@ -71,12 +73,29 @@ register(NAMESPACE, async (interaction, { action, args }) => {
         reviewerUserId: interaction.user.id,
         decision: 'ready_for_client',
       });
+
+      // Passing internal review is what releases this version to the client.
+      // Until a person does this, no submission link is client-visible, which
+      // is what keeps internal working files off the client dashboard.
+      if (submission) {
+        submissionsRepo.markClientVisible(db, guildId, submission.id, interaction.user.id);
+      }
+
       return tasksRepo.applyTransition(db, guildId, task.id, 'review_ready_for_client', {
         actorUserId: interaction.user.id,
         guardKey: `review-ready:${task.id}:${submission?.id ?? 'none'}`,
         detail: 'Passed internal review',
       });
     })();
+
+    // Refresh the client's dashboard so the new preview appears without
+    // anybody having to remember to repost it.
+    const project = projectsRepo.getProject(db, guildId, updated.project_id);
+    if (project?.client_id && project.client_channel_id) {
+      publishDashboard(interaction, db, guildId, project).catch((error) =>
+        console.error('Client dashboard refresh failed:', error)
+      );
+    }
 
     await interaction.update({
       content:

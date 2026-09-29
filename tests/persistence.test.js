@@ -61,8 +61,12 @@ test('migrations create the schema and are idempotent', () => {
     assert.ok(tables.includes(expected), `missing table ${expected}`);
   }
 
+  // Asserted against the files on disk rather than a fixed number, so adding a
+  // migration does not falsely fail this test.
+  const migrationFiles = fs.readdirSync(path.join(__dirname, '..', 'src', 'db', 'migrations'))
+    .filter((file) => file.endsWith('.sql'));
   const applied = db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n;
-  assert.equal(applied, 1);
+  assert.equal(applied, migrationFiles.length);
   db.close();
 });
 
@@ -86,7 +90,11 @@ test('data survives closing and reopening the database file', () => {
   assert.equal(code, 'PRJ-0001');
   // The counter continues rather than restarting after a reboot.
   assert.equal(nextCode(db, GUILD, 'project'), 'PRJ-0002');
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n, 1);
+
+  // Reopening must not re-apply migrations that already ran.
+  const migrationFiles = fs.readdirSync(path.join(__dirname, '..', 'src', 'db', 'migrations'))
+    .filter((file) => file.endsWith('.sql'));
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n, migrationFiles.length);
 
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
