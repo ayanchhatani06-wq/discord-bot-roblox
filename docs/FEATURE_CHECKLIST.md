@@ -137,11 +137,11 @@ not only an internal dashboard.
 | Item | Status |
 | --- | --- |
 | Onboarding collecting profile, timezone, specialties, software, portfolio, availability | ✅ already built |
-| Show procedures and record acknowledgement of the current version | ⬜ stage 8 |
-| Trial briefs with explicit terms, deadlines, submissions, feedback | ⬜ stage 8 |
-| Leader recommendations; promotion follows configured permissions | ⬜ stage 8 |
-| Temporary backup leaders with expiry and recorded responsibilities | ⬜ stage 8 |
-| Offboarding: remove access, flag unfinished tasks, missing files, outstanding pay | 🟡 soft-removal built; flagging in stage 8 |
+| Show procedures and record acknowledgement of the current version | ✅ (`/procedure`; an edit raises the version and makes earlier acknowledgements stale) |
+| Trial briefs with explicit terms, deadlines, submissions, feedback | ✅ (`/trial`; accepted terms are snapshotted) |
+| Leader recommendations; promotion follows configured permissions | ✅ (`/recommend`; the bot never grants a Discord role) |
+| Temporary backup leaders with expiry and recorded responsibilities | ✅ (`/people stand-in`; expiry is checked on every permission lookup) |
+| Offboarding: remove access, flag unfinished tasks, missing files, outstanding pay | ✅ (`/people offboard preview` and `start`; nothing is deleted) |
 | Historical records preserved | ✅ already built |
 
 ## 9. Personal and management dashboards
@@ -232,7 +232,7 @@ client login that must also work for clients who are not in the Discord server.
 5. **Client records and repeat orders** — §5
 6. **Task planning: templates, dependencies, blockers, extensions** — §6
 7. **Multi-contributor pay, budget guards, bonus milestones** — §7 ✅ done
-8. **Onboarding, trials, backup leaders, offboarding** — §8
+8. **Onboarding, trials, backup leaders, offboarding** — §8 ✅ done
 9. **The three desks and role-based help** — §9
 10. **Files, delivery authorization, archive, portfolio rights** — §10
 11. **Reports, filters and automation rules** — §12

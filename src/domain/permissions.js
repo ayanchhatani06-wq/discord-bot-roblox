@@ -98,6 +98,7 @@ function resolveActor({
   departments = [],
   roleCapabilities = [],
   guildOwnerId = null,
+  standInDepartmentIds = [],
 }) {
   const owner = isOwner({ userId, roleIds, config, guildOwnerId });
   const capabilities = new Set();
@@ -110,7 +111,13 @@ function resolveActor({
     if (roleIds.includes(grant.role_id)) capabilities.add(grant.capability);
   }
 
-  const leadDepartments = ledDepartmentIds({ roleIds, departments });
+  // Somebody standing in for a leader gets the same department-scoped powers,
+  // in that department only and only while the stand-in window is open. The
+  // caller decides which windows are open; this stays a pure function.
+  const known = new Set(departments.map((dept) => dept.id));
+  const standIn = [...new Set(standInDepartmentIds)].filter((id) => known.has(id));
+  const leadDepartments = [...new Set([...ledDepartmentIds({ roleIds, departments }), ...standIn])];
+
   if (leadDepartments.length > 0) {
     for (const capability of DEFAULT_LEADER_CAPABILITIES) capabilities.add(capability);
   }
@@ -120,6 +127,7 @@ function resolveActor({
     isOwner: owner,
     capabilities,
     leadDepartmentIds: leadDepartments,
+    standInDepartmentIds: standIn,
   };
 }
 

@@ -204,6 +204,8 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/work history task:` | Submissions, reviews and client decisions on a task |
 | `/work earnings` | Your own pay and payment history, private to you |
 | `/bonus mine` | Your progress towards milestone bonuses, and your awards |
+| `/procedure list` / `read key:` | Studio procedures, and acknowledging them |
+| `/trial mine` / `submit code:` | Your trial briefs, if you are on trial |
 | `/task mine` | Your offers and current assignments |
 
 ### Group leaders (in departments they lead)
@@ -223,6 +225,7 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/review awaiting-client` | Work sent to clients with no decision recorded yet |
 | `/manage reassign task: artist: reason:` | Move work, keeping the original record |
 | `/manage hold task: reason:` / `/manage resume task:` | Pause and unpause |
+| `/recommend new person: kind: note:` | Put somebody forward for a trial or promotion |
 
 ### Owner
 
@@ -250,6 +253,13 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/manage compensate task: member: amount:` | Pay for work done on cancelled or moved work |
 | `/manage flags` | Everything waiting on a decision from you |
 | `/summary now` / `post` / `schedule` / `run-reminders` | Management digest and reminder controls |
+| `/trial offer person: title: brief: terms:` | Send a paid trial brief |
+| `/trial decide code: outcome: feedback:` | Pass or fail a submitted trial |
+| `/recommend list` / `decide id:` | Recommendations from your leaders |
+| `/people stand-in grant person: department: until:` | Temporary leadership cover |
+| `/people offboard preview person:` / `start` | What somebody leaves behind |
+| `/procedure set key: title: body:` | Write a procedure everyone acknowledges |
+| `/procedure who key:` | Who has read the current version |
 | `/studio …` | All configuration |
 
 ---
@@ -327,6 +337,38 @@ When a milestone is reached the bot **flags it for you and stops**. Nothing is
 owed until `/bonus approve`, and nothing is recorded as paid until `/bonus pay`.
 Each milestone is indexed, so re-running the check — or two approvals landing at
 the same moment — cannot award the same milestone twice.
+
+### Procedures, trials and leaving
+
+**Procedures** are text the studio expects staff to have read. Acknowledgement
+is bound to a *version*: editing the text raises the version, which makes every
+earlier acknowledgement stale rather than quietly carrying it forward. Agreeing
+to version 1 is not agreeing to version 2, and the record says so. `/procedure
+who` shows who has read the current version and who has not, counting only the
+people it applies to.
+
+**Trials** are paid briefs with the terms written down before the work starts.
+The candidate accepts explicitly, and what they accepted is snapshotted, so a
+later edit cannot rewrite the deal behind them. A trial cannot be submitted
+before it is accepted, and cannot be decided before it is submitted. Trial pay
+is owed whatever the outcome.
+
+**Recommendations** (`/recommend`) let a leader put somebody forward. That is
+all they do: the bot never grants or removes a Discord role, so who actually
+gets promoted stays a human decision made in Discord.
+
+**Stand-in leaders** cover a department for a stated period. They get exactly a
+leader's powers, in that department only. The window is re-checked every time
+permissions are worked out, so the cover ends on time even if the bot was
+offline when it lapsed and even though nothing is scheduled to take it away.
+
+**Offboarding** reports rather than deletes. `/people offboard preview` shows
+unfinished work, unanswered offers, approved work with no files recorded, open
+trials and stand-in grants, and money still owed — including money owed to
+somebody who only helped on another person's task. Starting an offboarding
+flags the profile, takes them off the boards, withdraws their unanswered offers
+and ends their stand-in cover. It does not touch their submissions, approvals or
+payment history, because those are exactly what the studio still needs.
 
 ### Multi-department projects
 
@@ -517,6 +559,9 @@ only discover you needed after losing them.
 | The bot loses permission to a channel | That board or notification is skipped and logged; nothing else stops |
 | A deadline is typed in a DST gap | Refused with an explanation instead of being silently shifted |
 | A task changes hands mid-work | The original artist's submissions are kept and the task is flagged for a compensation decision |
+| A procedure is edited after people acknowledged it | Its version rises, earlier acknowledgements are kept but no longer count, and the acknowledge button for the old version is refused |
+| A stand-in's cover lapses while the bot is offline | Nothing is needed: the window is checked at every permission lookup, so the powers were already gone |
+| Somebody leaves owed money | It is reported and kept. Leaving does not cancel it, and nothing about their history is deleted |
 | A second person joins a task that already has agreed pay | The first artist is copied into a contributor row on their existing terms, so the two records can never both be counted |
 | Two people on one task are paid in different currencies | The split pool is left uncomputed and says so, rather than converting; enter it by hand with `/finance set-pool` |
 | The same bonus milestone is evaluated twice | The second award is rejected by a unique key on rule, person and milestone |
@@ -529,14 +574,16 @@ only discover you needed after losing them.
 npm test
 ```
 
-310 tests covering money parsing and per-currency totals, split exactness
+331 tests covering money parsing and per-currency totals, split exactness
 (including the worked $40/$25 example, the mixed-currency refusal and
 below-cost jobs), every legal and illegal task transition, repeat-click
 rejection, permission scoping, DST and quiet-hours edge cases, reminder
 escalation order, persistence across restarts, duplicate payment prevention,
 client access boundaries, portfolio rights, task dependencies, shared work
 (no double counting when a task gains a second person), the budget refusal and
-its override, and bonus milestones that cannot be awarded twice.
+its override, bonus milestones that cannot be awarded twice, version-bound procedure
+acknowledgements, trial state rules, stand-in leadership windows, and
+offboarding reports.
 
 ---
 

@@ -1,5 +1,6 @@
 const { getDatabase } = require('../db');
 const configRepo = require('../db/repos/config');
+const onboardingRepo = require('../db/repos/onboarding');
 const { resolveActor } = require('../domain/permissions');
 
 /**
@@ -34,6 +35,9 @@ function contextFor(interaction, db = getDatabase()) {
     departments,
     roleCapabilities,
     guildOwnerId: interaction.guild?.ownerId ?? null,
+    // Re-read every time, so a stand-in's powers lapse on the stated date
+    // without anything having to run to take them away.
+    standInDepartmentIds: onboardingRepo.activeBackupDepartmentIds(db, guildId, interaction.user.id),
   });
 
   return { db, guildId, config, departments, roleIds, actor };

@@ -3,6 +3,7 @@ const tasksRepo = require('../db/repos/tasks');
 const projectsRepo = require('../db/repos/projects');
 const offersRepo = require('../db/repos/offers');
 const staffRepo = require('../db/repos/staff');
+const onboardingRepo = require('../db/repos/onboarding');
 const configRepo = require('../db/repos/config');
 const submissionsRepo = require('../db/repos/submissions');
 const clientsRepo = require('../db/repos/clients');
@@ -59,6 +60,18 @@ function buildMyDesk(db, guildId, userId, { now = Date.now() } = {}) {
   const paid = paymentsRepo.payoutTotalsForPayee(db, guildId, userId);
   const recent = submissionsRepo.listRecentByUser(db, guildId, userId, { limit: 5 });
 
+  // Leadership here is only used to pick which procedures apply, so it is
+  // taken from who reports to them rather than from a Discord role the bot
+  // cannot see outside an interaction.
+  const leadsSomebody = Boolean(
+    db.prepare('SELECT 1 FROM staff WHERE guild_id = ? AND leader_user_id = ? LIMIT 1').get(guildId, userId)
+  );
+  const outstandingProcedures = onboardingRepo.outstandingProcedures(db, guildId, userId, {
+    departmentId: staff?.department_id ?? null,
+    isLeader: leadsSomebody,
+  });
+  const openTrials = onboardingRepo.listTrials(db, guildId, { status: 'open', userId, limit: 5 });
+
   const embed = new EmbedBuilder()
     .setTitle('My Desk')
     .setColor(0x5865f2)
@@ -114,6 +127,29 @@ function buildMyDesk(db, guildId, userId, { now = Date.now() } = {}) {
         ...overdue.map((task) => `🔴 **${task.code}** overdue since ${discordTimestamp(task.deadline_utc, 'R')}`),
         ...dueSoon.map((task) => `🟡 **${task.code}** due ${discordTimestamp(task.deadline_utc, 'R')}`),
       ]),
+      inline: false,
+    });
+  }
+
+  // Reading matter you owe the studio sits above pay, because somebody who
+  // has not read the procedures should see that before anything else.
+  if (outstandingProcedures.length > 0) {
+    embed.addFields({
+      name: `📋 Procedures to read (${outstandingProcedures.length})`,
+      value: truncate(outstandingProcedures.map((procedure) =>
+        `**${procedure.title}** _(v${procedure.version})_ — \`/procedure read key:${procedure.key}\``
+      )),
+      inline: false,
+    });
+  }
+
+  if (openTrials.length > 0) {
+    embed.addFields({
+      name: `🎯 Your trials (${openTrials.length})`,
+      value: truncate(openTrials.map((trial) =>
+        `**${trial.code}** ${trial.title} — ${trial.status.replace(/_/g, ' ')}` +
+        `${trial.deadline_utc ? ` · due ${discordTimestamp(trial.deadline_utc, 'R')}` : ''}`
+      )),
       inline: false,
     });
   }
