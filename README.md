@@ -1,89 +1,504 @@
-# Discord Timezone Bot
+# Studio Operations Bot
 
-A Discord bot that lets members register their timezone and keeps a
-live-updating embed in a channel showing everyone's current local time,
-grouped by timezone.
+A Discord bot for running a creative production studio: staff directory and
+timezones, client projects broken into departmental tasks, leader-driven
+assignment, submissions and internal review, recorded client decisions, and
+payment tracking with configurable splits.
 
-## Features
+It is built to sit alongside Dyno, Bloxlink, Carl, Ticket Tool and a word
+filter — it does not moderate, verify Roblox accounts, or manage tickets. It
+records studio operations.
 
-- `/timezone set <timezone> [user]` — register your own IANA timezone
-  (autocomplete suggests matches as you type, e.g. `America/New_York`,
-  `Europe/London`). Pass `user` to assign a timezone to someone else instead
-  — this requires the **Manage Server** permission, so typically only the
-  admin doing the assigning can use it. This is the intended workflow if
-  you'd rather assign every dev's timezone yourself instead of asking each
-  person to self-register.
-- `/timezone remove [user]` — remove a registered timezone; same
-  Manage-Server gate applies when targeting someone else.
-- `/timezone view [user]` — check your own or another member's current local
-  time on demand.
-- `/timezone setchannel <channel>` — (requires **Manage Server**) pick the
-  channel where the bot posts and continuously refreshes a pinned embed
-  listing every registered member, grouped by timezone, sorted by UTC offset.
-  The embed is edited automatically every `UPDATE_INTERVAL_MINUTES` (default:
-  every minute) so the times shown are always current — no manual refresh
-  needed.
+---
 
-Timezones are stored in a local SQLite database (`data/timezones.db`),
-comfortably supporting a few hundred registered members per server.
+## Contents
 
-## Setup
+- [What it does](#what-it-does)
+- [Installation](#installation)
+- [First-run setup](#first-run-setup)
+- [Command reference](#command-reference)
+- [How the money rules work](#how-the-money-rules-work)
+- [Permissions](#permissions)
+- [Hosting](#hosting)
+- [Backups](#backups)
+- [When things go wrong](#when-things-go-wrong)
+- [Tests](#tests)
+- [Project layout](#project-layout)
+- [Deliberate limits](#deliberate-limits)
 
-1. **Create a bot application**
-   - Go to the [Discord Developer Portal](https://discord.com/developers/applications).
-   - Create a new application, then go to the **Bot** tab and copy the token.
-   - Under **OAuth2 → URL Generator**, select the `bot` and
-     `applications.commands` scopes, and under bot permissions select
-     **View Channels**, **Send Messages**, **Embed Links**, and (optionally)
-     **Manage Messages** (so the bot can pin its own status embed). Use the
-     generated URL to invite the bot to your server.
-   - No privileged intents are required.
+---
 
-2. **Configure environment variables**
+## What it does
 
-   ```bash
-   cp .env.example .env
-   ```
+**Staff directory.** Everyone fills in their own profile from one panel:
+timezone, specialties, software, portfolio, Roblox name, usual working hours
+and quiet hours. Availability is declared explicitly — *accepting tasks*, *at
+capacity*, or *away* — and is never inferred from whether someone is online in
+Discord. Per-department board messages in a staff channel are refreshed on a
+schedule and show current local times with a visible "updated" stamp.
 
-   Fill in:
-   - `DISCORD_TOKEN` — your bot token.
-   - `CLIENT_ID` — your application's client ID (Developer Portal → General
-     Information).
-   - `GUILD_ID` — (optional, recommended while developing) your server's ID,
-     so slash commands register instantly instead of waiting up to an hour
-     for global propagation.
-   - `UPDATE_INTERVAL_MINUTES` — how often the live embed refreshes (default `1`).
+**Projects and tasks.** A client order becomes one project with many tasks.
+`12 models, 4 vfx, 2 animations` expands into 18 separate tasks, each routed to
+the right department and pre-filled with that department's deliverables
+checklist.
 
-3. **Install dependencies**
+**Assignment by leaders.** New tasks land in their department's unassigned
+queue. The leader sees a shortlist of their artists with availability, current
+workload, local time and specialties, and chooses. Nothing is auto-assigned.
+Offering work to somebody away or at capacity warns and asks for a second
+click rather than refusing — the choice stays the leader's.
 
-   ```bash
-   npm install
-   ```
+**Pay you control.** A group leader can *propose* a figure; only the owner
+approves it, and a task cannot be offered until that approval exists. Changes
+to pay, deadline or scope after acceptance are recorded for the artist to
+acknowledge rather than silently replacing what they agreed to.
 
-4. **Register the slash commands**
+**Offers, work, review.** Offers go by DM (with a fallback channel if DMs are
+closed) showing the brief, deliverables, deadline, revision scope and pay, with
+Accept and Decline buttons. Declining needs a reason and returns the task to
+the queue. Final submissions require every deliverable ticked and at least one
+link. The group leader reviews internally, then — separately — the owner
+records what the client decided.
 
-   ```bash
-   npm run deploy
-   ```
+**Client approval is a record, not a bot action.** The bot never talks to
+clients. After the client replies through your normal channel, the owner
+records the decision, the feedback, a supporting message link, and the bot
+stores who wrote it down and when.
 
-5. **Run the bot**
+**Money.** Payment status is tracked separately from production status.
+Approved work can sit unpaid. Splits of the leftover pool go to the client
+finder, the department leader who did the work, a mod, and you.
 
-   ```bash
-   npm start
-   ```
+**Chasing.** Configurable reminders for unanswered offers, upcoming and overdue
+deadlines, work with no recent progress, submissions awaiting review, work
+awaiting a client, and approved work with payouts outstanding. The artist is
+chased first, then their leader. Reminders respect each person's quiet hours
+and arrive batched, one message per person.
 
-6. In your server, run `/timezone setchannel #your-channel` (as an admin) to
-   pick where the live embed appears. Then, as the admin, run
-   `/timezone set timezone:<tz> user:@dev` once per dev to assign their
-   timezone (or let members run `/timezone set` themselves if you'd rather
-   not do it manually for everyone). The embed in that channel keeps itself
-   up to date automatically — no need to re-run anything after that.
+**Weekly summary.** A private management digest: what was approved, what is
+overdue or blocked, what is awaiting review or a client, department workloads,
+and what is owed.
 
-## Notes
+---
 
-- If a member leaves the server, their entry stays registered but will
-  render as an unresolvable mention in the embed; there's currently no
-  automatic cleanup on member departure.
-- Pinning the status message requires the **Manage Messages** permission in
-  that channel; if the bot doesn't have it, the embed still updates, it just
-  won't be pinned.
+## Installation
+
+### 1. Create the Discord application
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) → **New Application**.
+2. **Bot** tab → **Reset Token** → copy it. This is your `DISCORD_TOKEN`; treat it like a password.
+3. **Bot** tab → **Privileged Gateway Intents** → enable **Server Members Intent**.
+   This is required: a staff directory has to know when somebody leaves the
+   server, otherwise the boards keep listing people who are gone.
+   *Presence* and *Message Content* are **not** needed.
+4. **General Information** → copy the **Application ID**. This is your `CLIENT_ID`.
+
+### 2. Invite it
+
+**OAuth2 → URL Generator**:
+
+- Scopes: `bot`, `applications.commands`
+- Bot permissions: **View Channels**, **Send Messages**, **Embed Links**,
+  **Read Message History**, and optionally **Manage Messages** (so it can pin
+  its own board messages)
+
+Open the generated URL and add it to your server.
+
+### 3. Install and run
+
+Requires **Node.js 18 or newer**.
+
+```bash
+git clone <your-repo-url>
+cd discord-bot-roblox
+npm install
+cp .env.example .env
+```
+
+Fill in `.env`:
+
+```
+DISCORD_TOKEN=your-bot-token
+CLIENT_ID=your-application-id
+GUILD_ID=your-server-id        # optional, registers commands instantly
+DATABASE_FILE=                 # optional, defaults to ./data/studio.db
+```
+
+To find your server ID: Discord → Settings → Advanced → enable **Developer
+Mode**, then right-click the server icon → **Copy Server ID**.
+
+```bash
+npm run deploy   # register the slash commands
+npm start        # run the bot
+```
+
+Everything else — departments, role mappings, channels, reminder timings, quiet
+hours, split percentages — is configured inside Discord and stored in the
+database, not in `.env`.
+
+---
+
+## First-run setup
+
+Run **`/studio setup`** as the server owner. (The server owner can always run
+it, which is what prevents a locked-out first install.)
+
+It records you as the studio owner, creates the eight default departments
+(modelling, building, animation, VFX, UI, GFX, scripting, SFX) with starter
+deliverable checklists, and shows a checklist panel with controls for the rest:
+
+1. **Staff info board channel** — where the directory lives. Make it staff-only.
+2. **DM fallback channel** — a private staff channel used when someone's DMs are
+   closed. Without this, a closed DM means a lost notification.
+3. **Weekly summary channel** — private; carries pay figures. Optional (the
+   summary is DMed to you if unset).
+4. **Owner role** — optional; anyone with it has full owner authority.
+5. **Map department roles** — for each department, the group leader role and the
+   artist role. *The leader role is what grants the right to assign and review
+   work in that department.*
+6. **Pool split** — defaults to finder 20 / leader 20 / mod 10 / owner 50.
+
+Then ask staff to run **`/profile me`** and fill in their timezone and details.
+
+### Try it before using it for real
+
+```
+/studio sample action:Create sample project
+```
+
+This builds a demonstration project with six tasks, one sitting in each stage
+of the workflow — unassigned, pay proposed, offered, in progress, awaiting
+review, and fully finished and paid — so every view has real data in it. Sample
+tasks are set up directly rather than by sending real offers, so nobody is DMed
+about work that does not exist.
+
+Remove it with `/studio sample action:Remove sample data`.
+
+---
+
+## Command reference
+
+### Everyone
+
+| Command | What it does |
+| --- | --- |
+| `/profile me` | Your profile panel: timezone, details, hours, availability |
+| `/profile view member:` | Somebody's profile |
+| `/profile timezone timezone:` | Set your timezone (with autocomplete) |
+| `/profile availability status:` | Accepting / at capacity / away, with optional return date |
+| `/time member:` | Somebody's current local date and time |
+| `/time department:` | Local times across a department, sorted west to east |
+| `/work progress task: note:` | Post a progress update |
+| `/work submit task:` | Submit finished work (checklist, then links) |
+| `/work history task:` | Submissions, reviews and client decisions on a task |
+| `/work earnings` | Your own pay and payment history, private to you |
+| `/task mine` | Your offers and current assignments |
+
+### Group leaders (in departments they lead)
+
+| Command | What it does |
+| --- | --- |
+| `/task queue [department:]` | Unassigned work, with a button to choose an artist per task |
+| `/task assign task:` | Pick the artist and send the offer |
+| `/task pay task: amount:` | Propose a figure for the owner to approve |
+| `/task edit task:` | Change title, brief, deadline, formats, deliverables, revisions |
+| `/task withdraw task:` | Take back an unanswered offer |
+| `/review queue` | Work awaiting your internal review |
+| `/review decide task:` | Request changes, or mark ready for the client |
+| `/review awaiting-client` | Work sent to clients with no decision recorded yet |
+| `/manage reassign task: artist: reason:` | Move work, keeping the original record |
+| `/manage hold task: reason:` / `/manage resume task:` | Pause and unpause |
+
+### Owner
+
+| Command | What it does |
+| --- | --- |
+| `/project create name: …` | Create a project (budget, deadline, manager, finder, mod, ticket link) |
+| `/project bulk project: spec:` | `"12 models, 4 vfx, 2 animations"` → 18 routed tasks |
+| `/project view` / `list` / `tasks` / `edit` | Project views and edits |
+| `/task create` | A single task |
+| `/task pay` / `/task approve-pay` | Set or approve agreed pay |
+| `/review client task: decision:` | Record what the client decided |
+| `/finance client-receipt project: amount:` | Record money received from a client |
+| `/finance pay task:` | Record a payout to the artist |
+| `/finance pay-split task: share:` | Record a finder / leader / mod / owner share |
+| `/finance splits task:` | See how a task's pool divides |
+| `/finance set-pool task: amount: currency:` | Enter the pool by hand when currencies differ |
+| `/finance mark-payable task: reason:` | Make approved work payable before the client pays |
+| `/finance ledger` / `outstanding` / `balance member:` | Money views |
+| `/manage cancel task: reason:` | Cancel, preserving history |
+| `/manage compensate task: member: amount:` | Pay for work done on cancelled or moved work |
+| `/manage flags` | Everything waiting on a decision from you |
+| `/summary now` / `post` / `schedule` / `run-reminders` | Management digest and reminder controls |
+| `/studio …` | All configuration |
+
+---
+
+## How the money rules work
+
+### The pool
+
+The artist's agreed pay is never reduced by a split. What gets divided is what
+is **left over** on that task:
+
+```
+pool = the task's share of the client payment  −  the artist's agreed pay
+```
+
+Then the pool divides by your configured percentages — by default finder 20%,
+the department leader who did the work 20%, mod 10%, you 50%.
+
+**Worked example.** A client pays $40 and the artist's agreed pay is $25:
+
+| Share | % of pool | Amount |
+| --- | --- | --- |
+| Client finder | 20% | $3.00 |
+| Group leader (the department that did it) | 20% | $3.00 |
+| Mod | 10% | $1.50 |
+| You | 50% | $7.50 |
+
+The artist still receives their full $25.
+
+### Multi-department projects
+
+Each task gets its own pool, so the **leader share always follows the
+department that actually did that task** — never split between leaders.
+
+A task's share of the client payment comes from one of three places, in order:
+
+1. a pool you entered by hand (`/finance set-pool`)
+2. an explicit per-task client price
+3. otherwise, a pro-rata slice of the project's client payment, weighted by
+   artist pay — so you don't have to price all 18 tasks of a bulk order
+
+Rounding uses the largest-remainder method, so each task's pool is allocated to
+the last cent with nothing lost. Note that because rounding happens per task,
+aggregate shares across many tasks can land a cent or two off the headline
+percentage; every individual pool still adds up exactly.
+
+### Unassigned shares
+
+A share with nobody attached falls to you. No mod recorded on the project means
+that 10% stays with you; if you found the client yourself, the finder's 20%
+stacks onto your 50% for 70%.
+
+### Currencies
+
+USD and Robux are supported. **There is no conversion anywhere** — no DevEx
+rate, no implicit rate. Consequences:
+
+- Totals are always reported per currency and never summed across them.
+- Client receipts and staff payouts are separate ledgers.
+- If a client pays USD and the artist is paid Robux, the pool **cannot** be
+  computed. The bot says so and asks you to enter the distributable pool
+  yourself with `/finance set-pool`, so the figure on record is one you chose.
+
+### Gift cards
+
+A gift card is a payment **method**, not a currency — a $25 Roblox gift card is
+USD 25 paid by gift card. **The bot never stores gift card codes.** A code is a
+bearer instrument: anyone who can read it can spend it, and a database or a
+Discord embed is the wrong place for one. Record the method and, if you want, a
+non-sensitive reference only.
+
+The bot records that payments happened. It never moves money, and it will never
+ask for account passwords, card details or wallet seed phrases.
+
+### When work becomes payable
+
+Payment state runs *pending client payment → payable → partially paid → paid*.
+Work becomes payable only when it is **both** client-approved **and** the
+client's payment for that project is recorded as received. For deposit
+situations, `/finance mark-payable` overrides that with your reason kept on the
+record.
+
+Recording more than is outstanding is refused, which catches a mistyped amount
+before it becomes a wrong record. Repeat clicks cannot double-pay; a genuinely
+separate instalment still can.
+
+---
+
+## Permissions
+
+Discord roles are mapped to capabilities in configuration, so you can
+restructure roles without touching code.
+
+**Defaults, as configured for this studio:**
+
+- **You (owner)** — everything. Pay approval, payments, the full ledger and
+  client decisions are owner-only.
+- **Group leaders** — run their own department: offer work, reassign, hold,
+  propose pay, review internally. They **cannot** change agreed pay, record
+  payments, or record client decisions. A leader acting on a department they do
+  not lead is refused even though they hold the capability in general.
+- **Artists** — manage their own profile, post progress, submit work, and see
+  their own pay. They cannot approve their own submissions or mark anything
+  paid.
+
+Grant anything to any role explicitly:
+
+```
+/studio capability mode:Grant role:@Finance capability:finance.view_all
+/studio capabilities          # see every grant
+```
+
+Every change to assignments, scope, deadlines, pay, client approval and
+payments is written to an audit log with the actor, the before and after
+values, and a timestamp.
+
+---
+
+## Hosting
+
+The bot is a single long-running Node process with a SQLite database on local
+disk. It needs an always-on machine with a **persistent filesystem** — a host
+with an ephemeral disk will destroy the database on restart.
+
+Suitable: your own machine, a Raspberry Pi, a small VPS, or an Oracle Cloud
+Always Free ARM instance. Not suitable without moving to Postgres: hosts whose
+filesystem resets, or free web-service tiers that sleep when idle.
+
+### Keeping it running with pm2
+
+```bash
+npm install -g pm2
+pm2 start src/index.js --name studio-bot
+pm2 save
+pm2 startup          # follow the printed instruction so it survives reboots
+pm2 logs studio-bot
+```
+
+### Or with systemd
+
+`/etc/systemd/system/studio-bot.service`:
+
+```ini
+[Unit]
+Description=Studio Operations Bot
+After=network-online.target
+
+[Service]
+Type=simple
+User=youruser
+WorkingDirectory=/home/youruser/discord-bot-roblox
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now studio-bot
+journalctl -u studio-bot -f
+```
+
+### Upgrading
+
+```bash
+git pull
+npm install
+npm run deploy      # only needed if commands changed
+pm2 restart studio-bot
+```
+
+Migrations run automatically at start-up and are applied once each, inside a
+transaction, so a crash part-way cannot leave a half-applied schema marked as
+done.
+
+---
+
+## Backups
+
+Everything — profiles, projects, tasks, submissions, approvals, the audit log
+and every payment record — lives in one SQLite file (`data/studio.db` by
+default). **Back it up.**
+
+Because the bot runs in WAL mode, don't just copy the file while it's running.
+Use SQLite's own backup:
+
+```bash
+sqlite3 data/studio.db ".backup '/path/to/backups/studio-$(date +%F).db'"
+```
+
+A daily cron job is enough:
+
+```cron
+15 3 * * * cd /home/youruser/discord-bot-roblox && sqlite3 data/studio.db ".backup '/home/youruser/backups/studio-$(date +\%F).db'"
+```
+
+Keep backups off the machine as well. Payment records are the kind of thing you
+only discover you needed after losing them.
+
+---
+
+## When things go wrong
+
+| Situation | What happens |
+| --- | --- |
+| Somebody deletes a board message | It is re-posted on the next refresh; stale extra pages are cleaned up |
+| A staff member's DMs are closed | Delivery falls back to the private staff channel; if that fails too, the sender is told rather than the notification vanishing |
+| A reminder can't be delivered | It is left unmarked and retried on the next sweep |
+| A reminder lands in quiet hours | It is deferred until they end, not dropped |
+| A staff member leaves the server | Their profile is flagged, not deleted; submissions, approvals and payments survive, and they drop off the boards |
+| A button is clicked twice | Rejected three independent ways: the state machine re-checks inside the transaction, offers resolve only from pending, and a guard key claims each action once |
+| The bot loses permission to a channel | That board or notification is skipped and logged; nothing else stops |
+| A deadline is typed in a DST gap | Refused with an explanation instead of being silently shifted |
+| A task changes hands mid-work | The original artist's submissions are kept and the task is flagged for a compensation decision |
+
+---
+
+## Tests
+
+```bash
+npm test
+```
+
+177 tests covering money parsing and per-currency totals, split exactness
+(including the worked $40/$25 example, the mixed-currency refusal and
+below-cost jobs), every legal and illegal task transition, repeat-click
+rejection, permission scoping, DST and quiet-hours edge cases, reminder
+escalation order, persistence across restarts, and duplicate payment
+prevention.
+
+---
+
+## Project layout
+
+```
+src/
+  index.js              bot start-up and interaction routing
+  deploy-commands.js    slash command registration
+  commands/             one file per slash command
+  interactions/         button, select menu and modal handlers
+  db/
+    index.js            connection and migration runner
+    migrations/         schema, applied in order
+    repos/              all database access
+  domain/               money, allocations, task states, permissions, bulk parsing
+  services/             boards, offers, reminders, summary, notifications, sample data
+  utils/                timezones and reply helpers
+tests/                  node:test suites
+```
+
+`db/repos` and `domain` contain no Discord code, which is what would let a web
+dashboard reuse them later without a rewrite.
+
+---
+
+## Deliberate limits
+
+Things this bot does **not** do, by design:
+
+- It does not talk to clients. Client decisions are recorded by staff.
+- It does not move money. It records payments that happened elsewhere.
+- It does not convert between currencies.
+- It does not auto-assign work, and it does not stop a leader from choosing
+  somebody who is busy — it warns and lets them decide.
+- It does not read Ticket Tool's data. You link a ticket URL; the bot keeps its
+  own records.
+- It does not change anyone's availability for them, including when an away date
+  passes — it asks.
