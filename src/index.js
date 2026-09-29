@@ -65,10 +65,8 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (interaction.isButton() || interaction.isAnySelectMenu() || interaction.isModalSubmit()) {
-      if (!interaction.inGuild()) {
-        await replyPrivate(interaction, 'This control only works inside a server.');
-        return;
-      }
+      // Deliberately not restricted to guilds: task offers are answered from
+      // DMs, and those handlers recover the guild from the offer itself.
       await router.route(interaction);
     }
   } catch (error) {

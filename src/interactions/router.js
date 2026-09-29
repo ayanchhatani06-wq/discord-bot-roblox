@@ -2,6 +2,7 @@ const { PermissionError } = require('../domain/permissions');
 const { TransitionError } = require('../domain/taskState');
 const { InvalidAmountError, CurrencyMismatchError } = require('../domain/money');
 const { AllocationConfigError } = require('../domain/allocations');
+const { DuplicateActionError } = require('../db/repos/tasks');
 const { replyPrivate } = require('../utils/reply');
 
 /**
@@ -36,7 +37,9 @@ async function reportError(interaction, error, label) {
     error instanceof TransitionError ||
     error instanceof InvalidAmountError ||
     error instanceof CurrencyMismatchError ||
-    error instanceof AllocationConfigError;
+    error instanceof AllocationConfigError ||
+    // A replayed click is an expected outcome, not a fault worth logging.
+    error instanceof DuplicateActionError;
 
   if (expected) {
     await replyPrivate(interaction, `❌ ${error.message}`);
