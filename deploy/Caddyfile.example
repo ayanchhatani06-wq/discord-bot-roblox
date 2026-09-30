@@ -1,0 +1,43 @@
+# TLS for the studio website, with a certificate Caddy gets and renews itself.
+#
+# Copy to /etc/caddy/Caddyfile, replace the hostname and the email, then:
+#
+#   sudo systemctl reload caddy
+#
+# Caddy is the recommendation here because it obtains and renews the
+# certificate on its own. There is no renewal cron to forget, which is how
+# most hobby sites end up serving an expired certificate.
+
+studio.example.com {
+	# Where Let's Encrypt writes if something needs your attention.
+	tls you@example.com
+
+	# The website process. It listens on localhost only; Caddy is the only
+	# thing that should be reachable from outside.
+	reverse_proxy 127.0.0.1:8080 {
+		# Set the headers the app needs to know who asked. Believing these
+		# requires TRUST_PROXY=1 in the app's environment, and that is only
+		# correct because this proxy really is in front and overwrites them.
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	encode gzip
+
+	# The app sets its own security headers. This one belongs to the proxy,
+	# because only the proxy knows the connection is really HTTPS.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/studio.log
+		# Paths carry one-time sign-in tokens, so they are not logged.
+		format filter {
+			request>uri query {
+				delete token
+			}
+		}
+	}
+}

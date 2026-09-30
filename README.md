@@ -656,6 +656,26 @@ of showing a form that goes nowhere. Set `SITE_URL` to the public address and
 the export also writes a `sitemap.xml` — without it there is no sitemap, because
 a sitemap pointing at the wrong domain is worse than none.
 
+### TLS and a real domain
+
+`deploy/Caddyfile.example` is a working template. Caddy is the recommendation
+because it obtains and renews the certificate itself — there is no renewal cron
+to forget, which is how most hobby sites end up serving an expired certificate.
+
+```bash
+sudo apt install caddy
+sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile
+sudo nano /etc/caddy/Caddyfile    # your hostname and email
+sudo systemctl reload caddy
+```
+
+Two things it does beyond terminating TLS: it sets `X-Forwarded-For` (which is
+what makes `TRUST_PROXY=1` correct — see below), and it strips the `token` query
+parameter from its logs, because that parameter is a live sign-in link.
+
+The website process should then listen on localhost only, so Caddy is the sole
+thing reachable from outside.
+
 ### If you put a proxy in front
 
 Set `TRUST_PROXY=1` **only** when something really does sit in front and set

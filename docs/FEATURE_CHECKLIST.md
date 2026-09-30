@@ -117,7 +117,7 @@ not only an internal dashboard.
 | Notify the next group when required files are ready | ✅ |
 | Flag affected downstream deadlines without changing them | ✅ |
 | Artist "I'm Blocked" button with reason and attachment | ✅ (`/work blocked`, surfaced on every desk) |
-| Deadline-extension requests preserving the previous date and approver | ⬜ stage 6 |
+| Deadline-extension requests preserving the previous date and approver | ✅ (`/plan deadline-request` and `decide`; `previous_deadline` and `decided_by` are both kept) |
 | Capacity and workload views for leaders | ✅ (Group Desk) |
 
 ## 7. Shared work and compensation
@@ -173,7 +173,7 @@ not only an internal dashboard.
 | Distinguish in-scope correction from additional work | ✅ |
 | Manager decides disputes; owner approves additional charges | ✅ |
 | Private staff escalation route for assignment or pay concerns | ✅ |
-| Pause promotional messages while an issue is open | 🟡 enforced in data; applied once messaging lands |
+| Pause promotional messages while an issue is open | ✅ (an open issue blocks every automated message, transactional included) |
 | Decisions and feedback linked to the project, not scattered | ✅ already built |
 
 ## 12. Reports and useful automation
@@ -216,7 +216,7 @@ client login that must also work for clients who are not in the Discord server.
 | Quote request form feeding the same enquiry pipeline | ✅ (a web request and a typed one are the same enquiry from there on) |
 | Portfolio populated only from assets the client permitted | ✅ (only `publishablePortfolio`; no client, project, price or date shown) |
 | Separate web process, read-only on a curated subset | ✅ (writes only enquiries, sessions and login tokens) |
-| Reverse proxy and TLS for a real domain | 🟡 documented; needs the owner's hostname |
+| Reverse proxy and TLS for a real domain | 🟡 Caddyfile template shipped; needs the owner's hostname to be real |
 | Client login via Discord OAuth2 | ✅ (off unless configured; only the `identify` scope, and access still comes only from a recorded account) |
 | Client login via email magic link, for clients not in Discord | ✅ (sent by SMTP when configured, handed over by staff otherwise) |
 | Staff/owner dashboards, archive search, automation rule builder | 🟡 read-only staff desk and queues built; archive search and rule builder stay in Discord |
