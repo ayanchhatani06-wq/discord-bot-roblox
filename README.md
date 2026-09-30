@@ -709,6 +709,43 @@ Suitable: your own machine, a Raspberry Pi, a small VPS, or an Oracle Cloud
 Always Free ARM instance. Not suitable without moving to Postgres: hosts whose
 filesystem resets, or free web-service tiers that sleep when idle.
 
+### One paste on a fresh Ubuntu box
+
+```bash
+git clone -b claude/vigilant-noether-0lxjky https://github.com/ayanchhatani06-wq/discord-bot-roblox.git
+cd discord-bot-roblox
+bash deploy/setup-ubuntu.sh
+```
+
+It adds swap if the box is small (a 1 GB shape runs out of memory compiling
+`better-sqlite3`, and the failure looks like an unrelated compiler error), pins
+**Node 22** (newer Node has no prebuilt binary for `better-sqlite3`), installs
+the dependencies and writes systemd units for the bot and the website.
+
+It deliberately does **not** write your `.env` or start anything. The token
+should go straight from Discord into the file, and nothing should start before
+you have looked at what it is about to run as. The script prints the three
+remaining steps.
+
+Running it twice is safe — every step checks before it acts.
+
+### Backups that survive losing the box
+
+`/backup now` writes a verified copy to `data/backups`, on the same disk as the
+database it is protecting. That is a second copy of a file, not a backup.
+
+```bash
+BACKUP_DESTINATION=user@other-host:/backups deploy/backup-offsite.sh
+```
+
+Takes a fresh copy with SQLite's own backup, opens it and runs an integrity
+check, copies it off the box, and only then prunes old local ones — so a failing
+job can never delete your last good backup. Put it in cron:
+
+```
+17 3 * * * /home/ubuntu/discord-bot-roblox/deploy/backup-offsite.sh >> ~/backup.log 2>&1
+```
+
 ### Keeping it running with pm2
 
 ```bash
