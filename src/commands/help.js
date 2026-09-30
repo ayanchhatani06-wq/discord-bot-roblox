@@ -16,7 +16,9 @@ const SECTIONS = [
     title: 'Your work',
     applies: () => true,
     lines: [
+      ['`/go`', '**Start here.** What is waiting on you right now'],
       ['`/desk me`', 'Everything of yours: offers, assignments, deadlines, pay'],
+      ['`/desk web-link`', 'Open your desk in a browser (read-only)'],
       ['`/profile me`', 'Timezone, specialties, working hours, availability'],
       ['`/work progress`', 'Post an update on a task you hold'],
       ['`/work submit`', 'Submit finished work for review'],

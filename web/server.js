@@ -14,6 +14,8 @@ const httpLib = require('./lib/http');
 const content = require('./lib/content');
 const pages = require('./lib/pages');
 const clientPages = require('./lib/clientPages');
+const staffPages = require('./lib/staffPages');
+const staffView = require('./lib/staffView');
 const { errorPage } = require('./lib/render');
 
 /**
@@ -214,7 +216,10 @@ function buildRouter({ db, guildId }) {
       ? webRepo.consumeLoginToken(db, httpLib.hashToken(token), { ip: clientIp(request) })
       : null;
 
-    if (!consumed) {
+    // A staff link must not open a client session. Without the client_id check
+    // a staff token would be spent here and mint a session with no client
+    // attached, which is a signed-in state nobody intended to exist.
+    if (!consumed || !consumed.client_id) {
       httpLib.send(response, 400, clientPages.signIn({
         studio,
         error: 'That link has already been used or has expired. Ask us for another.',
@@ -289,6 +294,79 @@ function buildRouter({ db, guildId }) {
       project,
       report: clientReport.buildProjectReport(db, guildId, project),
       canApprove: account?.can_approve === 1,
+    }));
+  });
+
+  // ---- staff area (read-only) ----
+
+  const staffSession = (request) => {
+    const session = sessionFor(db, request);
+    return session && session.subject_kind === webRepo.SUBJECTS.STAFF ? session : null;
+  };
+
+  router.get('/staff/sign-in', (_req, res) => {
+    httpLib.send(res, 200, staffPages.signIn({ studio: snapshot().studio.name }));
+  });
+
+  router.get('/staff/enter', (request, response) => {
+    const url = new URL(request.url, 'http://localhost');
+    const token = url.searchParams.get('token');
+    const studio = snapshot().studio.name;
+
+    const consumed = token
+      ? webRepo.consumeLoginToken(db, httpLib.hashToken(token), { ip: clientIp(request) })
+      : null;
+
+    // Staff links are issued against a Discord user id, never a client, so a
+    // client's link can never open the staff area and the reverse is true too.
+    if (!consumed || !consumed.staff_user_id) {
+      httpLib.send(response, 400, staffPages.signIn({
+        studio,
+        error: 'That link has already been used or has expired. Ask for another with /desk web-link.',
+      }));
+      return;
+    }
+
+    const sessionToken = httpLib.randomToken();
+    webRepo.createSession(db, guildId, {
+      tokenHash: httpLib.hashToken(sessionToken),
+      subjectKind: webRepo.SUBJECTS.STAFF,
+      userId: consumed.staff_user_id,
+      displayName: null,
+    });
+
+    httpLib.redirect(response, '/staff', {
+      'Set-Cookie': httpLib.cookie(SESSION_COOKIE, sessionToken, { secure: SECURE }),
+    });
+  });
+
+  router.get('/staff/sign-out', (request, response) => {
+    const jar = httpLib.parseCookies(request.headers.cookie);
+    if (jar[SESSION_COOKIE]) webRepo.revokeSession(db, httpLib.hashToken(jar[SESSION_COOKIE]));
+    httpLib.redirect(response, '/', { 'Set-Cookie': httpLib.clearCookie(SESSION_COOKIE, { secure: SECURE }) });
+  });
+
+  router.get('/staff', (request, response) => {
+    const session = staffSession(request);
+    if (!session) return httpLib.redirect(response, '/staff/sign-in');
+
+    const view = staffView.myWork(db, guildId, session.user_id);
+    return httpLib.send(response, 200, staffPages.myWork({
+      studio: snapshot().studio.name,
+      who: view.who,
+      ...view,
+    }));
+  });
+
+  router.get('/staff/queue', (request, response) => {
+    const session = staffSession(request);
+    if (!session) return httpLib.redirect(response, '/staff/sign-in');
+
+    const view = staffView.queues(db, guildId, session.user_id);
+    return httpLib.send(response, 200, staffPages.queues({
+      studio: snapshot().studio.name,
+      who: view.who,
+      ...view,
     }));
   });
 

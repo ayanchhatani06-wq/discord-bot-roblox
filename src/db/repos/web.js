@@ -56,14 +56,27 @@ function pruneSessions(db, { now = Date.now() } = {}) {
 // One-time login links
 // ---------------------------------------------------------------------------
 
-function issueLoginToken(db, guildId, { clientId, tokenHash, email = null, issuedBy = null, ttlMs = LOGIN_TOKEN_TTL_MS, now = Date.now() }) {
+/**
+ * A one-time link, for exactly one of a client or a staff member.
+ *
+ * The database enforces that it is one or the other, so a link can never be
+ * ambiguous about which door it opens.
+ */
+function issueLoginToken(db, guildId, {
+  clientId = null, staffUserId = null, tokenHash, email = null,
+  issuedBy = null, ttlMs = LOGIN_TOKEN_TTL_MS, now = Date.now(),
+}) {
   const token = db.prepare(`
-    INSERT INTO web_login_tokens (guild_id, token_hash, client_id, email, issued_by, issued_at, expires_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *
-  `).get(guildId, tokenHash, clientId, email, issuedBy, now, now + ttlMs);
+    INSERT INTO web_login_tokens (guild_id, token_hash, client_id, staff_user_id, email, issued_by, issued_at, expires_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *
+  `).get(guildId, tokenHash, clientId, staffUserId, email, issuedBy, now, now + ttlMs);
 
   recordAudit(db, {
-    guildId, actorUserId: issuedBy, action: 'web.login_link.issue', entityType: 'client', entityId: clientId,
+    guildId,
+    actorUserId: issuedBy,
+    action: 'web.login_link.issue',
+    entityType: staffUserId ? 'staff' : 'client',
+    entityId: staffUserId || clientId,
     after: { email, expires_at: token.expires_at },
     detail: 'One-time link. It is spent the first time it is used.',
   });

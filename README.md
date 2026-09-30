@@ -205,6 +205,8 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/work progress task: note:` | Post a progress update |
 | `/work submit task:` | Submit finished work (checklist, then links) |
 | `/work history task:` | Submissions, reviews and client decisions on a task |
+| **`/go`** | **Start here.** Everything waiting on you, with the command for each |
+| `/desk web-link` | A one-time link to open your desk in a browser |
 | `/work earnings` | Your own pay and payment history, private to you |
 | `/bonus mine` | Your progress towards milestone bonuses, and your awards |
 | `/procedure list` / `read key:` | Studio procedures, and acknowledging them |
@@ -278,6 +280,9 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/automation set` / `preview` / `on` / `off` | Rules that watch for something and tell somebody |
 | `/backup now` / `verify` / `restore` | A copy you can restore from, and how to do it |
 | `/backup export what:` | Readable CSV — explicitly not a backup |
+| `/web identity` / `service` / `page` | What the public site says about the studio |
+| `/web client-email` / `sign-in-link` | Let a client use the website without Discord |
+| `/web status` | What the public site currently shows |
 | `/studio …` | All configuration |
 
 ---
@@ -553,6 +558,81 @@ separate instalment still can.
 
 ---
 
+## One command to remember
+
+`/go` is the answer to "is anything waiting on me?". It reads what is recorded,
+sorts by how pressing it is, and prints the command for each item so nothing has
+to be recalled:
+
+```
+3 things waiting on you
+
+💰 1 pay figure proposed and waiting on you — the work cannot be offered until you decide
+┗ /task approve-pay
+
+🔴 2 of your tasks are past the deadline: TSK-0012, TSK-0019
+┗ /work progress to say where it stands, or /work blocked if something is in the way
+
+💬 1 client has written in and nobody has answered — their automated messages are paused until somebody does
+┗ /outreach replies
+```
+
+Nothing appears there that you would then be refused: every item is gathered
+under the same permission checks as the command it names. An artist never sees
+the owner's decisions, and a leader sees their own department rather than the
+studio. If nothing is waiting, it says so plainly rather than inventing
+something to suggest.
+
+---
+
+## The website
+
+Two ways to serve the same pages, because free static hosting is everywhere and
+free Node hosting is not.
+
+```bash
+npm run site   # renders the public pages to files, for any static host
+npm run web    # runs the live site, for the client and staff areas
+```
+
+**The public pages** — services, work, about, quote — are written by you with
+`/web` and shown verbatim. Nothing about them is generated. The portfolio draws
+only on work a client has explicitly permitted, and shows no client name, no
+project code, no price and no dates: permission to show the work is not
+permission to say who paid for it.
+
+**The client area** needs the database, so it only runs under `npm run web`. A
+client signs in with a one-time link — `/web sign-in-link` — which works once
+and expires in 30 minutes. An order opens only if it belongs to the client the
+session is for, so changing the number in the address bar gets a 404 rather than
+somebody else's order.
+
+**The staff area** is read-only, completely. `/desk web-link` gives you a link
+to check your work from a phone. Every action in this studio is a decision with
+a name attached, and the bot already records who made it; a web page that could
+make those decisions would be a second, weaker door to the same thing.
+
+Sessions and login links are stored hashed, so a copy of the database is not a
+set of live logins. A client link cannot open the staff area and a staff link
+cannot open a client's orders — the two routes read different columns, and the
+database refuses a token that claims to be both.
+
+### Hosting the two halves separately
+
+The public pages are plain files with no scripts and one stylesheet, so they run
+on any host that serves text — including free PHP hosts that cannot run Node:
+
+```bash
+WEB_GUILD_ID=<your server id> npm run site
+# then upload the contents of data/site/ over FTP
+```
+
+Set `WEB_APP_URL` to wherever the live site runs and the static quote form will
+post to it. Without that, the quote page tells visitors to get in touch instead
+of showing a form that goes nowhere.
+
+---
+
 ## Permissions
 
 Discord roles are mapped to capabilities in configuration, so you can
@@ -698,7 +778,7 @@ only discover you needed after losing them.
 npm test
 ```
 
-385 tests covering money parsing and per-currency totals, split exactness
+436 tests covering money parsing and per-currency totals, split exactness
 (including the worked $40/$25 example, the mixed-currency refusal and
 below-cost jobs), every legal and illegal task transition, repeat-click
 rejection, permission scoping, DST and quiet-hours edge cases, reminder
@@ -712,7 +792,10 @@ deduplication and digesting, and every client-messaging guard including the
 re-check at send time, standing requirements, and repeat-order drafts that
 cannot become an order until scope, price and deadline are each confirmed,
 waiting-time attribution, automation rules that act once per task, CSV quoting,
-and backups that are verified by opening them.
+backups that are verified by opening them, that every value written into a web
+page is escaped, that a client cannot open another client's order by changing
+the address, that a staff link and a client link cannot open each other's area,
+and that the static export never writes a client page.
 
 ---
 

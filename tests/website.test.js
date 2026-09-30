@@ -480,3 +480,131 @@ test('the static export never writes a client page', () => {
 
   fs.rmSync(directory, { recursive: true, force: true });
 });
+
+// ---------------------------------------------------------------------------
+// The staff area
+// ---------------------------------------------------------------------------
+
+const staffRepo = require('../src/db/repos/staff');
+
+function staffLink(db, userId) {
+  const token = httpLib.randomToken();
+  webRepo.issueLoginToken(db, GUILD, { staffUserId: userId, tokenHash: httpLib.hashToken(token) });
+  return token;
+}
+
+test('a login token is for a client or a member of staff, never both or neither', () => {
+  const db = setup();
+  const client = makeClient(db);
+
+  assert.throws(() => webRepo.issueLoginToken(db, GUILD, {
+    clientId: client.id, staffUserId: 'u1', tokenHash: httpLib.hashToken('a'),
+  }), /CHECK/);
+
+  assert.throws(() => webRepo.issueLoginToken(db, GUILD, {
+    tokenHash: httpLib.hashToken('b'),
+  }), /CHECK/);
+});
+
+test('the staff area is closed without a session', async () => {
+  const db = setup();
+  await withServer(db, async ({ get }) => {
+    for (const route of ['/staff', '/staff/queue']) {
+      const response = await get(route);
+      assert.equal(response.status, 302, route);
+      assert.equal(response.headers.get('location'), '/staff/sign-in');
+    }
+  });
+});
+
+test("a client's link cannot open the staff area", async () => {
+  const db = setup();
+  const client = makeClient(db);
+  const token = httpLib.randomToken();
+  webRepo.issueLoginToken(db, GUILD, { clientId: client.id, tokenHash: httpLib.hashToken(token) });
+
+  await withServer(db, async ({ get }) => {
+    const response = await get(`/staff/enter?token=${token}`);
+    assert.equal(response.status, 400);
+    assert.equal(response.headers.get('set-cookie'), null, 'nothing was signed in');
+  });
+});
+
+test("a staff link cannot open a client's orders", async () => {
+  const db = setup();
+  staffRepo.ensureStaff(db, GUILD, 'artist-1', 'Artist');
+  const token = staffLink(db, 'artist-1');
+
+  await withServer(db, async ({ get }) => {
+    const response = await get(`/client/enter?token=${token}`);
+    assert.equal(response.status, 400);
+    assert.equal(response.headers.get('set-cookie'), null,
+      'a staff token minting a client session would be a signed-in state nobody intended');
+  });
+});
+
+test('a staff member signs in and sees their own work, read-only', async () => {
+  const db = setup();
+  staffRepo.ensureStaff(db, GUILD, 'artist-1', 'An Artist');
+  const token = staffLink(db, 'artist-1');
+
+  await withServer(db, async ({ get }) => {
+    const entered = await get(`/staff/enter?token=${token}`);
+    assert.equal(entered.status, 302);
+
+    const cookie = entered.headers.get('set-cookie').split(';')[0];
+    const desk = await get('/staff', { headers: { Cookie: cookie } });
+    const body = await desk.text();
+
+    assert.equal(desk.status, 200);
+    assert.match(body, /Your work/);
+    assert.match(body, /Read-only/);
+    assert.doesNotMatch(body, /<form/, 'the staff area changes nothing, so it has no forms');
+  });
+});
+
+test('somebody who leads nothing sees empty queues, not the whole studio', async () => {
+  const db = setup();
+  const project = projectsRepo.createProject(db, GUILD, { name: 'Order' }, OWNER);
+  tasksRepo.createTask(db, GUILD, {
+    projectId: project.id, title: 'Somebody else\'s crate',
+    departmentId: configRepo.getDepartmentByKey(db, GUILD, 'modelling').id,
+  }, OWNER);
+
+  staffRepo.ensureStaff(db, GUILD, 'artist-1', 'An Artist');
+  const token = staffLink(db, 'artist-1');
+
+  await withServer(db, async ({ get }) => {
+    const entered = await get(`/staff/enter?token=${token}`);
+    const cookie = entered.headers.get('set-cookie').split(';')[0];
+
+    const queue = await get('/staff/queue', { headers: { Cookie: cookie } });
+    assert.doesNotMatch(await queue.text(), /Somebody else's crate/);
+  });
+});
+
+test('a leader sees their own department and not another', async () => {
+  const db = setup();
+  const modelling = configRepo.getDepartmentByKey(db, GUILD, 'modelling');
+  const vfx = configRepo.getDepartmentByKey(db, GUILD, 'vfx');
+  const project = projectsRepo.createProject(db, GUILD, { name: 'Order' }, OWNER);
+
+  tasksRepo.createTask(db, GUILD, { projectId: project.id, title: 'Mine to run', departmentId: modelling.id }, OWNER);
+  tasksRepo.createTask(db, GUILD, { projectId: project.id, title: 'Not my department', departmentId: vfx.id }, OWNER);
+
+  // Leadership without a live role list is read from who reports to them.
+  staffRepo.ensureStaff(db, GUILD, 'leader-1', 'A Leader');
+  staffRepo.ensureStaff(db, GUILD, 'artist-1', 'An Artist');
+  staffRepo.updateStaff(db, GUILD, 'artist-1', { leader_user_id: 'leader-1', department_id: modelling.id }, OWNER);
+
+  const token = staffLink(db, 'leader-1');
+
+  await withServer(db, async ({ get }) => {
+    const entered = await get(`/staff/enter?token=${token}`);
+    const cookie = entered.headers.get('set-cookie').split(';')[0];
+
+    const body = await (await get('/staff/queue', { headers: { Cookie: cookie } })).text();
+    assert.match(body, /Mine to run/);
+    assert.doesNotMatch(body, /Not my department/);
+  });
+});

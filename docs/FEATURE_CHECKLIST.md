@@ -202,7 +202,7 @@ not only an internal dashboard.
 | Recovery when a DM fails, a ticket closes, or a board is deleted | ✅ |
 | Setup wizard, demonstration project | ✅ already built |
 | Role-based help | ✅ |
-| Buttons and short forms over long command lists | 🟡 ongoing design rule |
+| Buttons and short forms over long command lists | ✅ (`/go` answers "is anything waiting on me?" in one command, with the command for each item written out) |
 
 ## Website — the studio's public site
 
@@ -212,14 +212,14 @@ client login that must also work for clients who are not in the Discord server.
 
 | Item | Status |
 | --- | --- |
-| Public pages: services, portfolio, about, contact | ⬜ final stage |
-| Quote request form feeding the same enquiry pipeline | 🟡 pipeline ready; web form pending |
-| Portfolio populated only from assets the client permitted | 🟡 source of truth built (publishablePortfolio); web page pending |
-| Separate web process, read-only on a curated subset | ⬜ final stage |
-| Reverse proxy and TLS for a real domain | ⬜ needs a domain from the owner |
-| Client login via Discord OAuth2 | ⬜ final stage |
-| Client login via email magic link, for clients not in Discord | ⬜ final stage — needs an email provider and DNS records |
-| Staff/owner dashboards, archive search, automation rule builder | ⬜ final stage |
+| Public pages: services, portfolio, about, contact | ✅ (`/web` writes them; shown verbatim, nothing generated) |
+| Quote request form feeding the same enquiry pipeline | ✅ (a web request and a typed one are the same enquiry from there on) |
+| Portfolio populated only from assets the client permitted | ✅ (only `publishablePortfolio`; no client, project, price or date shown) |
+| Separate web process, read-only on a curated subset | ✅ (writes only enquiries, sessions and login tokens) |
+| Reverse proxy and TLS for a real domain | 🟡 documented; needs the owner's hostname |
+| Client login via Discord OAuth2 | ⬜ needs a CLIENT_SECRET; the magic-link path covers both audiences meanwhile |
+| Client login via email magic link, for clients not in Discord | ✅ (link generated and spent once; delivery is manual until an email provider is set) |
+| Staff/owner dashboards, archive search, automation rule builder | 🟡 read-only staff desk and queues built; archive search and rule builder stay in Discord |
 
 ---
 
@@ -237,4 +237,4 @@ client login that must also work for clients who are not in the Discord server.
 10. **Files, delivery authorization, archive, portfolio rights** — §10
 11. **Reports, filters and automation rules** — §12 ✅ done
 12. **Exports and restore tooling** — §13 ✅ done
-13. **Website interface** — reusing `db/repos` and `domain` unchanged
+13. **Website interface** — reusing `db/repos` and `domain` unchanged ✅ done
