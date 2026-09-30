@@ -1,4 +1,6 @@
-# What to post in each channel
+# Channel sheet
+
+The final layout, who can see what, and the words to post in each one.
 
 Written against the studio's own documents, not invented:
 
@@ -14,6 +16,134 @@ becomes a promise the moment somebody reads it.
 and the bot currently disagree, and two of them are about money.
 
 Pin every one of these. A rule nobody can find is a rule nobody follows.
+
+---
+
+## The layout
+
+27 channels in four categories, plus one per active client. Departments are
+**roles**, not channels — the staff board covers all of them in one place.
+
+```
+👋 GREETINGS                     everyone, including clients
+   👋・welcome
+   🚪・goodbye
+   ✅・verify
+   📥・apply
+   📢・announcements             one only — you currently have two
+   🧾・transcripts
+
+💬 MAIN HUB                      everyone, including clients
+   📜・rules
+   💬・general
+   🎲・off-topic
+   🛠️・services                   no prices — quote on request
+   📄・terms
+   🖼️・showcase                   only what /archive portfolio permits
+   ⭐・vouches                    clients write, everyone reads
+   🎫・request-a-quote            read-only front door
+   🤖・bot-commands
+
+🏢 CYLOPS · STAFF                staff only — clients must never see this
+   📊・studio-board        🤖    every department, auto-refreshing
+   📈・studio-summary      🤖    weekly digest
+   🔔・studio-alerts       🤖    DMs that could not be delivered
+   🔐・studio-audit        🤖    owner only
+   📣・staff-announcements
+   💼・staff-chat
+   🙋・introductions
+   ❓・help-desk
+   📁・resources
+   🧭・how-we-work
+   💵・price-guide               leads + owner only
+   📕・staff-rules
+
+🤝 CLIENTS
+   🤝・client-«name»             one per active client, private to them
+```
+
+🤖 = the bot posts here. Those four, plus each client channel, are the only
+places it posts. Everything else it does is a private reply or a DM.
+
+## Permissions
+
+Deny `View Channel` for `@everyone` **on the CYLOPS · STAFF category** and allow
+`@Staff`. Everything inside inherits, except the two overrides marked below.
+
+| Channel | Who can see it | Who can post |
+| --- | --- | --- |
+| 👋 welcome | everyone | nobody |
+| 🚪 goodbye | everyone | nobody |
+| ✅ verify | everyone | everyone |
+| 📥 apply | @Member | @Member |
+| 📢 announcements | everyone | @Founder |
+| 🧾 transcripts | @Staff | ticket bot |
+| 📜 rules | everyone | nobody |
+| 💬 general | @Member | @Member |
+| 🎲 off-topic | @Member | @Member |
+| 🛠️ services | everyone | nobody |
+| 📄 terms | everyone | nobody |
+| 🖼️ showcase | everyone | @Founder + leads |
+| ⭐ vouches | everyone | **@Client only** |
+| 🎫 request-a-quote | everyone | nobody |
+| 🤖 bot-commands | @Member | @Member |
+| 📊 studio-board | @Staff | **bot only** |
+| 📈 studio-summary | @Staff | **bot only** |
+| 🔔 studio-alerts | @Staff | **bot only** |
+| 🔐 studio-audit | **@Founder only** ⚠️ | **bot only** |
+| 📣 staff-announcements | @Staff | @Founder + leads |
+| 💼 staff-chat | @Staff | @Staff |
+| 🙋 introductions | @Staff | @Staff |
+| ❓ help-desk | @Staff | @Staff |
+| 📁 resources | @Staff | @Staff |
+| 🧭 how-we-work | @Staff | @Founder |
+| 💵 price-guide | **leads + @Founder** ⚠️ | leads + @Founder |
+| 📕 staff-rules | @Staff | @Founder |
+| 🤝 client-«name» | that client + @Staff | that client + @Staff |
+
+⚠️ The two that break category inheritance, and both matter:
+
+- **🔐 studio-audit** names pay figures and client decisions.
+- **💵 price-guide** is artist pay. The Staff Guidelines put the split system
+  under the NDA, so this channel is covered by it. A client seeing it next to
+  what they are charged is a conversation you do not want.
+
+**Deny Send Messages in the three bot channels even for @Staff.** Buttons still
+work — Accept and Decline on a task offer are interactive components and are not
+affected by send permission — so 🔔 studio-alerts stays clean and people can
+still act on what lands there.
+
+## The bot's own permissions
+
+`@Cylops-bot` needs **View Channel + Send Messages + Embed Links** in:
+
+- 📊 studio-board · 📈 studio-summary · 🔔 studio-alerts · 🔐 studio-audit
+- every 🤝 client channel
+
+Nothing anywhere else. Put its role **above** the craft and lead roles, then run
+`/studio doctor` — it checks it can actually post where you pointed it and names
+the missing permission rather than failing silently.
+
+## Setting the channels up
+
+```
+/studio channel purpose:Staff info board              channel:#studio-board
+/studio channel purpose:Weekly management summary     channel:#studio-summary
+/studio channel purpose:DM fallback (private staff)   channel:#studio-alerts
+/studio channel purpose:Audit log                     channel:#studio-audit
+/studio reminders board_refresh_minutes:10
+/studio refresh
+/studio doctor
+```
+
+Then map each craft role to its department so the queues and leader permissions
+work:
+
+```
+/studio department key:building name:Building leader_role:@Lead Builder member_role:@Builder
+```
+
+…and archive the crafts you do not run: `/studio department key:sfx archived:true`.
 
 ---
 
