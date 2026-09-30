@@ -3,6 +3,7 @@ const configRepo = require('../db/repos/config');
 const staffRepo = require('../db/repos/staff');
 const onboardingRepo = require('../db/repos/onboarding');
 const { contextFor } = require('../services/actor');
+const recruiterFee = require('../services/recruiterFee');
 const offboarding = require('../services/offboarding');
 const { withdrawOffer } = require('../services/offerFlow');
 const { notifyUser } = require('../services/notify');
@@ -76,6 +77,27 @@ module.exports = {
             .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /people offboard list').setRequired(true))
         )
         .addSubcommand((sub) => sub.setName('list').setDescription('Departures, open ones first'))
+    )
+    .addSubcommandGroup((group) =>
+      group
+        .setName('recruited')
+        .setDescription('Who brought somebody onto the team, and their one-time introduction fee')
+        .addSubcommand((sub) =>
+          sub
+            .setName('set')
+            .setDescription('Record who recruited this person')
+            .addUserOption((opt) => opt.setName('person').setDescription('Who joined').setRequired(true))
+            .addUserOption((opt) => opt.setName('recruiter').setDescription('Who brought them in').setRequired(true))
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('clear')
+            .setDescription('Remove a recorded recruiter, before any fee is taken')
+            .addUserOption((opt) => opt.setName('person').setDescription('Who joined').setRequired(true))
+        )
+        .addSubcommand((sub) =>
+          sub.setName('list').setDescription('Who recruited whom, and whose fee is still to come')
+        )
     ),
 
   async autocomplete(interaction) {
@@ -92,6 +114,78 @@ module.exports = {
 
     assertCan(actor, CAPABILITIES.STAFF_MANAGE);
     const departmentName = new Map(departments.map((dept) => [dept.id, dept.name]));
+
+    if (group === 'recruited') {
+      if (sub === 'set') {
+        const person = interaction.options.getUser('person', true);
+        const recruiter = interaction.options.getUser('recruiter', true);
+
+        const result = recruiterFee.setRecruiter(db, guildId, {
+          userId: person.id, recruiterUserId: recruiter.id, actorUserId: userId,
+        });
+
+        if (!result.ok) {
+          const reasons = {
+            self: '❌ Somebody cannot have recruited themselves.',
+            not_staff: `❌ <@${person.id}> is not on the team yet. They appear once they run \`/profile me\`.`,
+            already_paid: `❌ <@${person.id}> has already had their first payout, so the introduction fee is ` +
+              'settled. Changing this now would either hand it to the wrong person or take it twice.',
+          };
+          await interaction.reply(priv(reasons[result.reason] || `❌ ${result.reason}`));
+          return;
+        }
+
+        const bp = recruiterFee.feeBasisPoints(configRepo.getConfig(db, guildId) || {});
+        await interaction.reply(priv(
+          `✅ <@${recruiter.id}> recruited <@${person.id}>.\n` +
+          `On <@${person.id}>'s **first payout**, a one-time **${bp / 100}%** introduction fee goes to ` +
+          `<@${recruiter.id}>. Every task after that is the full amount.\n\n` +
+          '_They are told this in the offer itself, before they accept, so the figure they agree to is the ' +
+          'figure they can expect._'
+        ));
+        return;
+      }
+
+      if (sub === 'clear') {
+        const person = interaction.options.getUser('person', true);
+        const result = recruiterFee.clearRecruiter(db, guildId, person.id, userId);
+
+        await interaction.reply(priv(
+          result.ok
+            ? `✅ <@${person.id}> no longer has a recruiter recorded.`
+            : result.reason === 'already_paid'
+              ? `❌ The fee on <@${person.id}> has already been taken. The record of what was actually paid stays.`
+              : `❌ <@${person.id}> is not on the team.`
+        ));
+        return;
+      }
+
+      if (sub === 'list') {
+        const rows = db.prepare(`
+          SELECT user_id, display_name, recruited_by, recruited_at, recruiter_fee_taken_at
+          FROM staff WHERE guild_id = ? AND recruited_by IS NOT NULL
+          ORDER BY recruiter_fee_taken_at IS NOT NULL, recruited_at DESC
+        `).all(guildId);
+
+        const waiting = rows.filter((row) => !row.recruiter_fee_taken_at);
+
+        await interaction.reply(priv({
+          embeds: [new EmbedBuilder()
+            .setTitle('Who recruited whom')
+            .setColor(0x5865f2)
+            .setDescription(rows.length === 0
+              ? '_Nobody has a recruiter recorded. Set one with `/people recruited set`._'
+              : rows.map((row) =>
+                `${row.recruiter_fee_taken_at ? '✅' : '⏳'} <@${row.user_id}> — recruited by <@${row.recruited_by}>` +
+                `\n┗ ${row.recruiter_fee_taken_at
+                  ? `fee paid ${discordTimestamp(row.recruiter_fee_taken_at, 'R')}`
+                  : 'fee still to come, on their first payout'}`
+              ).join('\n').slice(0, 4000))
+            .setFooter({ text: `${waiting.length} introduction fee(s) still to come.` })],
+        }));
+        return;
+      }
+    }
 
     if (group === 'stand-in') {
       if (sub === 'list') {

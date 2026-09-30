@@ -24,6 +24,9 @@ function recordPayment(db, guildId, {
   methodLabel = null,
   reference = null,
   note = null,
+  // Whose pay this came out of, when that is not the payee — the recruiter's
+  // one-time cut. It is what lets the ledger see the artist's figure as settled.
+  deductedFromUserId = null,
   recordedBy,
   idempotencyKey,
 }) {
@@ -40,12 +43,14 @@ function recordPayment(db, guildId, {
   const payment = db.prepare(`
     INSERT INTO payments (
       guild_id, direction, project_id, task_id, payee_user_id, allocation_kind,
-      amount_minor, currency, method_label, reference, note, recorded_by, recorded_at, idempotency_key
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      amount_minor, currency, method_label, reference, note, recorded_by, recorded_at,
+      idempotency_key, deducted_from_user_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING *
   `).get(
     guildId, direction, projectId, taskId, payeeUserId, allocationKind,
-    amountMinor, currency, methodLabel, reference, note, recordedBy, Date.now(), idempotencyKey
+    amountMinor, currency, methodLabel, reference, note, recordedBy, Date.now(),
+    idempotencyKey, deductedFromUserId
   );
 
   recordAudit(db, {

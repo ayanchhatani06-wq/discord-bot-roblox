@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const configRepo = require('../db/repos/config');
 const boardScheduler = require('./boardScheduler');
+const enquiryAlerts = require('./enquiryAlerts');
 const { runSweep } = require('./reminders');
 const { postWeeklySummary } = require('./summary');
 const clientMessaging = require('./clientMessaging');
@@ -9,6 +10,7 @@ const automation = require('./automation');
 const webRepo = require('../db/repos/web');
 const { pruneGuards } = require('../db/repos/core');
 
+const ENQUIRY_CRON = '*/2 * * * *';
 const REMINDER_CRON = '*/10 * * * *';
 const HOUSEKEEPING_CRON = '30 4 * * *';
 // Queued client messages are sent on their own beat, separate from the sweep
@@ -67,6 +69,23 @@ function scheduleAllSummaries(client, db) {
 
 function startAll(client, db) {
   boardScheduler.start(client, db);
+
+  // The website writes a quote request and has no way to tell anybody — it runs
+  // as its own process with no Discord connection. This is the half that does.
+  // Every two minutes rather than every ten: an enquiry is somebody waiting.
+  safeSchedule(ENQUIRY_CRON, async () => {
+    try {
+      for (const { guild_id: guildId } of configRepo.listConfiguredGuilds(db)) {
+        const result = await enquiryAlerts.announcePending(client, db, guildId);
+        if (result.posted > 0) console.log(`Announced ${result.posted} new quote request(s).`);
+        if (result.reason && result.skipped > 0) {
+          console.warn(`${result.skipped} quote request(s) not announced: ${result.reason}.`);
+        }
+      }
+    } catch (error) {
+      console.error('Quote request announcement failed:', error);
+    }
+  }, 'quote request alerts');
 
   safeSchedule(REMINDER_CRON, async () => {
     try {

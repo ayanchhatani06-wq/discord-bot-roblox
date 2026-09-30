@@ -24,6 +24,7 @@ const CONFIG_COLUMNS = [
   'board_refresh_minutes', 'offer_reminder_hours', 'stale_progress_days',
   'deadline_warning_hours', 'quiet_start_minute', 'quiet_end_minute',
   'default_currency', 'payment_methods_json', 'summary_cron', 'setup_completed_at',
+  'recruiter_fee_bp', 'enquiry_channel_id',
 ];
 
 function ensureConfig(db, guildId) {

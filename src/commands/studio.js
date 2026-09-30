@@ -16,6 +16,7 @@ const CHANNEL_TARGETS = {
   audit: { column: 'audit_log_channel_id', label: 'audit log' },
   fallback: { column: 'fallback_channel_id', label: 'DM fallback' },
   summary: { column: 'summary_channel_id', label: 'weekly summary' },
+  enquiry: { column: 'enquiry_channel_id', label: 'new quote request' },
 };
 
 function percentToBp(percent) {
@@ -43,7 +44,8 @@ module.exports = {
             { name: 'Staff info board', value: 'board' },
             { name: 'Audit log', value: 'audit' },
             { name: 'DM fallback (private staff channel)', value: 'fallback' },
-            { name: 'Weekly management summary', value: 'summary' }
+            { name: 'Weekly management summary', value: 'summary' },
+            { name: 'New quote requests from the website', value: 'enquiry' }
           )
         )
         .addChannelOption((opt) =>

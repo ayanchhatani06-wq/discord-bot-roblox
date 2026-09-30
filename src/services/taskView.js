@@ -151,6 +151,24 @@ function offerEmbed({ task, project, department, guildName, db = null, guildId =
     embed.spliceFields(4, 0, { name: 'This client always asks for', value: requirements, inline: false });
   }
 
+  // A one-time introduction fee has to be visible at the moment somebody decides
+  // whether to take the job. An agreed figure that arrives smaller is a broken
+  // promise even when the arrangement behind it is fair.
+  if (db && guildId && task.artist_user_id && task.artist_pay_minor) {
+    const recruiterFee = require('./recruiterFee');
+    const config = require('../db/repos/config').getConfig(db, guildId) || {};
+    const disclosure = recruiterFee.disclosureFor(db, guildId, {
+      artistUserId: task.artist_user_id,
+      amountMinor: task.artist_pay_minor,
+      currency: task.artist_pay_currency,
+      config,
+      task,
+    });
+    if (disclosure) {
+      embed.addFields({ name: '\u{1F91D} Your first task \u2014 read this', value: disclosure, inline: false });
+    }
+  }
+
   return embed;
 }
 

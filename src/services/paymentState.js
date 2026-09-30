@@ -22,12 +22,18 @@ function owedToContributor(db, task, userId) {
 
   if (!agreed || agreed.minor === null || !agreed.currency) return null;
 
+  // Counts both what reached them and what was taken out of their pay on the
+  // way — the recruiter's one-time cut. Without the second clause the ledger
+  // would see $28 against $35 agreed and conclude they are still owed $7, when
+  // their pay is settled and $7 of it went to whoever brought them in.
   const paid = db.prepare(`
     SELECT COALESCE(SUM(amount_minor), 0) AS total FROM payments
-    WHERE task_id = ? AND direction = 'payout' AND payee_user_id = ?
-      AND allocation_kind IS NULL AND currency = ?
-      AND failed_at IS NULL
-  `).get(task.id, userId, agreed.currency).total;
+    WHERE task_id = ? AND direction = 'payout' AND currency = ? AND failed_at IS NULL
+      AND (
+        (payee_user_id = ? AND allocation_kind IS NULL AND deducted_from_user_id IS NULL)
+        OR deducted_from_user_id = ?
+      )
+  `).get(task.id, agreed.currency, userId, userId).total;
 
   return {
     agreedMinor: agreed.minor,

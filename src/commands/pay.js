@@ -18,6 +18,7 @@ const { discordTimestamp } = require('../utils/time');
 const { priv } = require('../utils/reply');
 const { brief, count } = require('../utils/brief');
 const { registerView } = require('../services/detailViews');
+const recruiterFee = require('../services/recruiterFee');
 
 const CURRENCY_CHOICES = Object.keys(CURRENCIES).map((code) => ({ name: code, value: code }));
 
@@ -572,12 +573,19 @@ module.exports = {
         return;
       }
 
+      // The recruiter's one-time cut comes out of this payout, not out of the
+      // studio's pool, so it is worked out before anything is recorded.
+      const fee = recruiterFee.feeFor(db, guildId, {
+        artistUserId: payeeUserId, task, amountMinor, currency: entry.currency, config,
+      });
+      const toArtistMinor = fee.applies ? fee.artistReceivesMinor : amountMinor;
+
       const { created } = paymentsRepo.recordPayment(db, guildId, {
         direction: paymentsRepo.DIRECTIONS.PAYOUT,
         projectId: task.project_id,
         taskId: task.id,
         payeeUserId,
-        amountMinor,
+        amountMinor: toArtistMinor,
         currency: entry.currency,
         methodLabel: interaction.options.getString('method'),
         reference: interaction.options.getString('reference'),
@@ -590,12 +598,44 @@ module.exports = {
         return;
       }
 
+      if (fee.applies) {
+        // Recorded against the artist's pay rather than as a separate cost, so
+        // the ledger knows their figure is settled and where the rest of it went.
+        paymentsRepo.recordPayment(db, guildId, {
+          direction: paymentsRepo.DIRECTIONS.PAYOUT,
+          projectId: task.project_id,
+          taskId: task.id,
+          payeeUserId: fee.recruiterUserId,
+          amountMinor: fee.feeMinor,
+          currency: entry.currency,
+          allocationKind: 'recruiter',
+          deductedFromUserId: payeeUserId,
+          note: `One-time ${fee.basisPoints / 100}% introduction fee on a first payout`,
+          recordedBy: userId,
+          idempotencyKey: `recruiter:${task.id}:${payeeUserId}:${interaction.id}`,
+        });
+
+        recruiterFee.markTaken(db, guildId, payeeUserId, userId, `First payout on ${task.code}`);
+
+        await notifyUser(interaction.client, db, guildId, fee.recruiterUserId, {
+          content:
+            `\u{1F91D} **${formatAmount(fee.feeMinor, entry.currency)}** came to you as the one-time ` +
+            `introduction fee on <@${payeeUserId}>'s first paid task.\n` +
+            'This is the only time it applies for them.',
+        }).catch(() => null);
+      }
+
       const updated = paymentState.recomputeTaskPaymentState(db, guildId, task.id, userId, 'Payout recorded');
       const stillOwed = paymentState.owedToContributor(db, updated, payeeUserId).remainingMinor;
       const taskOutstanding = paymentState.settlementOf(db, updated).outstanding;
 
       await interaction.reply(priv([
-        `✅ Recorded **${formatAmount(amountMinor, entry.currency)}** paid to <@${payeeUserId}> for **${task.code}**.`,
+        `✅ Recorded **${formatAmount(amountMinor, entry.currency)}** paid out for **${task.code}**.`,
+        fee.applies
+          ? `\u{1F91D} <@${payeeUserId}> received **${formatAmount(toArtistMinor, entry.currency)}**; ` +
+            `**${formatAmount(fee.feeMinor, entry.currency)}** went to <@${fee.recruiterUserId}> as the one-time ` +
+            'introduction fee. It does not apply to them again.'
+          : `Paid to <@${payeeUserId}>.`,
         stillOwed > 0
           ? `Still owed to them: **${formatAmount(stillOwed, entry.currency)}** (task marked ${updated.payment_state.replace(/_/g, ' ')}).`
           : (taskOutstanding > 0
