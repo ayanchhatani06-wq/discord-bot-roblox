@@ -689,3 +689,26 @@ test('the static export writes robots.txt, and a sitemap once it knows its addre
 
   fs.rmSync(directory, { recursive: true, force: true });
 });
+
+test('expired sessions and spent login links are eventually cleared away', () => {
+  const db = setup();
+  const client = makeClient(db);
+
+  // Expired rows are already ignored wherever they are read, so this is about
+  // the tables not growing forever on a box meant to run untouched for years.
+  webRepo.createSession(db, GUILD, {
+    tokenHash: httpLib.hashToken('old'), subjectKind: 'client', clientId: client.id, ttlMs: -1000,
+  });
+  webRepo.createSession(db, GUILD, {
+    tokenHash: httpLib.hashToken('live'), subjectKind: 'client', clientId: client.id,
+  });
+  webRepo.issueLoginToken(db, GUILD, {
+    clientId: client.id, tokenHash: httpLib.hashToken('spent'), ttlMs: -(48 * 60 * 60 * 1000),
+  });
+
+  assert.equal(webRepo.pruneSessions(db), 1);
+  assert.equal(webRepo.pruneLoginTokens(db), 1);
+
+  assert.ok(webRepo.sessionByHash(db, httpLib.hashToken('live')), 'a live session survives');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM web_sessions').get().n, 1);
+});

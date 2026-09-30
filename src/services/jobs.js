@@ -6,6 +6,7 @@ const { postWeeklySummary } = require('./summary');
 const clientMessaging = require('./clientMessaging');
 const messageTriggers = require('./messageTriggers');
 const automation = require('./automation');
+const webRepo = require('../db/repos/web');
 const { pruneGuards } = require('../db/repos/core');
 
 const REMINDER_CRON = '*/10 * * * *';
@@ -78,12 +79,19 @@ function startAll(client, db) {
     }
   }, 'reminder sweep');
 
-  // Old idempotency guards are only needed while a click could still be
-  // replayed, so they are pruned rather than kept forever.
+  // Expired rows are already ignored wherever they are read, so this is
+  // housekeeping rather than a safety measure: without it the tables grow
+  // forever on a box that is meant to run for years untouched.
   safeSchedule(HOUSEKEEPING_CRON, () => {
     try {
-      const removed = pruneGuards(db);
-      if (removed > 0) console.log(`Pruned ${removed} expired interaction guard(s).`);
+      const guards = pruneGuards(db);
+      const sessions = webRepo.pruneSessions(db);
+      const logins = webRepo.pruneLoginTokens(db);
+
+      const removed = guards + sessions + logins;
+      if (removed > 0) {
+        console.log(`Pruned ${guards} guard(s), ${sessions} expired session(s), ${logins} spent login link(s).`);
+      }
     } catch (error) {
       console.error('Housekeeping failed:', error);
     }
