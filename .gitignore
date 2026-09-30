@@ -13,3 +13,6 @@ npm-debug.log*
 data/evidence/
 data/backups/
 data/exports/
+
+# Build artifact of `npm run reference`; the PDF it produces is committed.
+docs/reference/commands.html

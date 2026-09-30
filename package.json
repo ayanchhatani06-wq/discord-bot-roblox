@@ -9,7 +9,8 @@
     "deploy": "node src/deploy-commands.js",
     "test": "node --test tests/*.test.js",
     "web": "node web/server.js",
-    "site": "node web/export-static.js"
+    "site": "node web/export-static.js",
+    "reference": "node docs/reference/build.js"
   },
   "engines": {
     "node": ">=18.0.0"

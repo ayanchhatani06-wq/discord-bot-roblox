@@ -98,3 +98,28 @@ test('the bot entry point loads without connecting', () => {
     require('../src/utils/reply');
   });
 });
+
+test('every command has a line in the command reference', () => {
+  // The reference is generated, but who may run each command is written by hand
+  // in docs/reference/gates.js because it lives in the command bodies. This
+  // fails the moment somebody adds a command without saying who it is for,
+  // rather than shipping a reference with a blank in that column — which a
+  // reader would take to mean "anybody".
+  const { readCommands, resolve } = require('../docs/reference/build');
+  assert.doesNotThrow(() => resolve(readCommands()));
+});
+
+test('the command reference covers every subcommand', () => {
+  const { readCommands, resolve } = require('../docs/reference/build');
+  const commands = resolve(readCommands());
+
+  for (const command of commands) {
+    const expected = command.subs.length > 0 ? command.subs.length : 1;
+    assert.equal(command.rows.length, expected, `/${command.name} lost a row`);
+    for (const row of command.rows) {
+      assert.ok(row.role.who && !row.role.who.startsWith('UNMAPPED'),
+        `/${command.name}${row.name ? ` ${row.name}` : ''} has no plain-language role`);
+      assert.ok(row.description, `/${command.name}${row.name ? ` ${row.name}` : ''} has no description`);
+    }
+  }
+});

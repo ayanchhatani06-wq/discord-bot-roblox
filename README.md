@@ -192,6 +192,14 @@ Remove it with `/studio sample action:Remove sample data`.
 
 ## Command reference
 
+There is also **[a printable PDF of every command](docs/COMMANDS.pdf)** — all 36
+commands and 222 subcommands, each with who can use it and what it does. It is
+generated from the command definitions themselves, so it cannot drift from the
+bot: `npm run reference` rebuilds it, and the test suite fails if a command is
+added without saying who it is for.
+
+The tables below are the short version.
+
 ### Everyone
 
 | Command | What it does |
