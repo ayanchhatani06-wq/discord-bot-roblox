@@ -17,6 +17,7 @@ const SECTIONS = [
     applies: () => true,
     lines: [
       ['`/go`', '**Start here.** What is waiting on you right now'],
+      ['`/find`', 'Search everything at once when you only half-remember it'],
       ['`/desk me`', 'Everything of yours: offers, assignments, deadlines, pay'],
       ['`/desk web-link`', 'Open your desk in a browser (read-only)'],
       ['`/profile me`', 'Timezone, specialties, working hours, availability'],
@@ -35,6 +36,7 @@ const SECTIONS = [
     applies: (actor) => actor.isOwner || actor.leadDepartmentIds.length > 0,
     lines: [
       ['`/desk group`', 'Your queue, capacity, reviews and deadline risks'],
+      ['`/free`', 'Who has room for more work over the next week'],
       ['`/task queue`', 'Unassigned work, with a button to pick an artist'],
       ['`/task assign`', 'Choose the artist and send the offer'],
       ['`/task pay`', 'Propose a figure for the owner to approve'],
@@ -62,6 +64,9 @@ const SECTIONS = [
       ['`/issues list`', 'Problems clients have reported'],
       ['`/deliver release`', 'Authorize release of finished work'],
       ['`/archive search`', 'Find past files and check portfolio permission'],
+      ['`/archive roblox-id`', 'Record the Roblox asset ID a file was uploaded as'],
+      ['`/proof add`', 'Keep a screenshot as proof — the file itself, not a link'],
+      ['`/proof record`', 'The whole record of an order, for a dispute'],
     ],
   },
   {
@@ -76,6 +81,12 @@ const SECTIONS = [
       ['`/finance pay`', 'Record a payout'],
       ['`/finance ledger`', 'Money in and out, per currency'],
       ['`/finance budget`', 'Committed pay against what the client pays'],
+      ['`/finance approve-all`', 'Approve every pay figure your leaders proposed'],
+      ['`/finance sent`', 'Payments sent that nobody has confirmed arrived'],
+      ['`/finance confirm-received`', 'They say the money actually reached them'],
+      ['`/finance mark-failed`', 'It was sent and never arrived — they are owed again'],
+      ['`/deposit add`', 'Split what a client owes into named parts'],
+      ['`/deposit list`', 'Which parts are covered, and what is still to come'],
       ['`/contrib pay`', "Set one contributor's pay on a shared task"],
       ['`/bonus pending`', 'Milestones reached and waiting on you'],
       ['`/manage flags`', 'Scope and compensation decisions'],

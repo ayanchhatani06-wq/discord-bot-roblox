@@ -1,6 +1,7 @@
 const tasksRepo = require('../db/repos/tasks');
 const projectsRepo = require('../db/repos/projects');
 const contributorsRepo = require('../db/repos/contributors');
+const paymentSchedule = require('./paymentSchedule');
 const { TASK_STATES } = require('../domain/taskState');
 
 const { PAYMENT_STATES } = tasksRepo;
@@ -25,6 +26,7 @@ function owedToContributor(db, task, userId) {
     SELECT COALESCE(SUM(amount_minor), 0) AS total FROM payments
     WHERE task_id = ? AND direction = 'payout' AND payee_user_id = ?
       AND allocation_kind IS NULL AND currency = ?
+      AND failed_at IS NULL
   `).get(task.id, userId, agreed.currency).total;
 
   return {
@@ -82,9 +84,46 @@ function computePaymentState(db, guildId, task) {
   const project = projectsRepo.getProject(db, guildId, task.project_id);
   if (!project) return PAYMENT_STATES.PENDING_CLIENT_PAYMENT;
 
-  return projectsRepo.isClientPaidInFull(db, project)
+  return coveredByClientMoney(db, guildId, project, task)
     ? PAYMENT_STATES.PAYABLE
     : PAYMENT_STATES.PENDING_CLIENT_PAYMENT;
+}
+
+/**
+ * Whether the client's money stretches to paying this task.
+ *
+ * The studio's rule: never pay out more than has come in. So what matters is
+ * not whether the order is settled in full, but whether what has arrived still
+ * covers this task's cost after everything already paid out on the project.
+ * A deposit therefore funds work, in order, up to the value of the deposit.
+ *
+ * Currencies are kept apart. Robux received does not fund a dollar payout,
+ * because there is no rate to make that true.
+ */
+function coveredByClientMoney(db, guildId, project, task) {
+  const owed = owedOnTask(db, task);
+  if (owed.length === 0) return false;
+
+  const available = paymentSchedule.availableToPayOut(db, guildId, project);
+  if (!available.currency || available.minor <= 0) return false;
+
+  // What this project has already handed out, in the currency the client paid.
+  const paidOut = db.prepare(`
+    SELECT COALESCE(SUM(amount_minor), 0) AS total FROM payments
+    WHERE guild_id = ? AND project_id = ? AND direction = 'payout' AND currency = ?
+      AND failed_at IS NULL
+  `).get(guildId, project.id, available.currency).total;
+
+  const headroom = available.minor - paidOut;
+  if (headroom <= 0) return false;
+
+  // What is still owed on this task, in that same currency.
+  const stillOwed = owed
+    .filter((entry) => entry.currency === available.currency)
+    .reduce((sum, entry) => sum + entry.remainingMinor, 0);
+
+  if (stillOwed === 0) return false;
+  return headroom >= stillOwed;
 }
 
 function recomputeTaskPaymentState(db, guildId, taskId, actorUserId = null, detail = null) {
@@ -130,6 +169,7 @@ function pendingPayouts(db, guildId) {
 
 module.exports = {
   PAYMENT_STATES,
+  coveredByClientMoney,
   owedToContributor,
   owedOnTask,
   settlementOf,

@@ -7,6 +7,8 @@ const { contextFor } = require('../services/actor');
 const allocationFlow = require('../services/allocationFlow');
 const budget = require('../services/budget');
 const paymentState = require('../services/paymentState');
+const paymentSchedule = require('../services/paymentSchedule');
+const bulkPay = require('../services/bulkPay');
 const { notifyUser } = require('../services/notify');
 const { CAPABILITIES, assertCan, can } = require('../domain/permissions');
 const { RECIPIENT_KINDS } = require('../domain/allocations');
@@ -110,6 +112,30 @@ module.exports = {
         .setName('budget-restore')
         .setDescription('Put the budget guard back on a project')
         .addStringOption((opt) => opt.setName('project').setDescription('Project code').setRequired(true).setAutocomplete(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('confirm-received')
+        .setDescription('The person says the money actually reached them')
+        .addIntegerOption((opt) => opt.setName('payment').setDescription('Payment number from /finance sent').setRequired(true))
+        .addStringOption((opt) => opt.setName('note').setDescription('Anything worth recording').setRequired(false).setMaxLength(200))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('mark-failed')
+        .setDescription('A payment was sent and did not arrive — they are owed it again')
+        .addIntegerOption((opt) => opt.setName('payment').setDescription('Payment number from /finance sent').setRequired(true))
+        .addStringOption((opt) => opt.setName('reason').setDescription('What went wrong').setRequired(true).setMaxLength(200))
+    )
+    .addSubcommand((sub) =>
+      sub.setName('sent').setDescription('Payments sent that nobody has confirmed arrived')
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('approve-all')
+        .setDescription('Approve every pay figure your leaders have proposed')
+        .addStringOption((opt) => opt.setName('project').setDescription('Only one order').setRequired(false).setAutocomplete(true))
+        .addBooleanOption((opt) => opt.setName('preview').setDescription('Show what would happen without doing it').setRequired(false))
     ),
 
   async autocomplete(interaction) {
@@ -247,10 +273,30 @@ module.exports = {
       // Receiving the client's money is what can turn approved work payable.
       const changed = paymentState.recomputeProjectPaymentStates(db, guildId, project.id, userId);
 
+      const schedule = paymentSchedule.scheduleFor(db, guildId, project);
       const lines = [
         `✅ Recorded **${formatAmount(amountMinor, currency)}** received for **${project.code}**.`,
         `Received so far: ${formatTotals(received)}${project.client_amount_minor !== null ? ` of ${formatAmount(project.client_amount_minor, project.client_currency)} expected` : ''}.`,
       ];
+
+      // On an order split into named parts, say which part this covers — that is
+      // the whole reason for splitting it.
+      if (schedule.hasSchedule) {
+        const covered = schedule.milestones.filter((line) => line.covered && !line.waived);
+        lines.push(
+          `\nParts covered: **${covered.length} of ${schedule.milestones.filter((line) => !line.waived).length}**` +
+          `${schedule.nextDue
+            ? ` — next is **${schedule.nextDue.milestone.label}**, ` +
+              `${formatAmount(schedule.nextDue.outstandingMinor, schedule.currency)} still to come.`
+            : ' — nothing outstanding.'}`
+        );
+        if (schedule.overpaidMinor > 0) {
+          lines.push(
+            `⚠️ ${formatAmount(schedule.overpaidMinor, schedule.currency)} more has arrived than the parts add up to. ` +
+            'Either a part is missing from the list or the client has paid twice.'
+          );
+        }
+      }
 
       if (nowPaidInFull) {
         lines.push('This project is now recorded as paid in full by the client.');
@@ -652,6 +698,172 @@ module.exports = {
         `as the ${kind} share of **${task.code}**.` +
         `${nowOutstanding > 0 ? `\nStill owed on this share: ${formatAmount(nowOutstanding, allocation.currency)}.` : '\nThis share is settled and is now frozen against recalculation.'}`
       ));
+      return;
+    }
+
+    if (sub === 'sent') {
+      assertCan(actor, CAPABILITIES.FINANCE_VIEW_ALL);
+
+      const waiting = paymentsRepo.unconfirmedPayouts(db, guildId, { limit: 25 });
+
+      await interaction.reply(priv({
+        embeds: [new EmbedBuilder()
+          .setTitle('Sent, not yet confirmed as arrived')
+          .setColor(waiting.length === 0 ? 0x57f287 : 0xfee75c)
+          .setDescription(
+            waiting.length === 0
+              ? 'Every payment recorded as sent has been confirmed as arrived.'
+              : waiting.map((payment) =>
+                `**#${payment.id}** ${formatAmount(payment.amount_minor, payment.currency)} to <@${payment.payee_user_id}>\n` +
+                `┗ ${payment.task_code ? `${payment.task_code} · ` : ''}sent ${discordTimestamp(payment.recorded_at, 'R')}` +
+                `${payment.method_label ? ` via ${payment.method_label}` : ''}`
+              ).join('\n\n').slice(0, 4000)
+          )
+          .setFooter({ text:
+            'Sending is not arriving. Confirm with /finance confirm-received, or ' +
+            '/finance mark-failed if it never landed.' })],
+      }));
+      return;
+    }
+
+    if (sub === 'confirm-received' || sub === 'mark-failed') {
+      assertCan(actor, CAPABILITIES.PAYMENT_RECORD);
+
+      const paymentId = interaction.options.getInteger('payment', true);
+      const result = sub === 'confirm-received'
+        ? paymentsRepo.confirmReceived(db, guildId, paymentId, {
+          confirmedBy: userId, note: interaction.options.getString('note'),
+        })
+        : paymentsRepo.markFailed(db, guildId, paymentId, {
+          failedBy: userId, reason: interaction.options.getString('reason', true),
+        });
+
+      if (!result.ok) {
+        const reasons = {
+          not_found: '❌ No payment with that number. Check `/finance sent`.',
+          not_a_payout: '❌ That is money the client sent in, not a payment out. Only payments out are confirmed this way.',
+          already_failed: '❌ That payment is already recorded as having failed. Record a fresh payment for the new attempt.',
+          already_confirmed: '❌ That payment is already confirmed as arrived, so it cannot be marked failed. ' +
+            'If the confirmation was wrong, say so in the audit trail rather than rewriting it.',
+        };
+        await interaction.reply(priv(reasons[result.reason] || `❌ ${result.reason}`));
+        return;
+      }
+
+      const payment = result.payment;
+
+      if (!result.changed) {
+        await interaction.reply(priv(
+          sub === 'confirm-received'
+            ? `That payment was already confirmed as arrived ${discordTimestamp(payment.confirmed_at, 'R')}.`
+            : `That payment was already marked failed ${discordTimestamp(payment.failed_at, 'R')}.`
+        ));
+        return;
+      }
+
+      if (sub === 'confirm-received') {
+        await interaction.reply(priv(
+          `✅ **${formatAmount(payment.amount_minor, payment.currency)}** to <@${payment.payee_user_id}> ` +
+          'is confirmed as having arrived.\n' +
+          '_Sent and arrived are kept as two separate facts, so neither side has to take the other\u2019s word for it._'
+        ));
+        return;
+      }
+
+      // A failed payment stops counting as paid, so the artist is owed again.
+      const task = payment.task_id ? tasksRepo.getTask(db, guildId, payment.task_id) : null;
+      if (task) paymentState.recomputeTaskPaymentState(db, guildId, task.id, userId, 'A payment failed');
+
+      await interaction.reply(priv(
+        `⚠️ **${formatAmount(payment.amount_minor, payment.currency)}** to <@${payment.payee_user_id}> ` +
+        'is recorded as sent and never arrived.\n' +
+        `Reason on record: ${payment.failure_note}\n\n` +
+        'The record is kept rather than deleted — the attempt happened. It no longer counts as paid, ' +
+        `so ${payment.payee_user_id ? `<@${payment.payee_user_id}> is` : 'they are'} owed it again.`
+      ));
+
+      if (payment.payee_user_id) {
+        await notifyUser(interaction.client, db, guildId, payment.payee_user_id, {
+          content:
+            `⚠️ A payment of **${formatAmount(payment.amount_minor, payment.currency)}** to you has been recorded ` +
+            `as failed: ${payment.failure_note}\n` +
+            'You are owed it again. Nothing is lost — it is still on the record.',
+        }).catch(() => null);
+      }
+      return;
+    }
+
+    if (sub === 'approve-all') {
+      assertCan(actor, CAPABILITIES.TASK_PAY_APPROVE);
+
+      const projectCode = interaction.options.getString('project');
+      const project = projectCode ? projectsRepo.getProjectByCode(db, guildId, projectCode) : null;
+      if (projectCode && !project) {
+        await interaction.reply(priv('❌ No order with that code.'));
+        return;
+      }
+
+      const preview = interaction.options.getBoolean('preview') === true;
+      const result = bulkPay.approveAll(db, guildId, {
+        actorUserId: userId, projectId: project?.id ?? null, dryRun: preview,
+      });
+
+      if (result.considered === 0) {
+        await interaction.reply(priv(
+          `Nothing waiting${project ? ` on **${project.code}**` : ''}. ` +
+          'Your leaders have no pay figures proposed for you to decide.'
+        ));
+        return;
+      }
+
+      const embed = new EmbedBuilder()
+        .setTitle(preview
+          ? `Preview · ${result.considered} figure(s) proposed`
+          : `${result.approved.length} of ${result.considered} figure(s) approved`)
+        .setColor(result.refused.length === 0 ? 0x57f287 : 0xfee75c);
+
+      if (result.approved.length > 0) {
+        embed.addFields({
+          name: preview ? `Would be approved — ${bulkPay.totals(result.approved)}` : `Approved — ${bulkPay.totals(result.approved)}`,
+          value: result.approved.map(bulkPay.describe).join('\n').slice(0, 1024),
+        });
+      }
+
+      if (result.refused.length > 0) {
+        embed.addFields({
+          name: `Refused — ${result.refused.length}`,
+          value: result.refused.map((entry) =>
+            `${bulkPay.describe(entry)}\n┗ ${entry.reason === 'over_budget'
+              ? `${formatAmount(entry.check.excessMinor, entry.check.currency)} over what the client is paying`
+              : 'could not be applied'}`
+          ).join('\n').slice(0, 1024),
+        });
+        embed.setFooter({ text:
+          'Each figure was checked as if approved on its own, in order — so a refusal here is ' +
+          'the same refusal you would get approving it last.' });
+      }
+
+      if (preview) {
+        embed.setDescription('_Nothing has been approved. Run it again without `preview` to decide._');
+      }
+
+      await interaction.reply(priv({ embeds: [embed] }));
+
+      // Telling people is the point of approving; a figure nobody hears about
+      // cannot be disagreed with.
+      if (!preview) {
+        for (const entry of result.approved) {
+          if (!entry.userId) continue;
+          await notifyUser(interaction.client, db, guildId, entry.userId, {
+            content:
+              `💰 Your pay for **${entry.task.code} · ${entry.task.title}** is ` +
+              `**${formatAmount(entry.amountMinor, entry.currency)}**.` +
+              (entry.requiresAcknowledgement
+                ? '\n⚠️ You had already accepted a different figure, so please acknowledge this change.'
+                : ''),
+          }).catch(() => null);
+        }
+      }
     }
   },
 };

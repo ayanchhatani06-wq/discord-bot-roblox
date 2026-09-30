@@ -5,9 +5,9 @@ unless it is implemented **and** covered by tests.
 
 Status key: ✅ done · 🟡 partial (stated exactly) · ⬜ not started
 
-Last updated: stages 1, 2, 4, 6, 9 and 10 complete (287 tests passing). Website scope
-revised: it is the studio's public site (services, portfolio, quote request),
-not only an internal dashboard.
+Last updated: stages 1–13 complete, plus stage 14 (the owner's chosen feature set:
+proof storage, named deposit parts, sent-vs-landed payments, one search, bulk pay
+approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 
 ---
 
@@ -223,6 +223,42 @@ client login that must also work for clients who are not in the Discord server.
 
 ---
 
+## 14. The owner's chosen feature set
+
+Chosen from a set of proposals, so each row here is something that was asked for
+by name rather than something that seemed like a good idea.
+
+| Item | Status |
+| --- | --- |
+| Screenshots and documents kept as proof, saved in the bot | ✅ (`/proof add`; the bytes are kept, not a Discord link, because those expire and die with the message) |
+| Tamper-evident: a changed file is refused, not returned | ✅ (SHA-256 recorded at filing; `/proof show` refuses a mismatch, `/proof verify` checks all of them) |
+| Identical file filed twice is one record | ✅ (unique on `(guild_id, sha256)`, enforced by the database) |
+| Only safe file types, size-capped | ✅ (images, PDF, plain text, 8 MB; an evidence store that takes executables is a way to pass malware around) |
+| Filed proof included in backups | ✅ (`/backup now` copies the files next to the database; `deploy/backup-offsite.sh` tars and ships them, and reads the archive back) |
+| Dispute evidence pack | ✅ (`/proof record` — terms, submissions, releases, decisions, money both ways, hashes, audit trail) |
+| The pack states what is **missing**, not just what is there | ✅ (gaps such as "no record of anybody accepting the terms" are listed in the document) |
+| Deposits with named milestones | ✅ (`/deposit add label:`; receipts fill parts in order) |
+| Payable when the deposit covers that artist's pay | ✅ (the rule the owner chose; a deposit funds work up to its own value and no further) |
+| Parts in a second currency refused | ✅ (no rate exists, so such a part could never be paid off) |
+| Overpayment and mismatched totals reported, not absorbed | ✅ (both usually mean a missing part or a double payment) |
+| Budget guard measures against the parts | ✅ (otherwise an order priced only through deposits would have no budget and the guard would stop guarding) |
+| Robux sent vs landed | ✅ (`/finance confirm-received`, `/finance mark-failed`, `/finance sent`) |
+| A failed payment is kept on the record, not deleted | ✅ (it stops counting as paid, so the artist is owed again; excluded from every money total) |
+| One search across everything | ✅ (`/find`, scoped by the same capabilities the target commands use) |
+| Bulk approve proposed pay | ✅ (`/finance approve-all`, each figure budget-checked in turn; refuses only what does not fit) |
+| Roblox asset IDs recorded and searchable | ✅ (`/archive roblox-id`, `/archive roblox-ids`; digits extracted from a pasted URL) |
+| Capacity forecast — who is free next week | ✅ (`/free`) |
+| Forecast states what it cannot know | ✅ (no per-person limit is recorded, so it reports load rather than inventing a threshold; undated work is counted, not assumed finished) |
+
+Not built, and deliberately:
+
+| Item | Why not |
+| --- | --- |
+| Reversing a client receipt (a chargeback) | The columns exist but nothing sets them. Un-receiving money would retroactively unfund artists already paid, and how to handle that is the owner's call to make, not a default to guess. Stated here rather than half-built. |
+| A per-person workload limit | Nothing in the studio records one. `/free` shows load and says it is doing so, instead of judging people against a number nobody set. |
+
+---
+
 ## Stage plan
 
 1. **Client identity, dashboard and version-bound approvals** — §1, §2, client parts of §13
@@ -238,3 +274,4 @@ client login that must also work for clients who are not in the Discord server.
 11. **Reports, filters and automation rules** — §12 ✅ done
 12. **Exports and restore tooling** — §13 ✅ done
 13. **Website interface** — reusing `db/repos` and `domain` unchanged ✅ done
+14. **The owner's chosen feature set** — §14 above ✅ done

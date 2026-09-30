@@ -246,6 +246,50 @@ function rightsSummary(db, guildId, projectId) {
   return { total: assets.length, unrecorded, staffOk, studioOk, pending };
 }
 
+
+/**
+ * The Roblox asset ID a file ended up as.
+ *
+ * A link to a file in Discord and the uploaded asset on Roblox are two different
+ * things, and it is the asset ID that matters months later: it is what somebody
+ * puts in a script, what proves an upload happened, and what survives the
+ * original file being lost. Recorded as digits only, because that is all a
+ * Roblox asset ID ever is, and a pasted full URL would otherwise be stored as if
+ * it were an ID.
+ */
+function setRobloxAssetId(db, guildId, assetId, { robloxAssetId, actorUserId }) {
+  const asset = getAsset(db, guildId, assetId);
+  if (!asset) return { ok: false, reason: 'not_found' };
+
+  // Accepts a bare ID or any URL containing one, and keeps the digits.
+  const digits = String(robloxAssetId ?? '').match(/\d{4,}/);
+  if (!digits) return { ok: false, reason: 'not_an_id' };
+
+  const updated = db.prepare(`
+    UPDATE assets SET roblox_asset_id = ? WHERE guild_id = ? AND id = ? RETURNING *
+  `).get(digits[0], guildId, assetId);
+
+  recordAudit(db, {
+    guildId, actorUserId, action: 'asset.roblox_id.set',
+    entityType: 'task', entityId: asset.task_id,
+    before: { roblox_asset_id: asset.roblox_asset_id },
+    after: { roblox_asset_id: digits[0] },
+  });
+
+  return { ok: true, asset: updated, previous: asset.roblox_asset_id };
+}
+
+/** Everything on this order that has been uploaded to Roblox. */
+function robloxAssetsForProject(db, guildId, projectId) {
+  return db.prepare(`
+    SELECT a.*, t.code AS task_code, t.title AS task_title FROM assets a
+    LEFT JOIN tasks t ON t.id = a.task_id
+    WHERE a.guild_id = ? AND a.roblox_asset_id IS NOT NULL
+      AND (a.project_id = ? OR t.project_id = ?)
+    ORDER BY a.id
+  `).all(guildId, projectId, projectId);
+}
+
 module.exports = {
   KINDS,
   resolvePortfolioRights,
@@ -261,4 +305,6 @@ module.exports = {
   setAssetRights,
   publishablePortfolio,
   rightsSummary,
+  setRobloxAssetId,
+  robloxAssetsForProject,
 };

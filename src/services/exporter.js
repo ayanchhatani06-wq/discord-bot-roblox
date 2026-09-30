@@ -114,6 +114,65 @@ async function backup(db, destination) {
   return { path: destination, bytes: size, takenAt: Date.now() };
 }
 
+/**
+ * Copies the evidence files alongside the database backup.
+ *
+ * Necessary because the database holds only each file's path and hash, not the
+ * bytes. A restored database without these files has a full set of evidence
+ * records that all read as missing — worse than useless in the argument they
+ * were kept for, because it looks like the proof was deleted.
+ *
+ * Files are copied by hash-derived path and never overwritten, since a file that
+ * is already there with the same name has the same contents by definition.
+ */
+function backupEvidence(sourceDirectory, destinationDirectory) {
+  if (!fs.existsSync(sourceDirectory)) {
+    return { copied: 0, bytes: 0, skipped: 0, directory: destinationDirectory };
+  }
+
+  const source = path.resolve(sourceDirectory);
+  const destination = path.resolve(destinationDirectory);
+
+  if (destination === source) {
+    return { copied: 0, skipped: 0, bytes: 0, directory: destinationDirectory, reason: 'same_directory' };
+  }
+
+  fs.mkdirSync(destination, { recursive: true });
+  let copied = 0;
+  let skipped = 0;
+  let bytes = 0;
+
+  const walk = (relative) => {
+    const absolute = path.join(source, relative);
+    for (const entry of fs.readdirSync(absolute, { withFileTypes: true })) {
+      const next = path.join(relative, entry.name);
+
+      // Never walk into our own output. With the backup directory configured
+      // inside the evidence directory this would otherwise copy the copies,
+      // forever, until the path is too long to write.
+      if (path.resolve(source, next) === destination) continue;
+
+      if (entry.isDirectory()) {
+        fs.mkdirSync(path.join(destination, next), { recursive: true });
+        walk(next);
+        continue;
+      }
+
+      const target = path.join(destination, next);
+      if (fs.existsSync(target)) {
+        skipped += 1;
+        continue;
+      }
+      fs.copyFileSync(path.join(source, next), target);
+      copied += 1;
+      bytes += fs.statSync(target).size;
+    }
+  };
+
+  walk('.');
+  return { copied, skipped, bytes, directory: destinationDirectory };
+}
+
 /** The most recent backup in a directory, or null if there are none. */
 function newestBackup(directory) {
   if (!fs.existsSync(directory)) return null;
@@ -174,6 +233,7 @@ const RESTORE_STEPS = Object.freeze([
 ]);
 
 module.exports = {
+  backupEvidence,
   EXPORTABLE,
   EXPORT_KINDS,
   RESTORE_STEPS,

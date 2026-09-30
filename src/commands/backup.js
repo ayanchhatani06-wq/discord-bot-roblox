@@ -3,6 +3,7 @@ const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discor
 const { openDatabase } = require('../db');
 const { contextFor } = require('../services/actor');
 const exporter = require('../services/exporter');
+const evidenceRepo = require('../db/repos/evidence');
 const { recordAudit } = require('../db/repos/core');
 const { CAPABILITIES, assertCan } = require('../domain/permissions');
 const { discordTimestamp } = require('../utils/time');
@@ -78,13 +79,24 @@ module.exports = {
 
         const check = exporter.verifyBackup(openDatabase, result.path);
 
+        // The database holds each filed screenshot's hash and path, not its
+        // bytes, so the files have to be copied too or a restore comes back
+        // with every piece of proof reading as missing.
+        const evidence = exporter.backupEvidence(
+          evidenceRepo.evidenceDir(),
+          `${result.path.replace(/\.sqlite$/, '')}-evidence`
+        );
+
         await interaction.editReply(
           `✅ Backup written to \`${result.path}\` (${Math.round(result.bytes / 1024)} KB) at ${discordTimestamp(result.takenAt, 'f')}.\n` +
           `${check.ok
             ? `Checked: it opens, integrity is fine, and it holds ${check.counts.projects} order(s), ${check.counts.tasks} task(s) and ${check.counts.payments} payment(s).`
-            : `⚠️ It was written but did **not** verify: ${check.reason}. Do not rely on it.`}\n\n` +
-          '_This file is on the server, not in Discord. Copy it somewhere else — a backup on the same disk ' +
-          'does not survive the disk._'
+            : `⚠️ It was written but did **not** verify: ${check.reason}. Do not rely on it.`}\n` +
+          `🔒 Filed proof: ${evidence.copied} file(s) copied` +
+          `${evidence.skipped > 0 ? `, ${evidence.skipped} already there` : ''}` +
+          ` to \`${evidence.directory}\`.\n\n` +
+          '_Both of these are on the server, not in Discord. Copy them somewhere else, **together** — ' +
+          'the database without the files gives you proof records with nothing behind them._'
         );
       } catch (error) {
         await interaction.editReply(`❌ The backup failed and nothing usable was written: ${error.message}`);

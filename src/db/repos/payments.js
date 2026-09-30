@@ -97,8 +97,8 @@ function listPaymentsForPayee(db, guildId, payeeUserId, { limit = 50 } = {}) {
  */
 function totalsByDirection(db, guildId, { projectId = null } = {}) {
   const rows = projectId
-    ? db.prepare('SELECT direction, currency, SUM(amount_minor) AS minor FROM payments WHERE guild_id = ? AND project_id = ? GROUP BY direction, currency').all(guildId, projectId)
-    : db.prepare('SELECT direction, currency, SUM(amount_minor) AS minor FROM payments WHERE guild_id = ? GROUP BY direction, currency').all(guildId);
+    ? db.prepare('SELECT direction, currency, SUM(amount_minor) AS minor FROM payments WHERE guild_id = ? AND project_id = ? AND failed_at IS NULL GROUP BY direction, currency').all(guildId, projectId)
+    : db.prepare('SELECT direction, currency, SUM(amount_minor) AS minor FROM payments WHERE guild_id = ? AND failed_at IS NULL GROUP BY direction, currency').all(guildId);
 
   const received = [];
   const paidOut = [];
@@ -116,6 +116,7 @@ function payoutTotalsForPayee(db, guildId, payeeUserId) {
   const rows = db.prepare(`
     SELECT currency, SUM(amount_minor) AS minor FROM payments
     WHERE guild_id = ? AND payee_user_id = ? AND direction = 'payout'
+      AND failed_at IS NULL
     GROUP BY currency
   `).all(guildId, payeeUserId);
   return totalsByCurrency(rows.map((row) => ({ minor: row.minor, currency: row.currency })));
@@ -127,12 +128,90 @@ function paidForAllocation(db, taskId, recipientKind, payeeUserId, currency) {
     SELECT COALESCE(SUM(amount_minor), 0) AS total FROM payments
     WHERE task_id = ? AND direction = 'payout' AND allocation_kind = ?
       AND payee_user_id = ? AND currency = ?
+      AND failed_at IS NULL
   `).get(taskId, recipientKind, payeeUserId, currency);
   return row.total;
 }
 
 function getPaymentByKey(db, idempotencyKey) {
   return db.prepare('SELECT * FROM payments WHERE idempotency_key = ?').get(idempotencyKey) || null;
+}
+
+
+/**
+ * A payout the person says actually reached them.
+ *
+ * Sending is not landing. A Robux group payout, a gift card, a PayPal transfer
+ * — each can be sent and still not arrive, and the studio's word against the
+ * artist's is a bad place to end up. So "sent" and "landed" are two separate
+ * facts with two separate timestamps, and this records the second one.
+ *
+ * Confirmation is idempotent: confirming twice keeps the first timestamp,
+ * because the first one is when it actually happened.
+ */
+function confirmReceived(db, guildId, paymentId, { confirmedBy, note = null }) {
+  const payment = getPayment(db, guildId, paymentId);
+  if (!payment) return { ok: false, reason: 'not_found' };
+  if (payment.direction !== DIRECTIONS.PAYOUT) return { ok: false, reason: 'not_a_payout' };
+  if (payment.failed_at) return { ok: false, reason: 'already_failed', payment };
+  if (payment.confirmed_at) return { ok: true, changed: false, payment };
+
+  const updated = db.prepare(`
+    UPDATE payments SET confirmed_at = ?, confirmed_by = ?
+    WHERE id = ? AND confirmed_at IS NULL RETURNING *
+  `).get(Date.now(), confirmedBy, paymentId);
+
+  recordAudit(db, {
+    guildId, actorUserId: confirmedBy, action: 'payment.confirmed_received',
+    entityType: 'payment', entityId: paymentId, detail: note,
+    after: { confirmed_by: confirmedBy },
+  });
+
+  return { ok: true, changed: true, payment: updated };
+}
+
+/**
+ * A payout that was sent and did not arrive.
+ *
+ * The record is not deleted. A failed transfer is a thing that happened, and
+ * erasing it would leave the ledger claiming money went out when it did not.
+ * Marking it failed takes it out of the paid-out total instead, so the artist
+ * is owed again without anybody having to pretend the attempt never existed.
+ */
+function markFailed(db, guildId, paymentId, { failedBy, reason }) {
+  const payment = getPayment(db, guildId, paymentId);
+  if (!payment) return { ok: false, reason: 'not_found' };
+  if (payment.direction !== DIRECTIONS.PAYOUT) return { ok: false, reason: 'not_a_payout' };
+  if (payment.confirmed_at) return { ok: false, reason: 'already_confirmed', payment };
+  if (payment.failed_at) return { ok: true, changed: false, payment };
+
+  const updated = db.prepare(`
+    UPDATE payments SET failed_at = ?, failure_note = ?
+    WHERE id = ? AND failed_at IS NULL RETURNING *
+  `).get(Date.now(), reason, paymentId);
+
+  recordAudit(db, {
+    guildId, actorUserId: failedBy, action: 'payment.failed',
+    entityType: 'payment', entityId: paymentId, detail: reason,
+    after: { failed_at: updated.failed_at, failure_note: reason },
+  });
+
+  return { ok: true, changed: true, payment: updated };
+}
+
+function getPayment(db, guildId, paymentId) {
+  return db.prepare('SELECT * FROM payments WHERE guild_id = ? AND id = ?').get(guildId, paymentId) || null;
+}
+
+/** Payouts recorded as sent that nobody has confirmed arrived yet. */
+function unconfirmedPayouts(db, guildId, { limit = 25 } = {}) {
+  return db.prepare(`
+    SELECT p.*, t.code AS task_code, t.title AS task_title FROM payments p
+    LEFT JOIN tasks t ON t.id = p.task_id
+    WHERE p.guild_id = ? AND p.direction = 'payout'
+      AND p.confirmed_at IS NULL AND p.failed_at IS NULL
+    ORDER BY p.recorded_at LIMIT ?
+  `).all(guildId, limit);
 }
 
 module.exports = {
@@ -145,4 +224,8 @@ module.exports = {
   payoutTotalsForPayee,
   paidForAllocation,
   getPaymentByKey,
+  getPayment,
+  confirmReceived,
+  markFailed,
+  unconfirmedPayouts,
 };

@@ -1,6 +1,7 @@
 const tasksRepo = require('../db/repos/tasks');
 const projectsRepo = require('../db/repos/projects');
 const contributorsRepo = require('../db/repos/contributors');
+const paymentSchedule = require('./paymentSchedule');
 const { recordAudit } = require('../db/repos/core');
 const { formatAmount } = require('../domain/money');
 const { TASK_STATES } = require('../domain/taskState');
@@ -54,14 +55,23 @@ function committedByCurrency(db, guildId, projectId, { excludeTaskId = null, exc
  */
 function checkBudget(db, guildId, task, { amountMinor, currency, userId = null }) {
   const project = projectsRepo.getProject(db, guildId, task.project_id);
+  if (!project) return { ok: true, reason: 'no_budget_set' };
 
-  if (!project || project.client_amount_minor === null || !project.client_currency) {
+  // The budget is whatever the client owes in total. On an order split into
+  // named parts that is the sum of the parts, not the single price column —
+  // otherwise an order priced entirely through deposits would have no budget at
+  // all and the guard would quietly stop guarding.
+  const schedule = paymentSchedule.scheduleFor(db, guildId, project);
+  const budgetMinor = schedule.hasSchedule ? schedule.totalMinor : project.client_amount_minor;
+  const budgetCurrency = schedule.hasSchedule ? schedule.currency : project.client_currency;
+
+  if (budgetMinor === null || !budgetCurrency) {
     return { ok: true, reason: 'no_budget_set' };
   }
-  if (project.client_currency !== currency) {
+  if (budgetCurrency !== currency) {
     // No conversion rate exists, so this pay simply is not measured against
     // that budget. Said plainly rather than silently passing.
-    return { ok: true, reason: 'different_currency', budgetCurrency: project.client_currency };
+    return { ok: true, reason: 'different_currency', budgetCurrency };
   }
   if (project.budget_override_by) {
     return { ok: true, reason: 'override_in_place', overriddenBy: project.budget_override_by };
@@ -73,14 +83,14 @@ function checkBudget(db, guildId, task, { amountMinor, currency, userId = null }
   }).get(currency) || 0;
 
   const wouldBe = committed + amountMinor;
-  if (wouldBe <= project.client_amount_minor) {
+  if (wouldBe <= budgetMinor) {
     return {
       ok: true,
       committed,
       wouldBe,
-      budget: project.client_amount_minor,
+      budget: budgetMinor,
       currency,
-      remaining: project.client_amount_minor - wouldBe,
+      remaining: budgetMinor - wouldBe,
     };
   }
 
@@ -89,10 +99,11 @@ function checkBudget(db, guildId, task, { amountMinor, currency, userId = null }
     reason: 'over_budget',
     committed,
     wouldBe,
-    budget: project.client_amount_minor,
+    budget: budgetMinor,
     currency,
-    excessMinor: wouldBe - project.client_amount_minor,
+    excessMinor: wouldBe - budgetMinor,
     project,
+    fromSchedule: schedule.hasSchedule,
   };
 }
 
@@ -136,10 +147,16 @@ function projectsOverBudget(db, guildId) {
   const results = [];
 
   for (const project of projectsRepo.listProjects(db, guildId, { status: 'active', limit: 200 })) {
-    if (project.client_amount_minor === null || !project.client_currency) continue;
-    const committed = committedByCurrency(db, guildId, project.id).get(project.client_currency) || 0;
-    if (committed >= project.client_amount_minor) {
-      results.push({ project, committed, budget: project.client_amount_minor, currency: project.client_currency });
+    // Same budget as the guard uses, so this sweep cannot disagree with the
+    // refusal an owner gets when they try to approve the figure.
+    const schedule = paymentSchedule.scheduleFor(db, guildId, project);
+    const budgetMinor = schedule.hasSchedule ? schedule.totalMinor : project.client_amount_minor;
+    const currency = schedule.hasSchedule ? schedule.currency : project.client_currency;
+
+    if (budgetMinor === null || !currency) continue;
+    const committed = committedByCurrency(db, guildId, project.id).get(currency) || 0;
+    if (committed >= budgetMinor) {
+      results.push({ project, committed, budget: budgetMinor, currency });
     }
   }
 

@@ -72,6 +72,19 @@ module.exports = {
       sub
         .setName('portfolio')
         .setDescription('What the studio may publish right now')
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('roblox-id')
+        .setDescription('Record the Roblox asset ID a file was uploaded as')
+        .addIntegerOption((opt) => opt.setName('asset').setDescription('Asset id from /archive search').setRequired(true))
+        .addStringOption((opt) => opt.setName('id').setDescription('The Roblox asset ID, or a link containing it').setRequired(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('roblox-ids')
+        .setDescription('Every Roblox asset ID recorded on an order')
+        .addStringOption((opt) => opt.setName('project').setDescription('Which order').setRequired(true).setAutocomplete(true))
     ),
 
   async autocomplete(interaction) {
@@ -169,6 +182,34 @@ module.exports = {
       return;
     }
 
+    if (sub === 'roblox-ids') {
+      const project = projectsRepo.getProjectByCode(db, guildId, interaction.options.getString('project', true));
+      if (!project) {
+        await interaction.reply(priv('❌ No order with that code.'));
+        return;
+      }
+
+      const uploaded = assetsRepo.robloxAssetsForProject(db, guildId, project.id);
+
+      await interaction.reply(priv({
+        embeds: [new EmbedBuilder()
+          .setTitle(`Roblox asset IDs · ${project.code}`)
+          .setColor(0x5865f2)
+          .setDescription(
+            uploaded.length === 0
+              ? 'No Roblox asset IDs recorded on this order yet.\n\n' +
+                '_Record one with `/archive roblox-id` after a file is uploaded. ' +
+                'The ID is what a script needs and what stays findable when the original file does not._'
+              : uploaded.map((asset) =>
+                `**${asset.roblox_asset_id}** — ${asset.label || asset.task_title || 'unnamed file'}` +
+                `${asset.task_code ? `\n┗ ${asset.task_code}` : ''}` +
+                `${asset.asset_type ? ` · ${asset.asset_type}` : ''}`
+              ).join('\n\n').slice(0, 4000)
+          )],
+      }));
+      return;
+    }
+
     // Recording what a client permits is a commitment about their property.
     assertCan(actor, CAPABILITIES.PROJECT_EDIT);
 
@@ -251,6 +292,35 @@ module.exports = {
         `✅ Asset #${assetId} now overrides its project: ${rightsBadge(rights)}.` +
         `${rights.restrictions ? `\nRestriction: ${rights.restrictions}` : ''}`
       ));
+      return;
+    }
+
+    if (sub === 'roblox-id') {
+      const assetId = interaction.options.getInteger('asset', true);
+      const result = assetsRepo.setRobloxAssetId(db, guildId, assetId, {
+        robloxAssetId: interaction.options.getString('id', true),
+        actorUserId: userId,
+      });
+
+      if (!result.ok) {
+        const reasons = {
+          not_found: '❌ No file with that number. Find it with `/archive search`.',
+          not_an_id: '❌ I could not find a Roblox asset ID in that. Paste the ID itself, ' +
+            'or a link with the ID in it — it is the long run of digits.',
+        };
+        await interaction.reply(priv(reasons[result.reason] || `❌ ${result.reason}`));
+        return;
+      }
+
+      await interaction.reply(priv(
+        `✅ File #${assetId} is recorded as Roblox asset **${result.asset.roblox_asset_id}**.` +
+        `${result.previous && result.previous !== result.asset.roblox_asset_id
+          ? `\n_It was previously recorded as ${result.previous}; the change is in the audit trail._`
+          : ''}` +
+        '\n\n_The ID is what lasts. A link to the original file can rot; the uploaded asset stays findable._' +
+        `\nFind it later with \`/find query:${result.asset.roblox_asset_id}\`.`
+      ));
+      return;
     }
   },
 };

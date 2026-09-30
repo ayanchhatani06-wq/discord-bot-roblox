@@ -85,6 +85,7 @@ function outstandingPay(db, guildId, userId) {
     const paid = db.prepare(`
       SELECT COALESCE(SUM(amount_minor), 0) AS total FROM payments
       WHERE task_id = ? AND allocation_kind = ? AND payee_user_id = ? AND currency = ?
+        AND failed_at IS NULL
     `).get(share.task_id, share.recipient_kind, userId, share.currency).total;
 
     const remaining = share.amount_minor - paid;

@@ -212,6 +212,7 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/procedure list` / `read key:` | Studio procedures, and acknowledging them |
 | `/trial mine` / `submit code:` | Your trial briefs, if you are on trial |
 | `/task mine` | Your offers and current assignments |
+| **`/find query:`** | Search everything at once — work, orders, clients, people, files. Scoped to what you may see |
 
 ### Group leaders (in departments they lead)
 
@@ -231,6 +232,7 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/manage reassign task: artist: reason:` | Move work, keeping the original record |
 | `/manage hold task: reason:` / `/manage resume task:` | Pause and unpause |
 | `/recommend new person: kind: note:` | Put somebody forward for a trial or promotion |
+| `/free [days:] [group:]` | Who has room for more work, and who has not |
 
 ### Owner
 
@@ -252,6 +254,13 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/finance budget project:` | Committed pay against what the client pays |
 | `/finance budget-override project: reason:` | Deliberately allow over-budget pay, on the record |
 | `/finance budget-restore project:` | Put the guard back |
+| `/finance approve-all [project:] [preview:]` | Approve every pay figure your leaders proposed, budget-checked one by one |
+| `/finance confirm-received payment:` | They say the money actually reached them |
+| `/finance mark-failed payment: reason:` | Sent and never arrived — they are owed it again |
+| `/finance sent` | Payments sent that nobody has confirmed either way |
+| `/deposit add project: label: amount:` | Split what a client owes into named parts |
+| `/deposit list project:` | Which parts are covered, and what is still to come |
+| `/deposit invoiced id:` / `waive id: reason:` / `remove id:` | Asked for, not charging, or entered by mistake |
 | `/bonus rule-set key: label: threshold: amount:` | A milestone rule, e.g. every 10 approved animations |
 | `/bonus pending` / `approve id:` / `decline id: reason:` / `pay id:` | Decide and record bonuses |
 | `/manage cancel task: reason:` | Cancel, preserving history |
@@ -283,6 +292,11 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/web identity` / `service` / `page` | What the public site says about the studio |
 | `/web client-email` / `sign-in-link` | Let a client use the website without Discord |
 | `/web status` | What the public site currently shows |
+| `/proof add file: kind:` | Keep a screenshot as proof — the file itself, not a link to it |
+| `/proof list` / `show id:` / `verify` | What is filed, get one back, check none have changed |
+| `/proof record project:` | The whole record of an order, as a file, for a dispute |
+| `/archive roblox-id asset: id:` | Record the Roblox asset ID a file was uploaded as |
+| `/archive roblox-ids project:` | Every Roblox asset ID on an order |
 | `/studio doctor` | Everything quietly misconfigured, worst first |
 | `/studio …` | All configuration |
 
@@ -406,6 +420,85 @@ the studio back.
   card code in a spreadsheet is money lying in the open.
 - `/backup restore` prints the steps, including the one that silently corrupts a
   restore if you miss it — moving the `-wal` file aside.
+
+`/backup now` also copies the **filed proof** (see below) next to the database
+backup, as `studio-<timestamp>-evidence/`. It has to: the database holds each
+file's hash and path, not its bytes. A restored database without those files
+comes back with a complete set of proof records that all read as missing, which
+looks like the proof was deleted. **Copy the two together**, or you have kept the
+index to evidence you no longer hold.
+
+### Screenshots kept as proof
+
+`/proof add file: kind:` files a screenshot or document against an order, a task
+or a client. What it keeps is **the file itself, not a link to it** — because a
+Discord attachment URL is signed, expires, and stops working for good once the
+message is deleted. A stored link is not proof; it is a bet that Discord is still
+holding something for you on the day somebody disputes an invoice.
+
+Each file is hashed with SHA-256 when it is filed, and:
+
+- **The same file filed twice is one record**, not two, since the hash is the
+  same.
+- `/proof show id:` **refuses** a file whose bytes no longer match the hash
+  recorded when it was filed. A changed file is worse than a missing one, so it
+  is never handed back as if it were fine.
+- `/proof verify` checks every filed file at once and separates intact, missing
+  from disk, and changed since filing.
+- **Only images, PDFs and plain text are accepted**, up to 8 MB. An evidence
+  store that takes executables is a way to pass malware around with the studio's
+  name on it.
+
+`/proof record project:` produces the whole record of one order as a text file:
+what was agreed, every submission and when it was released to the client, every
+client decision, money in and out, the filed proof with its hashes, and the audit
+trail. Every timestamp in it was written when the thing happened, not when the
+document was produced.
+
+It also lists the **gaps**: "no record of anybody accepting the terms", "nothing
+was ever released to the client to look at", "no screenshots have been filed".
+A gap said out loud is worth more than one you discover mid-chargeback.
+
+### Roblox asset IDs
+
+`/archive roblox-id asset: id:` records what a file was actually uploaded as. The
+ID is what lasts — it is what goes in a script, and it stays findable when the
+original file does not. Paste the ID or any link containing it; the digits are
+kept, so a pasted store URL is not stored as if it were an ID. `/find` searches
+them, which is the point of recording them.
+
+### Who has room for more work
+
+`/free [days:] [group:]` answers the question you ask before saying yes to a
+client. It reads availability, recorded absences with their return dates, and
+what each person is carrying — split into work due before the window (should be
+finished), due inside it (competes with anything new), running past it, and
+**work with no deadline at all**.
+
+Two things it deliberately does not do:
+
+- **It does not invent a limit.** No maximum workload is recorded for anybody, so
+  it shows what each person carries instead of declaring them over a threshold
+  the studio never set. A made-up "three tasks each" would look authoritative and
+  be wrong for everybody.
+- **It does not assume undated work is finished.** Work with no deadline is
+  counted as work and the count is stated, because assuming otherwise is exactly
+  what overbooks people.
+
+Leaders see the departments they lead; the owner sees the studio.
+
+### Approving pay in bulk
+
+`/finance approve-all` says yes to every figure your leaders have proposed. Work
+cannot be offered until pay is decided, so on a busy week that queue is the
+bottleneck.
+
+It approves **only what somebody already proposed** — it never invents a figure,
+so you are still the one deciding. Each one is budget-checked in turn, as if
+approved on its own, which means approving five together can refuse the fifth for
+exactly the reason approving it last would have. The rest still go through:
+five good figures should not be thrown away because the sixth would blow the
+budget. `preview:true` shows what would happen and changes nothing.
 
 ### Repeat orders
 
@@ -548,14 +641,81 @@ ask for account passwords, card details or wallet seed phrases.
 ### When work becomes payable
 
 Payment state runs *pending client payment → payable → partially paid → paid*.
-Work becomes payable only when it is **both** client-approved **and** the
-client's payment for that project is recorded as received. For deposit
-situations, `/finance mark-payable` overrides that with your reason kept on the
-record.
+Work becomes payable when it is client-approved **and** the client money already
+received still covers what that task owes, after everything the order has
+already paid out.
+
+That last clause is the whole rule. A deposit funds work up to the value of the
+deposit and no further: with $40 in and two $25 tasks approved, the first is
+payable, and once it is actually paid the second drops back to pending, because
+there is only $15 of headroom left. Nothing is ever payable out of money that
+has not arrived.
+
+Currencies never mix. Robux received does not make a dollar payout payable,
+because there is no rate that would make that true — and the bot has no
+conversion function anywhere, on purpose.
+
+`/finance mark-payable` still overrides all of it, with your reason kept on the
+record, for when you are paying somebody out of studio funds.
 
 Recording more than is outstanding is refused, which catches a mistyped amount
 before it becomes a wrong record. Repeat clicks cannot double-pay; a genuinely
 separate instalment still can.
+
+### Deposits, in named parts
+
+`/deposit add project: label: amount:` splits what a client owes into parts you
+name — "Deposit", "On delivery", "Rush fee". Receipts fill the parts in order:
+there is no guessing which payment was meant for which part, because the client
+sent money and it counts towards whatever they owe soonest.
+
+```
+/deposit add project:PRJ-0004 label:Deposit amount:40 due:before work starts
+/deposit add project:PRJ-0004 label:On delivery amount:60
+/deposit list project:PRJ-0004
+```
+
+Three things it refuses or reports rather than smoothing over:
+
+- **A part in a second currency is refused.** With no rate between Robux and
+  dollars, a part in the other currency could never be paid off — it would sit
+  as a debt forever.
+- **Money beyond the parts is reported, not absorbed.** More in than the parts
+  add up to usually means a part is missing from the list or the client paid
+  twice. Both are worth knowing.
+- **Parts that do not add up to the order's price are flagged** when you add
+  one, because that is a miscount you want to hear about now.
+
+`/deposit waive id: reason:` stops charging a part — it stops counting as owed,
+which can make more work payable. `/deposit invoiced id:` records that you asked
+the client for it. A part already asked for cannot be deleted, only waived, so
+the record of having asked survives.
+
+The budget guard measures against the parts when an order is priced entirely
+through them. Without that, an order with no single price would have no budget
+at all and the guard would quietly stop guarding.
+
+### Sent is not landed
+
+A Robux group payout, a gift card, a bank transfer — each can be sent and still
+not arrive, and "the studio says it paid, the artist says it never came" is a bad
+place to end up. So the two are separate facts:
+
+| Command | What it records |
+| --- | --- |
+| `/finance pay` | The studio sent it |
+| `/finance confirm-received payment:` | They say it arrived |
+| `/finance mark-failed payment: reason:` | It was sent and never arrived |
+| `/finance sent` | Everything sent that nobody has confirmed either way |
+
+A failed payment is **not deleted**. The attempt happened, and erasing it would
+leave the ledger claiming money went out when it did not. It stops counting as
+paid instead — so the artist is owed again, the work usually goes straight back
+to payable, and the studio totals and their earnings both exclude it. The person
+is told automatically, with the reason.
+
+Confirming twice keeps the first timestamp, because that is when it actually
+happened. A payment already confirmed cannot then be marked failed.
 
 ---
 
@@ -760,7 +920,15 @@ BACKUP_DESTINATION=user@other-host:/backups deploy/backup-offsite.sh
 
 Takes a fresh copy with SQLite's own backup, opens it and runs an integrity
 check, copies it off the box, and only then prunes old local ones — so a failing
-job can never delete your last good backup. Put it in cron:
+job can never delete your last good backup.
+
+It also tars up the filed proof as `studio-<timestamp>-evidence.tar.gz` and sends
+that too, then reads the archive back to check it is really an archive. Both files
+go to the destination, because the database alone gives you proof records with
+nothing behind them.
+
+It needs the `sqlite3` command line tool on the box (`sudo apt install sqlite3`).
+Put it in cron:
 
 ```
 17 3 * * * /home/ubuntu/discord-bot-roblox/deploy/backup-offsite.sh >> ~/backup.log 2>&1
