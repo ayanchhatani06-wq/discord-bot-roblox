@@ -25,19 +25,17 @@ const COMMAND_GROUPS = {
 
   task: 'work', 'my-work': 'work', deadlines: 'work', change: 'work', review: 'work', 'who-is-free': 'work',
 
-  pay: 'money', 'money-in': 'money', bonuses: 'money', contrib: 'money',
-
-  profile: 'people', time: 'people', people: 'people',
-  recommend: 'people', trial: 'people', 'staff-rules': 'people',
+  pay: 'money', 'money-in': 'money', bonuses: 'money', profile: 'people', time: 'people', team: 'people',
+  'staff-rules': 'people',
 
   orders: 'clients', clients: 'clients', quotes: 'clients', reorder: 'clients',
   messages: 'clients', problems: 'clients', send: 'clients',
 
   files: 'files', proof: 'files',
 
-  reports: 'watch', summary: 'watch', concern: 'watch',
+  reports: 'watch', concern: 'watch',
 
-  studio: 'setup', web: 'setup', automation: 'setup', backup: 'setup',
+  setup: 'setup',
 };
 
 /**

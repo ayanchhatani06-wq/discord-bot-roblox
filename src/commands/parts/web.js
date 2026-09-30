@@ -124,7 +124,7 @@ module.exports = {
         await interaction.reply(priv(
           `**${config?.studio_name || '_no name set_'}**\n` +
           `${config?.studio_tagline || '_no tagline set_'}\n\n` +
-          'Change either with `/web identity name: tagline:`.'
+          'Change either with `/setup web identity name: tagline:`.'
         ));
         return;
       }
@@ -152,7 +152,7 @@ module.exports = {
 
       await interaction.reply(priv(
         `✅ **${service.name}** saved${service.published ? '' : ' — and it is **not published yet**'}.\n` +
-        `${service.published ? '' : `Show it with \`/web publish-service key:${service.key} published:true\`.`}`
+        `${service.published ? '' : `Show it with \`/setup web publish-service key:${service.key} published:true\`.`}`
       ));
       return;
     }
@@ -176,7 +176,7 @@ module.exports = {
 
       await interaction.reply(priv(
         `✅ **${page.title}** saved${page.published ? '' : ' as a draft'}.\n` +
-        `${page.published ? '' : `Publish it with \`/web publish-page key:${page.key} published:true\`.`}\n` +
+        `${page.published ? '' : `Publish it with \`/setup web publish-page key:${page.key} published:true\`.`}\n` +
         '_Your text is shown exactly as written. A blank line starts a new paragraph, and that is the whole formatting._'
       ));
       return;
@@ -188,7 +188,7 @@ module.exports = {
 
       await interaction.reply(priv(page
         ? `✅ **${page.title}** is now ${published ? 'public' : 'hidden'}.`
-        : '❌ That page has not been written yet — use `/web page` first.'));
+        : '❌ That page has not been written yet — use `/setup web page` first.'));
       return;
     }
 
@@ -258,7 +258,7 @@ module.exports = {
         `${canApprove
           ? '⚠️ They can also **approve work**. Only give that to somebody who decides for this client.'
           : 'They can see this client\'s orders but not approve anything.'}\n` +
-        `Send them a link with \`/web sign-in-link client:${client.display_name} email:${added.email}\`.`
+        `Send them a link with \`/setup web sign-in-link client:${client.display_name} email:${added.email}\`.`
       ));
       return;
     }
@@ -287,7 +287,7 @@ module.exports = {
 
       if (!known || known.client_id !== client.id) {
         await interaction.reply(priv(
-          `❌ **${email}** is not an address on ${client.display_name}'s record. Add it with \`/web client-email\` first.`
+          `❌ **${email}** is not an address on ${client.display_name}'s record. Add it with \`/setup web client-email\` first.`
         ));
         return;
       }

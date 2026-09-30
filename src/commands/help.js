@@ -18,7 +18,7 @@ const SECTIONS = [
     lines: [
       ['`/go`', '**Start here.** What is waiting on you right now'],
       ['`/find`', 'Search everything at once when you only half-remember it'],
-      ['`/desk me`', 'Everything of yours: offers, assignments, deadlines, pay'],
+      ['`/go`', 'Everything of yours: offers, assignments, deadlines, pay'],
       ['`/desk web-link`', 'Open your desk in a browser (read-only)'],
       ['`/profile me`', 'Timezone, specialties, working hours, availability'],
       ['`/my-work progress`', 'Post an update on a task you hold'],
@@ -26,7 +26,7 @@ const SECTIONS = [
       ['`/my-work earnings`', 'Your own pay and payment history'],
       ['`/bonuses mine`', 'Your progress towards milestone bonuses'],
       ['`/staff-rules list`', "Studio procedures, and which you still owe"],
-      ['`/trial mine`', 'Your trial briefs, if you are on trial'],
+      ['`/team trial mine`', 'Your trial briefs, if you are on trial'],
       ['`/time member`', "Someone's current local time"],
       ['`/concern raise`', 'Raise a concern privately with the owner'],
     ],
@@ -35,17 +35,17 @@ const SECTIONS = [
     title: 'Running your department',
     applies: (actor) => actor.isOwner || actor.leadDepartmentIds.length > 0,
     lines: [
-      ['`/desk group`', 'Your queue, capacity, reviews and deadline risks'],
+      ['`/go`', 'Your queue, capacity, reviews and deadline risks'],
       ['`/who-is-free`', 'Who has room for more work over the next week'],
       ['`/task queue`', 'Unassigned work, with a button to pick an artist'],
       ['`/task assign`', 'Choose the artist and send the offer'],
       ['`/task pay`', 'Propose a figure for the owner to approve'],
-      ['`/contrib add`', 'Put a second person on a task, with their own pay'],
-      ['`/contrib list`', 'Who is on a task and what each is owed'],
+      ['`/task helpers add`', 'Put a second person on a task, with their own pay'],
+      ['`/task helpers list`', 'Who is on a task and what each is owed'],
       ['`/review queue`', 'Work waiting on your internal review'],
       ['`/review decide`', 'Request changes, or pass it for the client'],
       ['`/change reassign`', 'Move work, keeping the original record'],
-      ['`/recommend new`', 'Put somebody forward for a trial or promotion'],
+      ['`/team recommend new`', 'Put somebody forward for a trial or promotion'],
     ],
   },
   {
@@ -73,7 +73,7 @@ const SECTIONS = [
     title: 'Owner only',
     applies: (actor) => actor.isOwner || can(actor, CAPABILITIES.TASK_PAY_APPROVE),
     lines: [
-      ['`/desk owner`', 'Everything waiting on a decision from you'],
+      ['`/go`', 'Everything waiting on a decision from you'],
       ['`/task approve-pay`', 'Approve what an artist is paid'],
       ['`/quotes approve-quote`', 'Approve a price before it is sent'],
       ['`/review client`', "Record the client's decision"],
@@ -87,26 +87,26 @@ const SECTIONS = [
       ['`/pay mark-failed`', 'It was sent and never arrived — they are owed again'],
       ['`/money-in add`', 'Split what a client owes into named parts'],
       ['`/money-in list`', 'Which parts are covered, and what is still to come'],
-      ['`/contrib pay`', "Set one contributor's pay on a shared task"],
+      ['`/task helpers pay`', "Set one contributor's pay on a shared task"],
       ['`/bonuses pending`', 'Milestones reached and waiting on you'],
       ['`/change flags`', 'Scope and compensation decisions'],
       ['`/concern list`', 'Staff concerns raised privately'],
-      ['`/trial offer`', 'Send a paid trial brief with written terms'],
-      ['`/trial decide`', 'Pass or fail a submitted trial, with feedback'],
-      ['`/recommend list`', 'Recommendations waiting on you'],
-      ['`/people stand-in grant`', 'Cover for a leader, expiring on a date'],
-      ['`/people offboard preview`', 'What somebody would leave behind'],
+      ['`/team trial offer`', 'Send a paid trial brief with written terms'],
+      ['`/team trial decide`', 'Pass or fail a submitted trial, with feedback'],
+      ['`/team recommend list`', 'Recommendations waiting on you'],
+      ['`/team stand-in grant`', 'Cover for a leader, expiring on a date'],
+      ['`/team offboard preview`', 'What somebody would leave behind'],
       ['`/staff-rules set`', 'Write a procedure everyone must acknowledge'],
       ['`/messages templates`', 'Client message wording, and what is approved'],
       ['`/messages replies`', 'Clients waiting on an answer from a person'],
       ['`/messages queue`', 'Messages waiting to send, held back or failed'],
       ['`/reports overview`', 'How many tasks match each filter right now'],
       ['`/reports waiting`', 'Whether an order is waiting on us or on the client'],
-      ['`/automation list`', 'Rules that watch for something and tell somebody'],
-      ['`/backup now`', 'Take a copy you can actually restore from'],
-      ['`/studio doctor`', 'What is quietly misconfigured or stuck'],
-      ['`/studio setup`', 'Configuration and the setup checklist'],
-      ['`/summary now`', 'The management digest'],
+      ['`/setup auto list`', 'Rules that watch for something and tell somebody'],
+      ['`/setup backup now`', 'Take a copy you can actually restore from'],
+      ['`/setup doctor`', 'What is quietly misconfigured or stuck'],
+      ['`/setup setup`', 'Configuration and the setup checklist'],
+      ['`/reports now`', 'The management digest'],
     ],
   },
 ];
@@ -165,12 +165,12 @@ module.exports = {
     if (!config?.setup_completed_at) {
       embed.addFields({
         name: '⚠️ Not set up yet',
-        value: 'The studio owner should run `/studio setup` first.',
+        value: 'The studio owner should run `/setup setup` first.',
         inline: false,
       });
     }
 
-    embed.setFooter({ text: 'Commands you cannot use are not listed. Start with /desk me.' });
+    embed.setFooter({ text: 'Commands you cannot use are not listed. Start with /go.' });
     await interaction.reply(priv({ embeds: [embed] }));
   },
 };

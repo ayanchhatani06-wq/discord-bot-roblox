@@ -60,7 +60,7 @@ module.exports = {
           .setColor(0x57f287)
           .setDescription(
             'No offers, nothing overdue, nothing needing a decision from you.\n\n' +
-            'If you want to look around anyway: `/desk me` for your own work, `/help` for everything you can do.'
+            'If you want to look around anyway: `/go` for your own work, `/help` for everything you can do.'
           )],
       }));
       return;

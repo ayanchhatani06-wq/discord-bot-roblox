@@ -97,7 +97,7 @@ module.exports = {
 
       if (!department) {
         await interaction.reply(priv(
-          'You do not lead a department. Name one explicitly if you need to look: `/desk group department:<name>`.'
+          'You do not lead a department. Name one explicitly if you need to look: `/go department:<name>`.'
         ));
         return;
       }

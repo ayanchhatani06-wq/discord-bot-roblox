@@ -34,7 +34,7 @@ const SHEETS = [
       'it is somebody else’s job — you will not be missing anything by not knowing it.',
     startHere: [
       ['/go', 'What is waiting on you right now. Run it first.'],
-      ['/desk me', 'Your work, deadlines and pay in one place.'],
+      ['/go', 'Your work, deadlines and pay in one place.'],
       ['/find', 'When you half-remember a name or a code and cannot recall the command.'],
     ],
     closing: [
@@ -54,14 +54,14 @@ const SHEETS = [
       'These work inside the departments you lead, and are refused elsewhere — the same command in ' +
       'somebody else’s department will tell you no. You can also use everything on the team sheet.',
     startHere: [
-      ['/desk group', 'Your queue, who is loaded, what needs reviewing, what is at risk.'],
+      ['/go', 'Your queue, who is loaded, what needs reviewing, what is at risk.'],
       ['/task queue', 'Unassigned work, each with a button to pick an artist.'],
       ['/who-is-free', 'Who has room before you promise anything.'],
     ],
     closing: [
       ['You propose pay, the owner approves it', 'Nothing can be offered until they decide, so propose early.'],
       ['A blocker is not a delay', 'Raise it. It is how the owner sees an order has stopped, and by what.'],
-      ['Standing in for another leader', 'Ask the owner for `/people stand-in grant`. It expires on a date by itself.'],
+      ['Standing in for another leader', 'Ask the owner for `/team stand-in grant`. It expires on a date by itself.'],
     ],
   },
   {
@@ -75,14 +75,14 @@ const SHEETS = [
       'You hold every permission, so you can run anything on the other two sheets as well. ' +
       'This one is the part nobody else can do.',
     startHere: [
-      ['/desk owner', 'Everything waiting on a decision from you.'],
+      ['/go', 'Everything waiting on a decision from you.'],
       ['/go', 'The same thing, shorter, with the command for each.'],
-      ['/studio doctor', 'What is quietly misconfigured, worst first. Run it after any setup change.'],
+      ['/setup doctor', 'What is quietly misconfigured, worst first. Run it after any setup change.'],
     ],
     closing: [
       ['The bot records money, it never moves it', 'And it never asks for a payment password, card number or wallet phrase. If anything ever does, it is not this bot.'],
       ['Nothing is payable before the money is in', 'Unless you say so with `/pay mark-payable`, with your reason kept on the record.'],
-      ['Back up somewhere else', '`/backup now` writes to the same disk as the database. That is a second copy, not a backup — see the hosting notes for the offsite job.'],
+      ['Back up somewhere else', '`/setup backup now` writes to the same disk as the database. That is a second copy, not a backup — see the hosting notes for the offsite job.'],
     ],
     layout: SERVER_LAYOUT,
   },
@@ -276,7 +276,7 @@ ${sections.map((group) => `
     <div class="place">
       <h3>${escape(channel.name)}</h3>
       <p>${escape(channel.what)}</p>
-      <p class="note">${escape(channel.who)} · Point the bot at it with <code>/studio channel purpose:${escape(channel.purpose)}</code></p>
+      <p class="note">${escape(channel.who)} · Point the bot at it with <code>/setup channel purpose:${escape(channel.purpose)}</code></p>
     </div>`).join('')}
     <div class="place">
       <h3>Client channels</h3>

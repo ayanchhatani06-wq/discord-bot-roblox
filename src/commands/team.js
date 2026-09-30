@@ -1,3 +1,4 @@
+const { CURRENCIES } = require('../domain/money');
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const configRepo = require('../db/repos/config');
 const staffRepo = require('../db/repos/staff');
@@ -12,6 +13,8 @@ const { formatTotals } = require('../domain/money');
 const { parseDeadlineInput, discordTimestamp } = require('../utils/time');
 const { priv } = require('../utils/reply');
 
+const CURRENCY_CHOICES = Object.keys(CURRENCIES).map((code) => ({ name: code, value: code }));
+
 /**
  * Standing in for a leader, and leaving the studio.
  *
@@ -22,7 +25,7 @@ const { priv } = require('../utils/reply');
  */
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('people')
+    .setName('team')
     .setDescription('Stand-in leaders and offboarding')
     .addSubcommandGroup((group) =>
       group
@@ -42,7 +45,7 @@ module.exports = {
           sub
             .setName('revoke')
             .setDescription('End a stand-in arrangement early')
-            .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /people stand-in list').setRequired(true))
+            .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /team stand-in list').setRequired(true))
         )
         .addSubcommand((sub) =>
           sub
@@ -74,7 +77,7 @@ module.exports = {
           sub
             .setName('complete')
             .setDescription('Mark an offboarding finished once nothing is outstanding')
-            .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /people offboard list').setRequired(true))
+            .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /team offboard list').setRequired(true))
         )
         .addSubcommand((sub) => sub.setName('list').setDescription('Departures, open ones first'))
     )
@@ -98,6 +101,111 @@ module.exports = {
         .addSubcommand((sub) =>
           sub.setName('list').setDescription('Who recruited whom, and whose fee is still to come')
         )
+    )
+.addSubcommandGroup((group) =>
+      group
+        .setName('recommend')
+        .setDescription('Put somebody forward for a trial, a promotion or a leader role')
+      .addSubcommand((sub) =>
+        sub
+          .setName('new')
+          .setDescription('Recommend somebody')
+          .addUserOption((opt) => opt.setName('person').setDescription('Who you are recommending').setRequired(true))
+          .addStringOption((opt) =>
+            opt.setName('kind').setDescription('What for').setRequired(true)
+              .addChoices(
+                { name: 'A trial', value: 'trial' },
+                { name: 'Taking them on / promotion', value: 'promotion' },
+                { name: 'A group leader role', value: 'leader' }
+              )
+          )
+          .addStringOption((opt) => opt.setName('note').setDescription('Why — what you have seen of their work').setRequired(true))
+          .addStringOption((opt) => opt.setName('department').setDescription('Which department').setRequired(false).setAutocomplete(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('list')
+          .setDescription('Recommendations waiting on a decision')
+          .addStringOption((opt) =>
+            opt.setName('status').setDescription('Which ones').setRequired(false)
+              .addChoices(
+                { name: 'Pending', value: 'pending' },
+                { name: 'Accepted', value: 'accepted' },
+                { name: 'Declined', value: 'declined' },
+                { name: 'All', value: 'all' }
+              )
+          )
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('decide')
+          .setDescription('Accept or decline a recommendation')
+          .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /team recommend list').setRequired(true))
+          .addStringOption((opt) =>
+            opt.setName('decision').setDescription('Your decision').setRequired(true)
+              .addChoices({ name: 'Accept', value: 'accept' }, { name: 'Decline', value: 'decline' })
+          )
+          .addStringOption((opt) => opt.setName('note').setDescription('A note for the leader who recommended them').setRequired(false))
+      )
+    )
+.addSubcommandGroup((group) =>
+      group
+        .setName('trial')
+        .setDescription('Paid trial briefs, and deciding them')
+      .addSubcommand((sub) =>
+        sub
+          .setName('offer')
+          .setDescription('Write a trial brief and send it')
+          .addUserOption((opt) => opt.setName('person').setDescription('Who it is for').setRequired(true))
+          .addStringOption((opt) => opt.setName('title').setDescription('Short title for the trial piece').setRequired(true))
+          .addStringOption((opt) => opt.setName('brief').setDescription('What they are asked to make').setRequired(true))
+          .addStringOption((opt) => opt.setName('terms').setDescription('What is paid, what is expected, what happens after').setRequired(true))
+          .addStringOption((opt) => opt.setName('department').setDescription('Which department').setRequired(false).setAutocomplete(true))
+          .addStringOption((opt) => opt.setName('pay').setDescription('Trial pay (leave empty only if genuinely unpaid)').setRequired(false))
+          .addStringOption((opt) => opt.setName('currency').setDescription('Currency').addChoices(...CURRENCY_CHOICES).setRequired(false))
+          .addStringOption((opt) => opt.setName('deadline').setDescription('Deadline, in their timezone, e.g. 2026-10-05 18:00').setRequired(false))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('submit')
+          .setDescription('Submit your trial work')
+          .addStringOption((opt) => opt.setName('code').setDescription('Trial code').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) => opt.setName('links').setDescription('Link(s) to your work').setRequired(true))
+          .addStringOption((opt) => opt.setName('note').setDescription('Anything you want noted').setRequired(false))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('decide')
+          .setDescription('Pass or fail a submitted trial, with feedback')
+          .addStringOption((opt) => opt.setName('code').setDescription('Trial code').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) =>
+            opt.setName('outcome').setDescription('The decision').setRequired(true)
+              .addChoices({ name: 'Passed', value: 'passed' }, { name: 'Not this time', value: 'failed' })
+          )
+          .addStringOption((opt) => opt.setName('feedback').setDescription('Feedback for them — required either way').setRequired(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('withdraw')
+          .setDescription('Withdraw a trial that has not been decided')
+          .addStringOption((opt) => opt.setName('code').setDescription('Trial code').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) => opt.setName('reason').setDescription('Why, for the record').setRequired(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('list')
+          .setDescription('Trials, open by default')
+          .addStringOption((opt) =>
+            opt.setName('status').setDescription('Which ones').setRequired(false)
+              .addChoices(
+                { name: 'Open', value: 'open' },
+                { name: 'Passed', value: 'passed' },
+                { name: 'Not passed', value: 'failed' },
+                { name: 'All', value: 'all' }
+              )
+          )
+      )
+      .addSubcommand((sub) => sub.setName('mine').setDescription('Your own trial briefs'))
     ),
 
   async autocomplete(interaction) {
@@ -107,6 +215,14 @@ module.exports = {
   },
 
   async execute(interaction) {
+    if (interaction.options.getSubcommandGroup() === 'trial') {
+      return require('./parts/trial').execute(interaction);
+    }
+
+    if (interaction.options.getSubcommandGroup() === 'recommend') {
+      return require('./parts/recommend').execute(interaction);
+    }
+
     const { db, guildId, departments, actor } = contextFor(interaction);
     const group = interaction.options.getSubcommandGroup();
     const sub = interaction.options.getSubcommand();
@@ -174,7 +290,7 @@ module.exports = {
             .setTitle('Who recruited whom')
             .setColor(0x5865f2)
             .setDescription(rows.length === 0
-              ? '_Nobody has a recruiter recorded. Set one with `/people recruited set`._'
+              ? '_Nobody has a recruiter recorded. Set one with `/team recruited set`._'
               : rows.map((row) =>
                 `${row.recruiter_fee_taken_at ? '✅' : '⏳'} <@${row.user_id}> — recruited by <@${row.recruited_by}>` +
                 `\n┗ ${row.recruiter_fee_taken_at
@@ -274,7 +390,7 @@ module.exports = {
         content:
           `🛡️ You are standing in for **${department.name}** until ${discordTimestamp(until.utcMs, 'F')}.\n` +
           `Covering: ${grant.responsibilities}\n` +
-          'You can assign work, propose pay and review submissions in that department. Start with `/desk group`.',
+          'You can assign work, propose pay and review submissions in that department. Start with `/go`.',
       }).catch(() => null);
       return;
     }
@@ -363,7 +479,7 @@ module.exports = {
     }
 
     if (sub === 'preview') {
-      embed.setFooter({ text: 'Nothing has been changed. Run /people offboard start when you are ready.' });
+      embed.setFooter({ text: 'Nothing has been changed. Run /team offboard start when you are ready.' });
       await interaction.reply(priv({ embeds: [embed] }));
       return;
     }

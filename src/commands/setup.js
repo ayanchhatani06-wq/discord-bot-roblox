@@ -11,6 +11,18 @@ const { CURRENCIES } = require('../domain/money');
 const { parseClockInput, formatClockMinutes } = require('../utils/time');
 const { priv } = require('../utils/reply');
 
+const automationService = require('../services/automation');
+const exporterService = require('../services/exporter');
+
+const TRIGGER_CHOICES = Object.entries(automationService.TRIGGER_LABELS)
+  .map(([value, name]) => ({ name: String(name).slice(0, 100), value }));
+const ACTION_CHOICES = Object.entries(automationService.ACTION_LABELS)
+  .map(([value, name]) => ({ name: String(name).slice(0, 100), value }));
+const KIND_CHOICES = exporterService.EXPORT_KINDS.map((kind) => ({
+  name: exporterService.EXPORTABLE[kind].label.slice(0, 100),
+  value: kind,
+}));
+
 const CHANNEL_TARGETS = {
   board: { column: 'staff_board_channel_id', label: 'staff info board' },
   audit: { column: 'audit_log_channel_id', label: 'audit log' },
@@ -27,7 +39,7 @@ function percentToBp(percent) {
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('studio')
+    .setName('setup')
     .setDescription('Configure the studio bot (owner only)')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addSubcommand((sub) =>
@@ -125,6 +137,145 @@ module.exports = {
         )
         .addUserOption((opt) => opt.setName('leader').setDescription('Stand-in group leader (defaults to you)').setRequired(false))
         .addUserOption((opt) => opt.setName('artist').setDescription('Stand-in artist (defaults to you)').setRequired(false))
+    )
+.addSubcommandGroup((group) =>
+      group
+        .setName('web')
+        .setDescription('The public website and client sign-in')
+      .addSubcommand((sub) =>
+        sub
+          .setName('identity')
+          .setDescription("Your studio's name and tagline, as the site shows them")
+          .addStringOption((opt) => opt.setName('name').setDescription('Studio name').setRequired(false).setMaxLength(80))
+          .addStringOption((opt) => opt.setName('tagline').setDescription('One line under the name').setRequired(false).setMaxLength(160))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('service')
+          .setDescription('Write or rewrite one service on the public site')
+          .addStringOption((opt) => opt.setName('key').setDescription('Short id, e.g. modelling').setRequired(true))
+          .addStringOption((opt) => opt.setName('name').setDescription('How it reads, e.g. 3D Modelling').setRequired(true))
+          .addStringOption((opt) => opt.setName('summary').setDescription('One or two sentences').setRequired(true).setMaxLength(400))
+          .addStringOption((opt) => opt.setName('detail').setDescription('Anything more').setRequired(false).setMaxLength(800))
+          .addIntegerOption((opt) => opt.setName('order').setDescription('Where it sits in the list').setRequired(false))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('publish-service')
+          .setDescription('Show or hide a service on the public site')
+          .addStringOption((opt) => opt.setName('key').setDescription('Service id').setRequired(true).setAutocomplete(true))
+          .addBooleanOption((opt) => opt.setName('published').setDescription('Show it?').setRequired(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('page')
+          .setDescription('Write a page, such as About')
+          .addStringOption((opt) =>
+            opt.setName('key').setDescription('Which page').setRequired(true)
+              .addChoices({ name: 'About', value: 'about' }, { name: 'Contact', value: 'contact' })
+          )
+          .addStringOption((opt) => opt.setName('title').setDescription('Heading').setRequired(true).setMaxLength(100))
+          .addStringOption((opt) => opt.setName('body').setDescription('The text. A blank line starts a new paragraph.').setRequired(true).setMaxLength(3500))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('publish-page')
+          .setDescription('Show or hide a page')
+          .addStringOption((opt) =>
+            opt.setName('key').setDescription('Which page').setRequired(true)
+              .addChoices({ name: 'About', value: 'about' }, { name: 'Contact', value: 'contact' })
+          )
+          .addBooleanOption((opt) => opt.setName('published').setDescription('Show it?').setRequired(true))
+      )
+      .addSubcommand((sub) => sub.setName('status').setDescription('What the public site currently shows'))
+      .addSubcommand((sub) =>
+        sub
+          .setName('client-email')
+          .setDescription('Let a client sign in to the website with an email address')
+          .addStringOption((opt) => opt.setName('client').setDescription('Client').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) => opt.setName('email').setDescription('Their email address').setRequired(true))
+          .addBooleanOption((opt) => opt.setName('can-approve').setDescription('May they approve work? (default: no)').setRequired(false))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('revoke-email')
+          .setDescription("Remove an email address's access")
+          .addStringOption((opt) => opt.setName('client').setDescription('Client').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) => opt.setName('email').setDescription('Address to remove').setRequired(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('sign-in-link')
+          .setDescription('Make a one-time sign-in link to send a client yourself')
+          .addStringOption((opt) => opt.setName('client').setDescription('Client').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) => opt.setName('email').setDescription('Which of their addresses').setRequired(true))
+      )
+    )
+.addSubcommandGroup((group) =>
+      group
+        .setName('auto')
+        .setDescription('Rules that watch for something and tell somebody')
+      .addSubcommand((sub) =>
+        sub
+          .setName('set')
+          .setDescription('Create or change a rule (it starts switched off)')
+          .addStringOption((opt) => opt.setName('key').setDescription('Short id, e.g. chase-overdue').setRequired(true))
+          .addStringOption((opt) => opt.setName('label').setDescription('What it is for, in your words').setRequired(true))
+          .addStringOption((opt) => opt.setName('when').setDescription('What it watches for').setRequired(true).addChoices(...TRIGGER_CHOICES))
+          .addStringOption((opt) => opt.setName('then').setDescription('What it does').setRequired(true).addChoices(...ACTION_CHOICES))
+          .addIntegerOption((opt) => opt.setName('days').setDescription('How many days, where the trigger needs one').setRequired(false).setMinValue(1).setMaxValue(365))
+          .addStringOption((opt) => opt.setName('department').setDescription('Only this department').setRequired(false).setAutocomplete(true))
+          .addUserOption((opt) => opt.setName('person').setDescription('Who to tell, if the action is one named person').setRequired(false))
+          .addStringOption((opt) => opt.setName('note').setDescription('A line to include in the message').setRequired(false))
+      )
+      .addSubcommand((sub) => sub.setName('list').setDescription('Every rule, and whether it is on'))
+      .addSubcommand((sub) =>
+        sub
+          .setName('preview')
+          .setDescription('What a rule would do right now — it does none of it')
+          .addStringOption((opt) => opt.setName('key').setDescription('Rule id').setRequired(true).setAutocomplete(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('on')
+          .setDescription('Switch a rule on')
+          .addStringOption((opt) => opt.setName('key').setDescription('Rule id').setRequired(true).setAutocomplete(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('off')
+          .setDescription('Switch a rule off')
+          .addStringOption((opt) => opt.setName('key').setDescription('Rule id').setRequired(true).setAutocomplete(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('delete')
+          .setDescription('Remove a rule entirely')
+          .addStringOption((opt) => opt.setName('key').setDescription('Rule id').setRequired(true).setAutocomplete(true))
+      )
+    )
+.addSubcommandGroup((group) =>
+      group
+        .setName('backup')
+        .setDescription('Backups you can restore from, and readable exports')
+      .addSubcommand((sub) =>
+        sub
+          .setName('now')
+          .setDescription('Take a consistent copy of the database, right now')
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('export')
+          .setDescription('Download readable data as a spreadsheet file')
+          .addStringOption((opt) => opt.setName('what').setDescription('Which records').setRequired(true).addChoices(...KIND_CHOICES))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('verify')
+          .setDescription('Check a backup file is really a database that opens')
+          .addStringOption((opt) => opt.setName('file').setDescription('Path on the server, or leave empty for the newest').setRequired(false))
+      )
+      .addSubcommand((sub) => sub.setName('restore').setDescription('How to put a backup back — read this before you need it'))
     ),
 
   async autocomplete(interaction) {
@@ -148,6 +299,18 @@ module.exports = {
   },
 
   async execute(interaction) {
+    if (interaction.options.getSubcommandGroup() === 'backup') {
+      return require('./parts/backup').execute(interaction);
+    }
+
+    if (interaction.options.getSubcommandGroup() === 'auto') {
+      return require('./parts/automation').execute(interaction);
+    }
+
+    if (interaction.options.getSubcommandGroup() === 'web') {
+      return require('./parts/web').execute(interaction);
+    }
+
     const ctx = contextFor(interaction);
     const { db, guildId, config, actor } = ctx;
     const sub = interaction.options.getSubcommand();
@@ -367,7 +530,7 @@ module.exports = {
     if (sub === 'departments') {
       const departments = configRepo.listDepartments(db, guildId);
       if (departments.length === 0) {
-        await interaction.reply(priv('No departments yet. Run `/studio setup` to create the defaults.'));
+        await interaction.reply(priv('No departments yet. Run `/setup setup` to create the defaults.'));
         return;
       }
 
@@ -528,7 +691,7 @@ module.exports = {
       if (existing.length > 0) {
         await interaction.reply(priv(
           `There is already a sample project (**${existing[0].code}**). ` +
-          'Remove it first with `/studio sample action:Remove sample data`.'
+          'Remove it first with `/setup sample action:Remove sample data`.'
         ));
         return;
       }
@@ -541,7 +704,7 @@ module.exports = {
 
       if (!result.ok) {
         await interaction.reply(priv(
-          `❌ Could not build the sample: ${result.reason === 'no_departments' ? 'no departments exist yet — run `/studio setup` first' : result.reason}.`
+          `❌ Could not build the sample: ${result.reason === 'no_departments' ? 'no departments exist yet — run `/setup setup` first' : result.reason}.`
         ));
         return;
       }
@@ -556,10 +719,10 @@ module.exports = {
         `• \`/review queue\` — ${result.showcase.inReview} is waiting for internal review`,
         `• \`/review client task:${result.showcase.inReview}\` — record a client decision (after passing review)`,
         `• \`/pay splits task:${result.showcase.finished}\` — see the pool divided`,
-        `• \`/pay ledger\` and \`/summary now\` — the money and management views`,
+        `• \`/pay ledger\` and \`/reports now\` — the money and management views`,
         '',
         'Nobody was DMed about these: sample tasks are set up directly, not offered for real.',
-        'Remove it all with `/studio sample action:Remove sample data`.',
+        'Remove it all with `/setup sample action:Remove sample data`.',
       ].join('\n')));
       boardScheduler.invalidate(guildId);
     }

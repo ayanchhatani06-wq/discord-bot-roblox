@@ -127,7 +127,7 @@ Builder set:
 | `completed-work`, `projects-done` | `/files`, `/files portfolio` |
 | `task-payments`, `payment-logs` | `/pay ledger`, `/pay outstanding`, `#studio-audit` |
 | `client-feedback` | Recorded against the version approved; `/my-work history` |
-| `[team]-applications` | `#apply` + `/recommend new` |
+| `[team]-applications` | `#apply` + `/team recommend new` |
 | `[team]-chat` | `#staff-chat`, or one channel per craft if you want them |
 
 The Builder summary already flags that this structure was *"verbally agreed but
@@ -135,7 +135,7 @@ not yet built"* — so nothing has been taken away yet. But danisaads was told h
 would get it.
 
 **This needs a conversation with him, not a quiet change.** The honest version
-is: you are getting better than that, because `/desk group` shows you your queue,
+is: you are getting better than that, because `/go` shows you your queue,
 your team's load, what is waiting on your review and what is at risk — in one
 place, always current, instead of seven channels you have to read. But he should
 hear it from you before he goes looking for channels that do not exist.
@@ -168,7 +168,7 @@ unambiguous.
 The Staff Guidelines exclude scripters from the hiring track (§2). The bot ships
 a **Scripting** department by default, and `#services` would advertise it.
 
-Either archive it — `/studio department key:scripting archived:true`, and it
+Either archive it — `/setup department key:scripting archived:true`, and it
 stops appearing on the boards — or decide scripters are handled on different
 terms and say what those are. Right now the bot is set up to route scripting work
 to a track your own handbook says does not exist.

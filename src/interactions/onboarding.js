@@ -91,7 +91,7 @@ register(TRIAL_NAMESPACE, async (interaction, { action, args }) => {
       `✅ You accepted **${trial.code} · ${trial.title}**.\n` +
       `${trial.pay_minor !== null ? `Agreed: **${formatAmount(trial.pay_minor, trial.pay_currency)}**. ` : ''}` +
       'The terms above are recorded as you accepted them.\n' +
-      `Submit your work with \`/trial submit code:${trial.code}\`.`
+      `Submit your work with \`/team trial submit code:${trial.code}\`.`
     ));
 
     if (config?.owner_user_id) {

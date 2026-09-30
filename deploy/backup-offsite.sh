@@ -2,14 +2,14 @@
 #
 # Takes a backup and copies it off this box.
 #
-# The bot's /backup now writes a verified copy to data/backups — on the same
+# The bot's /setup backup now writes a verified copy to data/backups — on the same
 # disk as the database it is protecting. That is not a backup, it is a second
 # copy of a file that dies with the disk. This moves it somewhere else and
 # throws away the old local ones.
 #
 # Run it from cron, daily:
 #   crontab -e
-#   17 3 * * * /home/ubuntu/discord-bot-roblox/deploy/backup-offsite.sh >> /home/ubuntu/backup.log 2>&1
+#   17 3 * * * /home/ubuntu/discord-bot-roblox/deploy/backup-offsite.sh >> /home/ubuntu/setup backup.log 2>&1
 #
 # Set DESTINATION to anything scp or rclone understands.
 
@@ -28,7 +28,7 @@ mkdir -p "$BACKUP_DIR"
 
 # SQLite's own backup, not cp: a copy taken mid-write produces a file that
 # looks fine and is not.
-sqlite3 "${DATABASE_FILE:-$APP_DIR/data/studio.db}" ".backup '$TARGET'"
+sqlite3 "${DATABASE_FILE:-$APP_DIR/data/setup.db}" ".backup '$TARGET'"
 
 # A backup nobody has opened is a hope. Open it.
 if ! sqlite3 "$TARGET" "PRAGMA integrity_check;" | grep -q '^ok$'; then

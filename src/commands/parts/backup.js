@@ -61,7 +61,7 @@ module.exports = {
           .setTitle('Putting a backup back')
           .setColor(0xfaa61a)
           .setDescription(exporter.RESTORE_STEPS.map((step, index) => `**${index + 1}.** ${step}`).join('\n\n'))
-          .setFooter({ text: 'A backup nobody has ever opened is a hope, not a backup. Try /backup verify on a real file.' })],
+          .setFooter({ text: 'A backup nobody has ever opened is a hope, not a backup. Try /setup backup verify on a real file.' })],
       }));
       return;
     }
@@ -107,7 +107,7 @@ module.exports = {
     if (sub === 'verify') {
       const file = interaction.options.getString('file') || exporter.newestBackup(BACKUP_DIR);
       if (!file) {
-        await interaction.reply(priv(`❌ No backup found in \`${BACKUP_DIR}\`. Take one with \`/backup now\`.`));
+        await interaction.reply(priv(`❌ No backup found in \`${BACKUP_DIR}\`. Take one with \`/setup backup now\`.`));
         return;
       }
 
@@ -142,7 +142,7 @@ module.exports = {
         content:
           `📄 **${result.label}** — ${result.rows} row(s).\n` +
           `${kind === 'payments' ? '_Payment references are deliberately left out: one of them could be a gift card code._\n' : ''}` +
-          '⚠️ **This is not a backup.** You cannot put the studio back from a spreadsheet — use `/backup now` for that.',
+          '⚠️ **This is not a backup.** You cannot put the studio back from a spreadsheet — use `/setup backup now` for that.',
         files: [file],
       }));
     }

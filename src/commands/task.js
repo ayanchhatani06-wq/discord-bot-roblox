@@ -122,7 +122,42 @@ module.exports = {
         .addStringOption((opt) => opt.setName('task').setDescription('Task code').setRequired(true).setAutocomplete(true))
         .addStringOption((opt) => opt.setName('reason').setDescription('Why').setRequired(false))
     )
-    .addSubcommand((sub) => sub.setName('mine').setDescription('Your offers and current assignments')),
+    .addSubcommand((sub) => sub.setName('mine').setDescription('Your offers and current assignments'))
+.addSubcommandGroup((group) =>
+      group
+        .setName('helpers')
+        .setDescription('Extra people on a task, each on their own agreed pay')
+      .addSubcommand((sub) =>
+        sub
+          .setName('add')
+          .setDescription('Add somebody to a task alongside the main artist')
+          .addStringOption((opt) => opt.setName('task').setDescription('Task code').setRequired(true).setAutocomplete(true))
+          .addUserOption((opt) => opt.setName('person').setDescription('Who is helping').setRequired(true))
+          .addStringOption((opt) => opt.setName('responsibility').setDescription('What they are doing on it').setRequired(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('remove')
+          .setDescription('Take somebody off a task (their record and any payments stay)')
+          .addStringOption((opt) => opt.setName('task').setDescription('Task code').setRequired(true).setAutocomplete(true))
+          .addUserOption((opt) => opt.setName('person').setDescription('Who to remove').setRequired(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('pay')
+          .setDescription("Set one contributor's pay (owner) or propose it (group leader)")
+          .addStringOption((opt) => opt.setName('task').setDescription('Task code').setRequired(true).setAutocomplete(true))
+          .addUserOption((opt) => opt.setName('person').setDescription('Who it is for').setRequired(true))
+          .addStringOption((opt) => opt.setName('amount').setDescription('Amount for their part').setRequired(true))
+          .addStringOption((opt) => opt.setName('currency').setDescription('Currency').addChoices(...CURRENCY_CHOICES).setRequired(false))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('list')
+          .setDescription('Who is on a task, and what each is owed')
+          .addStringOption((opt) => opt.setName('task').setDescription('Task code').setRequired(true).setAutocomplete(true))
+      )
+    ),
 
   async autocomplete(interaction) {
     const focused = interaction.options.getFocused(true);
@@ -158,6 +193,10 @@ module.exports = {
   },
 
   async execute(interaction) {
+    if (interaction.options.getSubcommandGroup() === 'helpers') {
+      return require('./parts/contrib').execute(interaction);
+    }
+
     const ctx = contextFor(interaction);
     const { db, guildId, config, actor, departments } = ctx;
     const sub = interaction.options.getSubcommand();

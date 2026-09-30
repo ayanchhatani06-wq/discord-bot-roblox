@@ -6,7 +6,7 @@ const tls = require('node:tls');
  *
  * Optional, and off unless SMTP settings are present. Without it everything
  * still works: the bot generates the link and a staff member passes it on,
- * which is exactly what `/web sign-in-link` is for. This only removes the
+ * which is exactly what `/setup web sign-in-link` is for. This only removes the
  * manual step.
  *
  * Written against SMTP directly rather than pulling in a mail library. The

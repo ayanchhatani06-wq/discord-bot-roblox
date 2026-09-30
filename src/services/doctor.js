@@ -38,7 +38,7 @@ function checkConfig(db, guildId) {
       SEVERITY.BREAKS,
       'No studio owner is recorded',
       'Pay cannot be approved, splits have nowhere to fall back to, and nothing that needs an owner decision can happen.',
-      '`/studio setup`'
+      '`/setup setup`'
     ));
   }
 
@@ -47,7 +47,7 @@ function checkConfig(db, guildId) {
       SEVERITY.BREAKS,
       'No fallback channel',
       'Task offers and reminders go by DM. Anybody with DMs closed simply never receives them, and nothing tells you it happened.',
-      '`/studio channels`'
+      '`/setup channels`'
     ));
   }
 
@@ -56,7 +56,7 @@ function checkConfig(db, guildId) {
       SEVERITY.NOTE,
       'No staff board channel',
       'The per-department boards showing who is available and their local time have nowhere to post.',
-      '`/studio channels`'
+      '`/setup channels`'
     ));
   }
 
@@ -64,8 +64,8 @@ function checkConfig(db, guildId) {
     findings.push(finding(
       SEVERITY.NOTE,
       'No summary channel',
-      'The weekly management digest has nowhere to go, so it is only ever seen by running `/summary now`.',
-      '`/studio channels`'
+      'The weekly management digest has nowhere to go, so it is only ever seen by running `/reports now`.',
+      '`/setup channels`'
     ));
   }
 
@@ -82,7 +82,7 @@ function checkDepartments(db, guildId) {
       SEVERITY.BREAKS,
       'No departments',
       'Work cannot be routed anywhere.',
-      '`/studio setup`'
+      '`/setup setup`'
     )];
   }
 
@@ -93,7 +93,7 @@ function checkDepartments(db, guildId) {
       `${leaderless.length} department(s) have no leader role`,
       `${leaderless.map((d) => d.name).join(', ')} — nobody holds the power to assign work or review it there, ` +
       'so every task in them waits on you personally.',
-      '`/studio department-roles`'
+      '`/setup department-roles`'
     ));
   }
 
@@ -103,7 +103,7 @@ function checkDepartments(db, guildId) {
       SEVERITY.RISKY,
       `${memberless.length} department(s) have no member role`,
       `${memberless.map((d) => d.name).join(', ')} — the assignment shortlist for those will be empty.`,
-      '`/studio department-roles`'
+      '`/setup department-roles`'
     ));
   }
 
@@ -166,7 +166,7 @@ function checkClients(db, guildId) {
       `${orphaned.length} client(s) with orders cannot open anything`,
       `${orphaned.map((row) => row.display_name).join(', ')} — no Discord account and no email address is authorised ` +
       'for them, so a dashboard posted in their channel opens for nobody.',
-      '`/clients add-account` or `/web client-email`'
+      '`/clients add-account` or `/setup web client-email`'
     ));
   }
 
@@ -230,7 +230,7 @@ function checkWebsite(db, guildId) {
       SEVERITY.NOTE,
       'The website has no studio name',
       'Every public page currently says "Studio".',
-      '`/web identity name:`'
+      '`/setup web identity name:`'
     ));
   }
 

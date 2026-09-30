@@ -145,7 +145,7 @@ module.exports = {
 
       await interaction.reply(priv(
         `✅ <@${person.id}> is on **${task.code}** for: ${responsibility}\n` +
-        `Their pay is separate and not set yet — \`/contrib pay task:${task.code} person:@them amount:...\`.`
+        `Their pay is separate and not set yet — \`/task helpers pay task:${task.code} person:@them amount:...\`.`
       ));
 
       await notifyUser(interaction.client, db, guildId, person.id, {
@@ -166,7 +166,7 @@ module.exports = {
       const person = interaction.options.getUser('person', true);
       const existing = contributorsRepo.getContributor(db, task.id, person.id);
       if ((!existing || existing.removed_at) && task.artist_user_id !== person.id) {
-        await interaction.reply(priv(`❌ <@${person.id}> is not on **${task.code}**. Add them first with \`/contrib add\`.`));
+        await interaction.reply(priv(`❌ <@${person.id}> is not on **${task.code}**. Add them first with \`/task helpers add\`.`));
         return;
       }
 
@@ -195,7 +195,7 @@ module.exports = {
           await notifyUser(interaction.client, db, guildId, config.owner_user_id, {
             content:
               `💰 <@${userId}> proposed **${formatAmount(amountMinor, currency)}** for <@${person.id}> on **${task.code} · ${task.title}**.\n` +
-              `Approve with \`/contrib pay task:${task.code} person:@them amount:...\`.`,
+              `Approve with \`/task helpers pay task:${task.code} person:@them amount:...\`.`,
           }).catch(() => null);
         }
         return;

@@ -60,7 +60,7 @@ function buildPanel(db, guildId) {
     .setTitle('Studio setup')
     .setColor(0x5865f2)
     .setDescription(steps.map((step) => `${tick(step.done)} ${step.text}${step.optional ? ' _(optional)_' : ''}`).join('\n'))
-    .setFooter({ text: 'Use the controls below. Everything here can be changed later with /studio.' });
+    .setFooter({ text: 'Use the controls below. Everything here can be changed later with /setup.' });
 
   const components = [
     new ActionRowBuilder().addComponents(
@@ -197,7 +197,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
   if (action === 'dept') {
     const departments = configRepo.listDepartments(db, guildId);
     if (departments.length === 0) {
-      await interaction.reply(priv('No departments yet. Run `/studio setup` first to create the defaults.'));
+      await interaction.reply(priv('No departments yet. Run `/setup setup` first to create the defaults.'));
       return;
     }
 

@@ -124,9 +124,9 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 
 | Item | Status |
 | --- | --- |
-| Multiple contributors per deliverable with defined responsibilities | ✅ (`/contrib add`) |
-| Owner-approved separate compensation per contribution | ✅ (leader proposes with `/contrib pay`, owner approves) |
-| Each contributor sees only their own terms | ✅ (`/contrib list` hides colleagues' figures from non-finance staff) |
+| Multiple contributors per deliverable with defined responsibilities | ✅ (`/task helpers add`) |
+| Owner-approved separate compensation per contribution | ✅ (leader proposes with `/task helpers pay`, owner approves) |
+| Each contributor sees only their own terms | ✅ (`/task helpers list` hides colleagues' figures from non-finance staff) |
 | Client revenue, artist pay, leader/finder shares, bonuses, studio allocations kept distinct | ✅ |
 | Prevent allocations silently exceeding the configured budget | ✅ (refused outright; `/pay budget-override` is the only way past, and it is recorded) |
 | Configurable bonus milestones (e.g. every 10 approved videos) | ✅ (`/bonuses rule-set`) |
@@ -138,10 +138,10 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 | --- | --- |
 | Onboarding collecting profile, timezone, specialties, software, portfolio, availability | ✅ already built |
 | Show procedures and record acknowledgement of the current version | ✅ (`/staff-rules`; an edit raises the version and makes earlier acknowledgements stale) |
-| Trial briefs with explicit terms, deadlines, submissions, feedback | ✅ (`/trial`; accepted terms are snapshotted) |
-| Leader recommendations; promotion follows configured permissions | ✅ (`/recommend`; the bot never grants a Discord role) |
-| Temporary backup leaders with expiry and recorded responsibilities | ✅ (`/people stand-in`; expiry is checked on every permission lookup) |
-| Offboarding: remove access, flag unfinished tasks, missing files, outstanding pay | ✅ (`/people offboard preview` and `start`; nothing is deleted) |
+| Trial briefs with explicit terms, deadlines, submissions, feedback | ✅ (`/team trial`; accepted terms are snapshotted) |
+| Leader recommendations; promotion follows configured permissions | ✅ (`/team recommend`; the bot never grants a Discord role) |
+| Temporary backup leaders with expiry and recorded responsibilities | ✅ (`/team stand-in`; expiry is checked on every permission lookup) |
+| Offboarding: remove access, flag unfinished tasks, missing files, outstanding pay | ✅ (`/team offboard preview` and `start`; nothing is deleted) |
 | Historical records preserved | ✅ already built |
 
 ## 9. Personal and management dashboards
@@ -163,7 +163,7 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 | Record who authorized delivery, which version, and when | ✅ |
 | Release according to configured delivery conditions | ✅ |
 | Searchable archive filtered by project, artist, asset type, permission | ✅ (also feeds the website) |
-| Portfolio rights: staff/studio use, start date, client restrictions | ✅ |
+| Portfolio rights: staff/setup use, start date, client restrictions | ✅ |
 
 ## 11. Issues, revisions, and support
 
@@ -184,7 +184,7 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 | Filters: deliverables, overdue, waiting time, unassigned, revisions, payouts, repeat orders, enquiries | ✅ (`/reports filter`, nine filters phrased as plain questions) |
 | Separate client-caused waiting from artist delay | ✅ (`/reports waiting`, reconstructed from the audit trail) |
 | Avoid ranking staff on task counts alone | ✅ (no score exists to sort by; the team list is in name order and says so) |
-| Owner-configurable automation rules with effect preview | ✅ (`/automation`; rules start off, a preview costs one command, and each task is acted on once per rule) |
+| Owner-configurable automation rules with effect preview | ✅ (`/setup auto`; rules start off, a preview costs one command, and each task is acted on once per rule) |
 
 ## 13. Access, reliability, and ease of use
 
@@ -196,8 +196,8 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 | Internal pay, staff feedback and private discussion never client-visible | ✅ |
 | Persistent storage, duplicate protection, audit trail | ✅ already built |
 | Scheduled-job recovery | ✅ reminder state survives restarts |
-| Backups and restore instructions | ✅ (`/backup now`, `verify`, `restore`; uses SQLite's online backup, not a file copy) |
-| Owner-controlled exports | ✅ (`/backup export`; CSV, with payment references deliberately left out) |
+| Backups and restore instructions | ✅ (`/setup backup now`, `verify`, `restore`; uses SQLite's online backup, not a file copy) |
+| Owner-controlled exports | ✅ (`/setup backup export`; CSV, with payment references deliberately left out) |
 | Configurable notifications, quiet hours, batching | ✅ already built |
 | Recovery when a DM fails, a ticket closes, or a board is deleted | ✅ |
 | Setup wizard, demonstration project | ✅ already built |
@@ -212,7 +212,7 @@ client login that must also work for clients who are not in the Discord server.
 
 | Item | Status |
 | --- | --- |
-| Public pages: services, portfolio, about, contact | ✅ (`/web` writes them; shown verbatim, nothing generated) |
+| Public pages: services, portfolio, about, contact | ✅ (`/setup web` writes them; shown verbatim, nothing generated) |
 | Quote request form feeding the same enquiry pipeline | ✅ (a web request and a typed one are the same enquiry from there on) |
 | Portfolio populated only from assets the client permitted | ✅ (only `publishablePortfolio`; no client, project, price or date shown) |
 | Separate web process, read-only on a curated subset | ✅ (writes only enquiries, sessions and login tokens) |
@@ -234,7 +234,7 @@ by name rather than something that seemed like a good idea.
 | Tamper-evident: a changed file is refused, not returned | ✅ (SHA-256 recorded at filing; `/proof show` refuses a mismatch, `/proof verify` checks all of them) |
 | Identical file filed twice is one record | ✅ (unique on `(guild_id, sha256)`, enforced by the database) |
 | Only safe file types, size-capped | ✅ (images, PDF, plain text, 8 MB; an evidence store that takes executables is a way to pass malware around) |
-| Filed proof included in backups | ✅ (`/backup now` copies the files next to the database; `deploy/backup-offsite.sh` tars and ships them, and reads the archive back) |
+| Filed proof included in backups | ✅ (`/setup backup now` copies the files next to the database; `deploy/backup-offsite.sh` tars and ships them, and reads the archive back) |
 | Dispute evidence pack | ✅ (`/proof record` — terms, submissions, releases, decisions, money both ways, hashes, audit trail) |
 | The pack states what is **missing**, not just what is there | ✅ (gaps such as "no record of anybody accepting the terms" are listed in the document) |
 | Deposits with named milestones | ✅ (`/money-in add label:`; receipts fill parts in order) |

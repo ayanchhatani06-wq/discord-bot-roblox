@@ -52,7 +52,7 @@ module.exports = {
       sub
         .setName('decide')
         .setDescription('Accept or decline a recommendation')
-        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /recommend list').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /team recommend list').setRequired(true))
         .addStringOption((opt) =>
           opt.setName('decision').setDescription('Your decision').setRequired(true)
             .addChoices({ name: 'Accept', value: 'accept' }, { name: 'Decline', value: 'decline' })
@@ -102,7 +102,7 @@ module.exports = {
           content:
             `👤 <@${userId}> recommends <@${person.id}> for **${recommendation.kind}**.\n` +
             `> ${recommendation.note.slice(0, 800)}\n` +
-            `Decide with \`/recommend decide id:${recommendation.id} decision:...\`.`,
+            `Decide with \`/team recommend decide id:${recommendation.id} decision:...\`.`,
         }).catch(() => null);
       }
       return;
@@ -141,7 +141,7 @@ module.exports = {
         `✅ Recommendation **#${decided.id}** ${accept ? 'accepted' : 'declined'}.` +
         `${accept
           ? `\n${decided.kind === 'trial'
-            ? `Next: send them a brief with \`/trial offer person:@them\`.`
+            ? `Next: send them a brief with \`/team trial offer person:@them\`.`
             : 'Next: give them the Discord role yourself — the bot does not grant roles.'}`
           : ''}`
       ));

@@ -220,7 +220,7 @@ function messageFor(rule, task) {
     `🔔 **${rule.label}**\n` +
     `**${task.code} · ${task.title}** — ${TRIGGER_LABELS[rule.trigger_key] || rule.trigger_key}.\n` +
     `${rule.note ? `> ${rule.note}\n` : ''}` +
-    '_Sent by one of your automation rules. Turn it off with `/automation off`._'
+    '_Sent by one of your automation rules. Turn it off with `/setup auto off`._'
   );
 }
 

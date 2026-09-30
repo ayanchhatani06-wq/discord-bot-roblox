@@ -350,7 +350,7 @@ function renderHtml(commands) {
     <h4>How to read the "who can use it" column</h4>
     <p>The badge is the plain-language answer. The grey text under it, where there is
     any, is the exact capability the code checks — the same name you would type into
-    <code>/studio capability</code>.</p>
+    <code>/setup capability</code>.</p>
     <p><strong>These are defaults, not fixed rules.</strong> Nothing in the bot checks
     Discord roles directly. Roles are mapped to capabilities in configuration, so the
     studio can restructure its roles without a code change. If you grant

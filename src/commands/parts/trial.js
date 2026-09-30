@@ -279,7 +279,7 @@ module.exports = {
           content:
             `📥 <@${userId}> submitted trial **${trial.code} · ${trial.title}**.\n` +
             `${updated.submission_links}\n` +
-            `Decide with \`/trial decide code:${trial.code}\`.`,
+            `Decide with \`/team trial decide code:${trial.code}\`.`,
         }).catch(() => null);
       }
       return;

@@ -135,7 +135,7 @@ Fill in `.env`:
 DISCORD_TOKEN=your-bot-token
 CLIENT_ID=your-application-id
 GUILD_ID=your-server-id        # optional, registers commands instantly
-DATABASE_FILE=                 # optional, defaults to ./data/studio.db
+DATABASE_FILE=                 # optional, defaults to ./data/setup.db
 ```
 
 To find your server ID: Discord → Settings → Advanced → enable **Developer
@@ -154,7 +154,7 @@ database, not in `.env`.
 
 ## First-run setup
 
-Run **`/studio setup`** as the server owner. (The server owner can always run
+Run **`/setup setup`** as the server owner. (The server owner can always run
 it, which is what prevents a locked-out first install.)
 
 It records you as the studio owner, creates the eight default departments
@@ -177,7 +177,7 @@ Then ask staff to run **`/profile me`** and fill in their timezone and details.
 ### Try it before using it for real
 
 ```
-/studio sample action:Create sample project
+/setup sample action:Create sample project
 ```
 
 This builds a demonstration project with six tasks, one sitting in each stage
@@ -186,7 +186,7 @@ review, and fully finished and paid — so every view has real data in it. Sampl
 tasks are set up directly rather than by sending real offers, so nobody is DMed
 about work that does not exist.
 
-Remove it with `/studio sample action:Remove sample data`.
+Remove it with `/setup sample action:Remove sample data`.
 
 ---
 
@@ -231,7 +231,7 @@ The tables below are the short version.
 | `/my-work earnings` | Your own pay and payment history, private to you |
 | `/bonuses mine` | Your progress towards milestone bonuses, and your awards |
 | `/staff-rules list` / `read key:` | Studio procedures, and acknowledging them |
-| `/trial mine` / `submit code:` | Your trial briefs, if you are on trial |
+| `/team trial mine` / `submit code:` | Your trial briefs, if you are on trial |
 | `/task mine` | Your offers and current assignments |
 | **`/find query:`** | Search everything at once — work, orders, clients, people, files. Scoped to what you may see |
 
@@ -242,9 +242,9 @@ The tables below are the short version.
 | `/task queue [department:]` | Unassigned work, with a button to choose an artist per task |
 | `/task assign task:` | Pick the artist and send the offer |
 | `/task pay task: amount:` | Propose a figure for the owner to approve |
-| `/contrib add task: person: responsibility:` | Put a second person on a task |
-| `/contrib pay task: person: amount:` | Propose what that person is paid |
-| `/contrib list task:` | Who is on a task and what each is owed |
+| `/task helpers add task: person: responsibility:` | Put a second person on a task |
+| `/task helpers pay task: person: amount:` | Propose what that person is paid |
+| `/task helpers list task:` | Who is on a task and what each is owed |
 | `/task edit task:` | Change title, brief, deadline, formats, deliverables, revisions |
 | `/task withdraw task:` | Take back an unanswered offer |
 | `/review queue` | Work awaiting your internal review |
@@ -252,7 +252,7 @@ The tables below are the short version.
 | `/review awaiting-client` | Work sent to clients with no decision recorded yet |
 | `/change reassign task: artist: reason:` | Move work, keeping the original record |
 | `/change hold task: reason:` / `/change resume task:` | Pause and unpause |
-| `/recommend new person: kind: note:` | Put somebody forward for a trial or promotion |
+| `/team recommend new person: kind: note:` | Put somebody forward for a trial or promotion |
 | `/who-is-free [days:] [group:]` | Who has room for more work, and who has not |
 
 ### Owner
@@ -287,12 +287,12 @@ The tables below are the short version.
 | `/change cancel task: reason:` | Cancel, preserving history |
 | `/change compensate task: member: amount:` | Pay for work done on cancelled or moved work |
 | `/change flags` | Everything waiting on a decision from you |
-| `/summary now` / `post` / `schedule` / `run-reminders` | Management digest and reminder controls |
-| `/trial offer person: title: brief: terms:` | Send a paid trial brief |
-| `/trial decide code: outcome: feedback:` | Pass or fail a submitted trial |
-| `/recommend list` / `decide id:` | Recommendations from your leaders |
-| `/people stand-in grant person: department: until:` | Temporary leadership cover |
-| `/people offboard preview person:` / `start` | What somebody leaves behind |
+| `/reports now` / `post` / `schedule` / `run-reminders` | Management digest and reminder controls |
+| `/team trial offer person: title: brief: terms:` | Send a paid trial brief |
+| `/team trial decide code: outcome: feedback:` | Pass or fail a submitted trial |
+| `/team recommend list` / `decide id:` | Recommendations from your leaders |
+| `/team stand-in grant person: department: until:` | Temporary leadership cover |
+| `/team offboard preview person:` / `start` | What somebody leaves behind |
 | `/staff-rules set key: title: body:` | Write a procedure everyone acknowledges |
 | `/staff-rules who key:` | Who has read the current version |
 | `/messages template-set` / `template-approve` | Write and approve client message wording |
@@ -307,19 +307,19 @@ The tables below are the short version.
 | `/reports waiting project:` | Where an order's time actually went |
 | `/reports person:` / `team` | A rounded picture of somebody's work — no score |
 | `/reports payouts` / `attention` | Who is owed, and which orders have stalled |
-| `/automation set` / `preview` / `on` / `off` | Rules that watch for something and tell somebody |
-| `/backup now` / `verify` / `restore` | A copy you can restore from, and how to do it |
-| `/backup export what:` | Readable CSV — explicitly not a backup |
-| `/web identity` / `service` / `page` | What the public site says about the studio |
-| `/web client-email` / `sign-in-link` | Let a client use the website without Discord |
-| `/web status` | What the public site currently shows |
+| `/setup auto set` / `preview` / `on` / `off` | Rules that watch for something and tell somebody |
+| `/setup backup now` / `verify` / `restore` | A copy you can restore from, and how to do it |
+| `/setup backup export what:` | Readable CSV — explicitly not a backup |
+| `/setup web identity` / `service` / `page` | What the public site says about the studio |
+| `/setup web client-email` / `sign-in-link` | Let a client use the website without Discord |
+| `/setup web status` | What the public site currently shows |
 | `/proof add file: kind:` | Keep a screenshot as proof — the file itself, not a link to it |
 | `/proof list` / `show id:` / `verify` | What is filed, get one back, check none have changed |
 | `/proof record project:` | The whole record of an order, as a file, for a dispute |
 | `/files roblox-id asset: id:` | Record the Roblox asset ID a file was uploaded as |
 | `/files roblox-ids project:` | Every Roblox asset ID on an order |
-| `/studio doctor` | Everything quietly misconfigured, worst first |
-| `/studio …` | All configuration |
+| `/setup doctor` | Everything quietly misconfigured, worst first |
+| `/setup …` | All configuration |
 
 ---
 
@@ -350,7 +350,7 @@ The artist still receives their full $25.
 
 ### Shared work
 
-More than one person can work on a single deliverable. `/contrib add` puts them
+More than one person can work on a single deliverable. `/task helpers add` puts them
 on the task with a stated responsibility, and each person's pay is agreed
 **separately** — a leader proposes, you approve, exactly as for a sole artist.
 
@@ -360,14 +360,14 @@ Three things follow from that, deliberately:
   artist is copied into a contributor row carrying their existing agreed figure.
   From then on the contributor rows are the truth, and the task's own pay column
   is no longer added on top of them.
-- **Nobody sees anyone else's rate.** `/contrib list` shows full figures to you
+- **Nobody sees anyone else's rate.** `/task helpers list` shows full figures to you
   and to the department's leader; everybody else sees their own figure and only
   "pay agreed" against their colleagues.
 - **The task is paid when the last person is paid.** `/pay pay` asks which
   person the payout is for, and the task stays *partially paid* until everybody
   on it is settled.
 
-Removing somebody with `/contrib remove` stops them counting towards the task's
+Removing somebody with `/task helpers remove` stops them counting towards the task's
 cost but keeps their record and any payments already made to them.
 
 ### The budget guard
@@ -413,12 +413,12 @@ jobs.
 
 ### Automation rules
 
-`/automation set` builds a rule out of two closed lists: something to watch for,
+`/setup auto set` builds a rule out of two closed lists: something to watch for,
 and something to do. The action list is short on purpose — tell you, tell the
 task's leader, tell one named person, or flag the task. **No rule can change
 pay, approve work, offer a task or message a client.** A rule is not a script.
 
-Every new or changed rule starts **switched off**, and `/automation preview`
+Every new or changed rule starts **switched off**, and `/setup auto preview`
 shows exactly which tasks it would act on before you allow it. Each task is
 acted on once per rule, ever, so a daily rule never becomes a daily nag about
 the same thing.
@@ -429,20 +429,20 @@ These are different things and the bot keeps saying so, because somebody who
 keeps only spreadsheets finds out on the worst possible day that they cannot put
 the studio back.
 
-- `/backup now` takes a **consistent copy of the database** using SQLite's own
+- `/setup backup now` takes a **consistent copy of the database** using SQLite's own
   online backup — not a file copy, which taken mid-write produces a file that
   looks fine and is not. It then opens the result and runs an integrity check,
   and tells you if that failed.
-- `/backup verify` opens a backup file and checks it is really a database. A
+- `/setup backup verify` opens a backup file and checks it is really a database. A
   backup nobody has ever opened is a hope, not a backup.
-- `/backup export what:` gives readable CSV for a person or a spreadsheet, and
+- `/setup backup export what:` gives readable CSV for a person or a spreadsheet, and
   says on every single one that it is not a backup. **Payment references are
   left out** of the export: one of them could be a gift card code, and a gift
   card code in a spreadsheet is money lying in the open.
-- `/backup restore` prints the steps, including the one that silently corrupts a
+- `/setup backup restore` prints the steps, including the one that silently corrupts a
   restore if you miss it — moving the `-wal` file aside.
 
-`/backup now` also copies the **filed proof** (see below) next to the database
+`/setup backup now` also copies the **filed proof** (see below) next to the database
 backup, as `studio-<timestamp>-evidence/`. It has to: the database holds each
 file's hash and path, not its bytes. A restored database without those files
 comes back with a complete set of proof records that all read as missing, which
@@ -499,7 +499,7 @@ finished), due inside it (competes with anything new), running past it, and
 Two things it deliberately does not do:
 
 - **It uses your cap, or none at all.** Where a department has a task cap set
-  (`/studio department task_cap:`), that is the limit — the same figure the assign
+  (`/setup department task_cap:`), that is the limit — the same figure the assign
   flow already warns you about, so the two cannot disagree. Where no cap is set it
   shows the load and names the departments it cannot measure, instead of inventing
   a threshold the studio never chose.
@@ -598,7 +598,7 @@ later edit cannot rewrite the deal behind them. A trial cannot be submitted
 before it is accepted, and cannot be decided before it is submitted. Trial pay
 is owed whatever the outcome.
 
-**Recommendations** (`/recommend`) let a leader put somebody forward. That is
+**Recommendations** (`/team recommend`) let a leader put somebody forward. That is
 all they do: the bot never grants or removes a Discord role, so who actually
 gets promoted stays a human decision made in Discord.
 
@@ -607,7 +607,7 @@ leader's powers, in that department only. The window is re-checked every time
 permissions are worked out, so the cover ends on time even if the bot was
 offline when it lapsed and even though nothing is scheduled to take it away.
 
-**Offboarding** reports rather than deletes. `/people offboard preview` shows
+**Offboarding** reports rather than deletes. `/team offboard preview` shows
 unfinished work, unanswered offers, approved work with no files recorded, open
 trials and stand-in grants, and money still owed — including money owed to
 somebody who only helped on another person's task. Starting an offboarding
@@ -743,7 +743,7 @@ happened. A payment already confirmed cannot then be marked failed.
 
 ## When something is quietly wrong
 
-`/studio doctor` looks for the failures that come with no error message:
+`/setup doctor` looks for the failures that come with no error message:
 
 - **no fallback channel** — offers go by DM, and anybody with DMs closed simply
   never gets them; nothing tells you it happened
@@ -801,13 +801,13 @@ npm run web    # runs the live site, for the client and staff areas
 ```
 
 **The public pages** — services, work, about, quote — are written by you with
-`/web` and shown verbatim. Nothing about them is generated. The portfolio draws
+`/setup web` and shown verbatim. Nothing about them is generated. The portfolio draws
 only on work a client has explicitly permitted, and shows no client name, no
 project code, no price and no dates: permission to show the work is not
 permission to say who paid for it.
 
 **The client area** needs the database, so it only runs under `npm run web`. A
-client signs in with a one-time link — `/web sign-in-link` — which works once
+client signs in with a one-time link — `/setup web sign-in-link` — which works once
 and expires in 30 minutes. An order opens only if it belongs to the client the
 session is for, so changing the number in the address bar gets a 404 rather than
 somebody else's order.
@@ -891,8 +891,8 @@ restructure roles without touching code.
 Grant anything to any role explicitly:
 
 ```
-/studio capability mode:Grant role:@Finance capability:finance.view_all
-/studio capabilities          # see every grant
+/setup capability mode:Grant role:@Finance capability:finance.view_all
+/setup capabilities          # see every grant
 ```
 
 Every change to assignments, scope, deadlines, pay, client approval and
@@ -933,7 +933,7 @@ Running it twice is safe — every step checks before it acts.
 
 ### Backups that survive losing the box
 
-`/backup now` writes a verified copy to `data/backups`, on the same disk as the
+`/setup backup now` writes a verified copy to `data/backups`, on the same disk as the
 database it is protecting. That is a second copy of a file, not a backup.
 
 ```bash
@@ -953,7 +953,7 @@ It needs the `sqlite3` command line tool on the box (`sudo apt install sqlite3`)
 Put it in cron:
 
 ```
-17 3 * * * /home/ubuntu/discord-bot-roblox/deploy/backup-offsite.sh >> ~/backup.log 2>&1
+17 3 * * * /home/ubuntu/discord-bot-roblox/deploy/backup-offsite.sh >> ~/setup backup.log 2>&1
 ```
 
 ### Keeping it running with pm2
@@ -1012,20 +1012,20 @@ done.
 ## Backups
 
 Everything — profiles, projects, tasks, submissions, approvals, the audit log
-and every payment record — lives in one SQLite file (`data/studio.db` by
+and every payment record — lives in one SQLite file (`data/setup.db` by
 default). **Back it up.**
 
 Because the bot runs in WAL mode, don't just copy the file while it's running.
 Use SQLite's own backup:
 
 ```bash
-sqlite3 data/studio.db ".backup '/path/to/backups/studio-$(date +%F).db'"
+sqlite3 data/setup.db ".backup '/path/to/backups/studio-$(date +%F).db'"
 ```
 
 A daily cron job is enough:
 
 ```cron
-15 3 * * * cd /home/youruser/discord-bot-roblox && sqlite3 data/studio.db ".backup '/home/youruser/backups/studio-$(date +\%F).db'"
+15 3 * * * cd /home/youruser/discord-bot-roblox && sqlite3 data/setup.db ".backup '/home/youruser/backups/studio-$(date +\%F).db'"
 ```
 
 Keep backups off the machine as well. Payment records are the kind of thing you

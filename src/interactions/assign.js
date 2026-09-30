@@ -168,7 +168,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
         ? 'They have been sent a DM.'
         : 'Their DMs were closed, so it went to the fallback channel.'
       : '⚠️ I could not reach them by DM and there is no working fallback channel — tell them directly, ' +
-        'or set one with `/studio channel purpose:DM fallback`.';
+        'or set one with `/setup channel purpose:DM fallback`.';
 
     await interaction.editReply({
       content:

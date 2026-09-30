@@ -229,7 +229,7 @@ const RESTORE_STEPS = Object.freeze([
   'Also move aside `studio.sqlite-wal` and `studio.sqlite-shm` if they exist. Leaving an old write-ahead log next to a restored database corrupts it.',
   'Copy the backup into place as `studio.sqlite`.',
   'Start the bot. Migrations run automatically and are safe to re-run.',
-  'Check `/studio setup` and `/summary now` before telling anybody it worked.',
+  'Check `/setup setup` and `/reports now` before telling anybody it worked.',
 ]);
 
 module.exports = {

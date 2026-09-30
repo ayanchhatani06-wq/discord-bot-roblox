@@ -3,6 +3,9 @@ const configRepo = require('../db/repos/config');
 const staffRepo = require('../db/repos/staff');
 const projectsRepo = require('../db/repos/projects');
 const { contextFor } = require('../services/actor');
+const { scheduleSummaryFor } = require('../services/jobs');
+const { runSweep } = require('../services/reminders');
+const { buildWeeklySummary, postWeeklySummary } = require('../services/summary');
 const reports = require('../services/reports');
 const { CAPABILITIES, assertCan, can } = require('../domain/permissions');
 const { formatAmount, formatTotals, totalsByCurrency } = require('../domain/money');
@@ -54,7 +57,20 @@ module.exports = {
     )
     .addSubcommand((sub) => sub.setName('team').setDescription('Everybody\'s picture, in name order'))
     .addSubcommand((sub) => sub.setName('payouts').setDescription('Everyone owed money on approved work'))
-    .addSubcommand((sub) => sub.setName('attention').setDescription('Orders that are overdue or have stalled with us')),
+    .addSubcommand((sub) => sub.setName('attention').setDescription('Orders that are overdue or have stalled with us'))
+    .addSubcommand((sub) => sub.setName('now').setDescription('Show the weekly summary right now, privately'))
+    .addSubcommand((sub) => sub.setName('post').setDescription('Post the weekly summary to its channel now'))
+    .addSubcommand((sub) =>
+      sub
+        .setName('schedule')
+        .setDescription('Change when the weekly summary is posted')
+        .addStringOption((opt) =>
+          opt.setName('cron').setDescription('Five-field cron, e.g. "0 9 * * 1" for Mondays at 09:00 UTC').setRequired(true)
+        )
+    )
+    .addSubcommand((sub) =>
+      sub.setName('run-reminders').setDescription('Run the reminder sweep now instead of waiting for the next one')
+    ),
 
   async autocomplete(interaction) {
     const focused = interaction.options.getFocused(true);
@@ -74,11 +90,66 @@ module.exports = {
   },
 
   async execute(interaction) {
-    const { db, guildId, departments, actor } = contextFor(interaction);
+    const { db, guildId, departments, config, actor } = contextFor(interaction);
     const sub = interaction.options.getSubcommand();
 
     assertCan(actor, CAPABILITIES.SUMMARY_VIEW);
     const departmentName = new Map(departments.map((dept) => [dept.id, dept.name]));
+
+    if (sub === 'now') {
+      await interaction.reply(priv({ embeds: [buildWeeklySummary(db, guildId)] }));
+      return;
+    }
+
+    if (sub === 'post') {
+      await interaction.deferReply(priv({}));
+      const result = await postWeeklySummary(interaction.client, db, guildId);
+      await interaction.editReply(
+        result.delivered
+          ? `✅ Summary posted${result.via === 'channel' ? ' to the summary channel' : ` by ${result.via}`}.`
+          : `❌ Could not post it: ${result.reason.replace(/_/g, ' ')}. Set a channel with \`/setup channel purpose:Weekly management summary\`.`
+      );
+      return;
+    }
+
+    if (sub === 'schedule') {
+      assertCan(actor, CAPABILITIES.CONFIG_MANAGE);
+
+      const expression = interaction.options.getString('cron', true).trim();
+      const fields = expression.split(/\s+/);
+      if (fields.length !== 5) {
+        await interaction.reply(priv('❌ A cron expression needs five fields: minute hour day month weekday. For example `0 9 * * 1`.'));
+        return;
+      }
+
+      const previous = config.summary_cron;
+      configRepo.updateConfig(db, guildId, { summary_cron: expression }, interaction.user.id);
+
+      // Rejected expressions are rolled back rather than left to fail silently
+      // every week from now on.
+      const task = scheduleSummaryFor(interaction.client, db, guildId);
+      if (!task) {
+        configRepo.updateConfig(db, guildId, { summary_cron: previous }, interaction.user.id);
+        await interaction.reply(priv(`❌ \`${expression}\` is not a valid cron expression, so the previous schedule was kept.`));
+        return;
+      }
+
+      await interaction.reply(priv(
+        `✅ Weekly summary now runs on \`${expression}\` (server time, UTC on most hosts). It was \`${previous}\`.`
+      ));
+      return;
+    }
+
+    if (sub === 'run-reminders') {
+      assertCan(actor, CAPABILITIES.CONFIG_MANAGE);
+      await interaction.deferReply(priv({}));
+
+      const result = await runSweep(interaction.client, db);
+      await interaction.editReply(
+        `✅ Sweep finished: ${result.sent} person/team notified, ${result.deferred} held back by quiet hours` +
+        `${result.failed.length > 0 ? `, ${result.failed.length} could not be reached` : ''}.`
+      );
+    }
 
     if (sub === 'overview') {
       const counts = reports.filterCounts(db, guildId);

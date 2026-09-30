@@ -9,7 +9,7 @@ const { ACTIVE_STATES } = require('../domain/taskState');
  * can we take this on next week? Guessing it wrong is how a studio ends up
  * either turning away work it could have done or promising work it cannot.
  *
- * Where a department records a cap (`/studio department task_cap:`), that is the
+ * Where a department records a cap (`/setup department task_cap:`), that is the
  * limit used — the same figure the assign flow already warns against, so the two
  * cannot disagree. Where no cap is set this reports the load and says plainly
  * that there is nothing to measure it against, rather than inventing a threshold

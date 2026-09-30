@@ -112,7 +112,7 @@ UNIT
 }
 
 write_unit studio-bot "Studio Operations Bot" "$(command -v node) ${APP_DIR}/src/index.js"
-write_unit studio-web "Studio Website" "$(command -v node) ${APP_DIR}/web/server.js"
+write_unit studio-web "Studio Website" "$(command -v node) ${APP_DIR}/setup web/server.js"
 
 sudo systemctl daemon-reload
 
@@ -143,9 +143,9 @@ cat <<NEXT
 
        sudo systemctl enable --now studio-web
 
-  Then in Discord: /studio setup, then /studio doctor.
+  Then in Discord: /setup setup, then /setup doctor.
 
-  Backups: /backup now writes to ${APP_DIR}/data/backups — on this same disk.
+  Backups: /setup backup now writes to ${APP_DIR}/data/backups — on this same disk.
   Copy them somewhere else, or they do not survive losing the box.
 
 NEXT

@@ -40,7 +40,7 @@ register(NAMESPACE, async (interaction, { action }) => {
 
     await interaction.reply(priv({
       content: actor.leadDepartmentIds.length > 1
-        ? `Showing **${department.name}**. For the others: \`/desk group department:<key>\`.`
+        ? `Showing **${department.name}**. For the others: \`/go department:<key>\`.`
         : undefined,
       embeds: [desk.embed],
     }));

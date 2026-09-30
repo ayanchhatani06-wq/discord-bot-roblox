@@ -135,7 +135,7 @@ function personalActions(db, guildId, userId, { now = Date.now() } = {}) {
       icon: '🎯',
       count: offeredTrials.length,
       text: `You have a trial brief waiting for an answer`,
-      command: '`/trial mine`',
+      command: '`/team trial mine`',
     }));
   }
 
@@ -186,7 +186,7 @@ function leaderActions(db, guildId, actor, { now = Date.now() } = {}) {
       icon: '🚧',
       count: blocked.length,
       text: `${blocked.length} task${blocked.length === 1 ? ' is' : 's are'} blocked and nobody has cleared ${blocked.length === 1 ? 'it' : 'them'}`,
-      command: '`/desk group`',
+      command: '`/go`',
     }));
   }
 
@@ -288,7 +288,7 @@ function ownerActions(db, guildId, actor, { now = Date.now() } = {}) {
       icon: '👤',
       count: recommendations.length,
       text: `${recommendations.length} recommendation${recommendations.length === 1 ? '' : 's'} from your leaders`,
-      command: '`/recommend list`',
+      command: '`/team recommend list`',
     }));
   }
 
@@ -299,7 +299,7 @@ function ownerActions(db, guildId, actor, { now = Date.now() } = {}) {
       icon: '🎯',
       count: trials.length,
       text: `${trials.length} trial${trials.length === 1 ? '' : 's'} submitted and waiting on a decision`,
-      command: '`/trial list`',
+      command: '`/team trial list`',
     }));
   }
 

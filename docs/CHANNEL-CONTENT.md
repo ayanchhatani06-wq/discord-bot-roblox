@@ -133,29 +133,29 @@ still act on what lands there.
 - every 🤝 client channel
 
 Nothing anywhere else. Put its role **above** the craft and lead roles, then run
-`/studio doctor` — it checks it can actually post where you pointed it and names
+`/setup doctor` — it checks it can actually post where you pointed it and names
 the missing permission rather than failing silently.
 
 ## Setting the channels up
 
 ```
-/studio channel purpose:Staff info board              channel:#studio-board
-/studio channel purpose:Weekly management summary     channel:#studio-summary
-/studio channel purpose:DM fallback (private staff)   channel:#studio-alerts
-/studio channel purpose:Audit log                     channel:#studio-audit
-/studio reminders board_refresh_minutes:10
-/studio refresh
-/studio doctor
+/setup channel purpose:Staff info board              channel:#studio-board
+/setup channel purpose:Weekly management summary     channel:#studio-summary
+/setup channel purpose:DM fallback (private staff)   channel:#studio-alerts
+/setup channel purpose:Audit log                     channel:#studio-audit
+/setup reminders board_refresh_minutes:10
+/setup refresh
+/setup doctor
 ```
 
 Then map each craft role to its department so the queues and leader permissions
 work:
 
 ```
-/studio department key:building name:Building leader_role:@Lead Builder member_role:@Builder
+/setup department key:building name:Building leader_role:@Lead Builder member_role:@Builder
 ```
 
-…and archive the crafts you do not run: `/studio department key:sfx archived:true`.
+…and archive the crafts you do not run: `/setup department key:sfx archived:true`.
 
 ---
 
@@ -662,7 +662,7 @@ thing entirely.
 ## Your commands
 
 `/go` — first thing, every day. What's waiting on you.
-`/desk me` — everything of yours in one place.
+`/go` — everything of yours in one place.
 `/find` — when you can't remember a code or a name.
 `/help` — only shows what you can actually use.
 
@@ -845,4 +845,4 @@ Terms are in #terms. Anything unclear, just ask here.
 4. **Retype every `#channel-name`** after pasting, so Discord links them.
 5. **Link both handbooks in `#staff-rules`**, and put them in `/staff-rules set` so
    acknowledgements are tracked.
-6. **Run `/studio doctor`** afterwards to catch anything pointed at but unfinished.
+6. **Run `/setup doctor`** afterwards to catch anything pointed at but unfinished.

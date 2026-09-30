@@ -132,9 +132,9 @@ if (require.main === module) {
   });
 
   console.log(`Wrote ${result.pages} page(s) and ${result.assets.length} asset(s) to ${result.outDir}`);
-  console.log(`Services: ${result.services}${result.placeholderServices ? ' (still the department placeholders — write your own with /web service)' : ''}`);
+  console.log(`Services: ${result.services}${result.placeholderServices ? ' (still the department placeholders — write your own with /setup web service)' : ''}`);
   console.log(`Portfolio: ${result.portfolio} item(s) cleared for public display`);
-  if (!result.hasAbout) console.log('No About page written yet — add one with /web page.');
+  if (!result.hasAbout) console.log('No About page written yet — add one with /setup web page.');
   if (!result.quoteForm) console.log('No WEB_APP_URL set, so the quote page points at Discord instead of a form.');
   console.log('Upload the contents of that folder to your static host.');
 }

@@ -17,13 +17,8 @@ module.exports = {
   files: { default: 'PROJECT_EDIT', subs: {
     search: 'STAFF', portfolio: 'STAFF', 'roblox-ids': 'STAFF',
   } },
-  automation: { default: 'CONFIG_MANAGE' },
-  backup: { default: 'CONFIG_MANAGE+FINANCE_VIEW_ALL' },
   bonuses: { default: 'TASK_PAY_APPROVE', subs: { mine: 'ANYONE', rules: 'SUMMARY_VIEW' } },
   clients: { default: 'PROJECT_EDIT' },
-  contrib: { default: 'TASK_EDIT_DEPT', subs: {
-    list: 'TASK_FINANCE_SCOPED', pay: 'PAY_SET_OR_PROPOSE',
-  } },
   send: { default: 'PROJECT_EDIT', subs: {
     conditions: 'CONFIG_MANAGE', check: 'PROJECT_EDIT_OR_REVIEWER', release: 'PROJECT_EDIT_RELEASE',
   } },
@@ -55,7 +50,11 @@ module.exports = {
   messages: { default: 'CLIENT_RECORD', subs: {
     placeholders: 'ANYONE', 'template-approve': 'CLIENT_RECORD+CONFIG_MANAGE',
   } },
-  people: { default: 'STAFF_MANAGE' },
+  team: { default: 'STAFF_MANAGE', subs: {
+    'trial mine': 'ANYONE',
+    'trial submit': 'TRIAL_OWNER',
+    'recommend new': 'LEADER_OR_MANAGER',
+  } },
   deadlines: { default: 'TASK_EDIT_DEPT', subs: {
     templates: 'ANYONE', template: 'TASK_CREATE', batch: 'TASK_CREATE',
     risks: 'ANYONE_SCOPED', blockers: 'ANYONE_SCOPED', extensions: 'ANYONE_SCOPED',
@@ -72,24 +71,33 @@ module.exports = {
     view: 'STAFF_MONEY_HIDDEN', list: 'STAFF', tasks: 'STAFF_MONEY_HIDDEN',
   } },
   proof: { default: 'CLIENT_RECORD', subs: { record: 'CLIENT_RECORD+FINANCE_VIEW_ALL' } },
-  recommend: { default: 'STAFF_MANAGE', subs: { new: 'LEADER_OR_MANAGER' } },
   reorder: { default: 'PROJECT_CREATE' },
-  reports: { default: 'SUMMARY_VIEW', subs: { payouts: 'SUMMARY_VIEW+FINANCE_VIEW_ALL' } },
+  reports: { default: 'SUMMARY_VIEW', subs: {
+    payouts: 'SUMMARY_VIEW+FINANCE_VIEW_ALL',
+    schedule: 'SUMMARY_VIEW+CONFIG_MANAGE',
+    'run-reminders': 'SUMMARY_VIEW+CONFIG_MANAGE',
+  } },
   review: { default: 'REVIEW_INTERNAL_DEPT', subs: {
     'awaiting-client': 'CLIENT_FACING_VIEW', client: 'CLIENT_RECORD_DEPT',
   } },
-  studio: { default: 'CONFIG_MANAGE', subs: { doctor: 'SUMMARY_VIEW', setup: 'FIRST_RUN' } },
-  summary: { default: 'SUMMARY_VIEW', subs: {
-    schedule: 'SUMMARY_VIEW+CONFIG_MANAGE', 'run-reminders': 'SUMMARY_VIEW+CONFIG_MANAGE',
+  setup: { default: 'CONFIG_MANAGE', subs: {
+    doctor: 'SUMMARY_VIEW',
+    setup: 'FIRST_RUN',
+    'backup now': 'CONFIG_MANAGE+FINANCE_VIEW_ALL',
+    'backup export': 'CONFIG_MANAGE+FINANCE_VIEW_ALL',
+    'backup verify': 'CONFIG_MANAGE+FINANCE_VIEW_ALL',
+    'backup restore': 'CONFIG_MANAGE+FINANCE_VIEW_ALL',
   } },
   task: { default: 'TASK_OFFER_DEPT', subs: {
     create: 'TASK_CREATE', mine: 'ANYONE', view: 'TASK_VIEW',
     pay: 'PAY_SET_OR_PROPOSE', 'approve-pay': 'TASK_PAY_APPROVE',
     edit: 'TASK_EDIT_DEPT',
+    'helpers add': 'TASK_EDIT_DEPT',
+    'helpers remove': 'TASK_EDIT_DEPT',
+    'helpers pay': 'PAY_SET_OR_PROPOSE',
+    'helpers list': 'TASK_FINANCE_SCOPED',
   } },
   time: { default: 'ANYONE' },
-  trial: { default: 'STAFF_MANAGE', subs: { mine: 'ANYONE', submit: 'TRIAL_OWNER' } },
-  web: { default: 'CONFIG_MANAGE' },
   'my-work': { default: 'ASSIGNED_ARTIST', subs: {
     earnings: 'ANYONE_OWN', history: 'OWN_OR_LEADER',
   } },

@@ -101,7 +101,7 @@ module.exports = {
             `${rule.department_id ? ` · ${departmentName.get(rule.department_id) || 'a department'}` : ''}\n` +
             `┗ then: ${automation.ACTION_LABELS[rule.action_key]}` +
             `${rule.last_run_at ? ` · last ran ${discordTimestamp(rule.last_run_at, 'R')}` : ' · never run'}`
-          ).join('\n').slice(0, 4000) || '_No rules. Add one with `/automation set`._')
+          ).join('\n').slice(0, 4000) || '_No rules. Add one with `/setup auto set`._')
           .setFooter({ text: 'A rule can only tell somebody or flag a task. None of them can change pay, approve work or message a client.' })],
       }));
       return;
@@ -150,7 +150,7 @@ module.exports = {
           `✅ **${rule.key}** saved and **switched off**.\n` +
           `${result.wasExisting ? 'A changed rule is a different rule, so it was switched off again.\n' : ''}` +
           `Right now it would act on **${check.wouldAct}** task(s), telling ${check.recipient}.\n` +
-          `Look at it with \`/automation preview key:${rule.key}\`, then \`/automation on key:${rule.key}\`.`,
+          `Look at it with \`/setup auto preview key:${rule.key}\`, then \`/setup auto on key:${rule.key}\`.`,
       }));
       return;
     }
