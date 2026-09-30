@@ -283,6 +283,7 @@ Remove it with `/studio sample action:Remove sample data`.
 | `/web identity` / `service` / `page` | What the public site says about the studio |
 | `/web client-email` / `sign-in-link` | Let a client use the website without Discord |
 | `/web status` | What the public site currently shows |
+| `/studio doctor` | Everything quietly misconfigured, worst first |
 | `/studio …` | All configuration |
 
 ---
@@ -558,6 +559,28 @@ separate instalment still can.
 
 ---
 
+## When something is quietly wrong
+
+`/studio doctor` looks for the failures that come with no error message:
+
+- **no fallback channel** — offers go by DM, and anybody with DMs closed simply
+  never gets them; nothing tells you it happened
+- **staff with no timezone** — their deadlines are read as UTC, so the date
+  looks right and lands hours out
+- **a client with orders and no authorised account or email** — the dashboard
+  posted in their channel opens for nobody
+- **departments with no leader role** — every task in them waits on you
+  personally
+- **templates written but never approved** — nothing sends, by design
+- pay waiting on your approval, and work nobody has picked up in a week
+
+Findings are ordered by consequence: what will silently not work, what works
+until it doesn't, and what is merely worth knowing. Every one says what to do
+about it — a problem with no stated remedy is just an accusation. When there is
+nothing to report it says so, rather than manufacturing advice.
+
+---
+
 ## One command to remember
 
 `/go` is the answer to "is anything waiting on me?". It reads what is recorded,
@@ -791,7 +814,7 @@ only discover you needed after losing them.
 npm test
 ```
 
-441 tests covering money parsing and per-currency totals, split exactness
+451 tests covering money parsing and per-currency totals, split exactness
 (including the worked $40/$25 example, the mixed-currency refusal and
 below-cost jobs), every legal and illegal task transition, repeat-click
 rejection, permission scoping, DST and quiet-hours edge cases, reminder

@@ -93,6 +93,7 @@ const SECTIONS = [
       ['`/report waiting`', 'Whether an order is waiting on us or on the client'],
       ['`/automation list`', 'Rules that watch for something and tell somebody'],
       ['`/backup now`', 'Take a copy you can actually restore from'],
+      ['`/studio doctor`', 'What is quietly misconfigured or stuck'],
       ['`/studio setup`', 'Configuration and the setup checklist'],
       ['`/summary now`', 'The management digest'],
     ],

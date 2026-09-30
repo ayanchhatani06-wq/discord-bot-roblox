@@ -33,6 +33,7 @@ module.exports = {
       sub.setName('setup').setDescription('First-run setup: claim ownership and create the default departments')
     )
     .addSubcommand((sub) => sub.setName('status').setDescription('Show the current configuration'))
+    .addSubcommand((sub) => sub.setName('doctor').setDescription('Find what is quietly misconfigured or stuck'))
     .addSubcommand((sub) =>
       sub
         .setName('channel')
@@ -158,6 +159,57 @@ module.exports = {
     // studio whose server was created by somebody else (a founder who is not
     // the guild owner) would otherwise be locked out of its own bot forever.
     // Once an owner is recorded, that door closes and the normal rules apply.
+    if (sub === 'doctor') {
+      assertCan(actor, CAPABILITIES.SUMMARY_VIEW);
+
+      const doctor = require('../services/doctor');
+      const result = doctor.diagnose(db, guildId);
+
+      if (result.findings.length === 0) {
+        await interaction.reply(priv({
+          embeds: [new EmbedBuilder()
+            .setTitle('Nothing quietly broken')
+            .setColor(0x57f287)
+            .setDescription(
+              'Owner set, channels configured, departments staffed, clients able to reach their orders.\n\n' +
+              'This checks the things that fail without an error message. It cannot tell you whether the work is going well.'
+            )],
+        }));
+        return;
+      }
+
+      const ICONS = { breaks: '🔴', risky: '🟡', note: '⚪' };
+      const HEADINGS = {
+        breaks: 'Will silently not work',
+        risky: 'Works until it does not',
+        note: 'Worth knowing',
+      };
+
+      const embed = new EmbedBuilder()
+        .setTitle('Studio check')
+        .setColor(result.breaks > 0 ? 0xed4245 : result.risky > 0 ? 0xfaa61a : 0x5865f2)
+        .setDescription(
+          `${result.breaks} thing(s) will silently not work, ` +
+          `${result.risky} may bite later, ${result.notes} worth knowing.`
+        );
+
+      for (const severity of doctor.ORDER) {
+        const group = result.findings.filter((item) => item.severity === severity);
+        if (group.length === 0) continue;
+
+        embed.addFields({
+          name: `${ICONS[severity]} ${HEADINGS[severity]} (${group.length})`,
+          value: group.map((item) =>
+            `**${item.title}**\n${item.detail}${item.fix ? `\n┗ ${item.fix}` : ''}`
+          ).join('\n\n').slice(0, 1024),
+          inline: false,
+        });
+      }
+
+      await interaction.reply(priv({ embeds: [embed] }));
+      return;
+    }
+
     if (sub === 'setup') {
       const mayClaim = canClaimStudio({
         userId,
