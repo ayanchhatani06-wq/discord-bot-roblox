@@ -6,8 +6,8 @@ Read from:
 - **Leader Handbook** v1, 26 Sep 2026
 - **Builder Recruitment & Payment Setup — Summary for Leads**, 26 Sep 2026
 
-against what the bot actually does. Four real conflicts, two smaller ones, and
-one thing the bot already solves that the handbooks flag as unresolved.
+against what the bot actually does. **Two of the four are now settled in code. Two still need a decision from you,
+and both are wording in your own handbooks.**
 
 None of this is a bug in the handbooks or the bot on its own. They were written
 apart, and they now have to agree — because a promise in a handbook that the
@@ -15,7 +15,7 @@ system cannot keep is the promise you get held to.
 
 ---
 
-## 1 · When somebody gets paid — the big one
+## 1 · When somebody gets paid — DECIDED, wording still to change
 
 **The handbook says** (Staff Guidelines §3): *"payment is released once the task
 is completed and approved."*
@@ -44,45 +44,48 @@ Three options, in the order I would take them:
 | **Change §3** to "once the task is approved and the client's payment for it has been received" | Honest, but it moves the risk onto your artists, who will notice |
 | **Pay out of studio funds** when a client is slow | `/pay mark-payable` with your reason on the record. Fine occasionally, dangerous as a habit |
 
-Whichever you pick, §3 and the bot should say the same thing.
+**You chose:** no fixed deposit. Jobs over $100 take 10–20% upfront, and a
+client who will not pay upfront is billed per milestone instead. Set the parts
+per order with `/money-in add`.
+
+**Still to do:** Staff Guidelines §3 says pay is released *"once the task is
+completed and approved."* With a 10–20% deposit that is often not yet true —
+$15 in against $65 of artist pay. Change it to:
+
+> *"Payment is released once the task is completed and approved, and the
+> client's payment covering it has been received. This is why we bill in
+> milestones: each one funds the work in it."*
+
+That is what the bot does, and your artists will work it out for themselves
+otherwise.
 
 ---
 
-## 2 · The recruiter's 20% cannot be recorded
+## 2 · The recruiter's 20% — BUILT ✅
 
-**The Leader Handbook says** (§5): *"If you recruit someone and they go on to get
-paid for a task, you get 20% of their pay."* The Builder summary confirms it was
-agreed with danisaads specifically, for VFX, GFX, SFX, GUI and animation
-recruits.
+**You chose:** 20% of the recruit's **first payout**, taken from that payout.
 
-**The bot has four split recipients:** `finder`, `leader`, `mod`, `owner`. There
-is no recruiter.
+Client pays $50, artist's pay $35 → the artist receives **$28**, the recruiter
+**$7**, and finder, lead, mod and owner are untouched at $3 / $3 / $1.50 / $7.50.
+Your pool does not move; it is the artist paying their recruiter, once.
 
-It is not just a missing name. The bases are different:
+Record it with `/team recruited set person:@them recruiter:@danisaads`.
 
-- Finder, leader, mod and owner are percentages of the **leftover pool** — what
-  is left after the artist is paid — and they must add up to 100%.
-- The recruiter's cut is 20% **of the artist's pay**, a different number
-  entirely.
+What the bot now refuses to get wrong:
 
-So it cannot be bolted on as a fifth share without either taking from the other
-four or changing what the percentages are a percentage of.
+- **Once only.** It is a fact on the person, not on a task, so paying them on
+  two jobs cannot collect it twice.
+- **It does not stack** on the finder's cut, per your answer.
+- **It is rounded down**, so it can never exceed the payout it comes out of, and
+  a payout too small to round leaves it unclaimed rather than spent.
+- **It cannot be moved once taken** — that would pay the wrong person, or twice.
+- **The artist is told before they accept.** The offer says *"you will receive
+  $28.00"* in money, not as a percentage, because an agreed $35 that arrives as
+  $28 is a broken promise however fair the rule is.
 
-**Right now that cut has to be paid and tracked by hand**, outside the bot, which
-means it is the one payment with no record — on the arrangement with the person
-you have already promised it to.
-
-**Options:**
-
-| Option | Notes |
-|---|---|
-| **Add a recruiter payout kind** to the bot, paid off the artist's pay rather than the pool | The honest fix. It is real work but not large, and it is the only one that leaves a record |
-| **Fold it into the finder share** when they are the same person | Only works when they are, which for danisaads they may not be |
-| **Pay it by hand and record it as a note** | Works today, leaves the least evidence, and this is exactly the kind of arrangement that gets disputed |
-
-Say the word and I will build the first one.
-
----
+**Still to do:** Leader Handbook §5 reads as ongoing — *"they go on to get paid
+for a task, you get 20% of their pay"*. It should say **first payout only**, and
+that it does not apply where they also brought in the client.
 
 ## 3 · "Three sign-offs" is not what the bot does
 
@@ -108,43 +111,16 @@ three sign-offs, it is true, and it matches what happens.
 
 ---
 
-## 4 · Leads were promised channels the new layout does not have
+## 4 · The channels leads were promised — NO LONGER A CONFLICT ✅
 
-**The Leader Handbook says** (§7) leads get *"their team's chat, applications,
-task-progress, review, payment, and completed-work channels"*, and lists the
-Builder set:
+You kept your department channels and added the studio ones alongside, so
+nothing danisaads was promised has been taken away. `#studio-board` is extra, not
+a replacement.
 
-`[team]-chat` · `[team]-applications` · `task-progress` · `[team]-reviews` ·
-`completed-work` · `task-payments` · `payment-logs` · `projects-done` ·
-`client-feedback`
-
-**The agreed layout has none of them**, because the bot does those jobs:
-
-| Promised channel | What replaced it |
-|---|---|
-| `task-progress` | `/my-work progress` — private, DMs the lead |
-| `[team]-reviews` | `/review queue` |
-| `completed-work`, `projects-done` | `/files`, `/files portfolio` |
-| `task-payments`, `payment-logs` | `/pay ledger`, `/pay outstanding`, `#studio-audit` |
-| `client-feedback` | Recorded against the version approved; `/my-work history` |
-| `[team]-applications` | `#apply` + `/team recommend new` |
-| `[team]-chat` | `#staff-chat`, or one channel per craft if you want them |
-
-The Builder summary already flags that this structure was *"verbally agreed but
-not yet built"* — so nothing has been taken away yet. But danisaads was told he
-would get it.
-
-**This needs a conversation with him, not a quiet change.** The honest version
-is: you are getting better than that, because `/go` shows you your queue,
-your team's load, what is waiting on your review and what is at risk — in one
-place, always current, instead of seven channels you have to read. But he should
-hear it from you before he goes looking for channels that do not exist.
-
-The Leader Handbook §7 also says *"you tell the studio what your team needs — the
-studio doesn't hand you a fixed list."* Worth keeping that spirit: show him the
-desk first and ask what is still missing.
-
----
+The only thing worth saying to him: `/go` and the group desk now show his queue,
+his team's load, what is waiting on his review and what is at risk, in one place
+and always current. The channels still work; they are no longer the only way to
+see it.
 
 ## 5 · "20% of the profit" is undefined
 
@@ -178,7 +154,7 @@ back if that changes.
 
 ---
 
-## 7 · One thing the bot already solves
+## 7 · The payout fee — DECIDED ✅
 
 The Builder summary spends most of its Payment section on an unresolved problem:
 payment goes out by Ziina link or card, **a fee of roughly 5–10% gets taken on
@@ -195,9 +171,13 @@ So when an artist receives $18 of a $20 payment, you record $20 sent, they
 confirm what landed, and the gap is on the record instead of being an argument
 three weeks later.
 
-**What it does not do is decide who absorbs the fee.** That is still yours to
-settle, and it should be one line in the Staff Guidelines §3 — because right now
-it is only written down in a summary of a Discord conversation at 4am.
+**You chose: the artist receives what lands.** That matches what you said in the
+Builder chat, and the bot records sent-versus-landed so the gap is visible rather
+than argued about.
+
+**Still to do:** one line in Staff Guidelines §3. Right now it exists only in a
+summary of a 4am Discord conversation, which is not where somebody looks when
+they are $2 short and wondering why.
 
 ---
 
@@ -215,12 +195,19 @@ The Leader Handbook §12 flags these itself. They are still open:
 
 ---
 
-## What I would do, in order
+## What is left, all of it in your handbooks
 
-1. **Decide the deposit** — it unblocks conflict 1, which is the one your artists
-   will notice first.
-2. **Talk to danisaads** about the channels before he looks for them.
-3. **Tell me whether to build the recruiter split.** Until it exists, that cut is
-   the only money moving through the studio with no record.
-4. Fix §3, §4 and §14 wording to match what actually happens.
-5. Archive scripting, or write its terms.
+The bot is done. These are four wording changes, and each one is a promise that
+currently reads differently from what happens:
+
+1. **Staff Guidelines §3** — pay is released once approved *and the client's
+   payment covering it has arrived* (conflict 1). Add the line about who absorbs
+   the payout fee: the artist receives what lands (conflict 7).
+2. **Leader Handbook §5** — the recruiter's 20% is the **first payout only**, and
+   does not apply where they also found the client (conflict 2).
+3. **Staff Guidelines §4** — *"your lead has passed it, the client has approved
+   it, and the owner has authorised delivery"* (conflict 3).
+4. **Staff Guidelines §14** — *"20% of what is left from that client's payment
+   after the artists on the job are paid"* (conflict 5).
+
+Then run `/setup department key:scripting archived:true` (conflict 6).
