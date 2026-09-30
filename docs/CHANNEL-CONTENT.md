@@ -1,9 +1,17 @@
 # What to post in each channel
 
-Ready to paste. Anything in `[square brackets]` is a decision only you can make —
-turnaround, revision counts, deposit size. **Fill those in before posting.** They
-become promises the moment a client reads them, and an invented number you never
-agreed to is worse than no number at all.
+Written against the studio's own documents, not invented:
+
+- **Staff Payment & Work Guidelines** (v2, 27 Sep 2026)
+- **Leader Handbook** (v1, 26 Sep 2026)
+- **Builder Recruitment & Payment Setup — Summary for Leads** (26 Sep 2026)
+
+Where those state a policy, it is used as written. Where they leave something
+open, it is left as a `[bracket]` rather than filled in — an invented number
+becomes a promise the moment somebody reads it.
+
+**Read `CONFLICTS.md` before posting any of this.** Four things in the handbooks
+and the bot currently disagree, and two of them are about money.
 
 Pin every one of these. A rule nobody can find is a rule nobody follows.
 
@@ -13,15 +21,15 @@ Pin every one of these. A rule nobody can find is a rule nobody follows.
 
 > # Welcome to Cylops Studio
 >
-> We build for Roblox — models, maps, animation, VFX, UI, GFX, scripting and sound.
+> We build for Roblox — models, maps, animation, VFX, UI, GFX and sound.
 >
 > **Here for work done?** Read <#services>, then post in <#request-a-quote>.
 > **Here to work with us?** Read <#apply>.
 >
-> Start by getting verified in <#verify>, then have a look at <#rules>.
+> Get verified in <#verify> first, then have a look at <#rules>.
 >
-> Everything we take on is quoted individually, because no two jobs are the same
-> size. Ask and we will tell you what it costs.
+> Everything is quoted individually, because no two jobs are the same size. Ask
+> and you get a real number for your actual job.
 
 ---
 
@@ -29,32 +37,41 @@ Pin every one of these. A rule nobody can find is a rule nobody follows.
 
 > # Rules
 >
-> **1 · Be decent to people.** No harassment, slurs, or going after someone's work
-> to make a point. Disagree with the thing, not the person.
+> **1 · Be decent to people.** No harassment, no slurs, no going after someone's
+> work to make a point. Disagree with the thing, not the person.
 >
 > **2 · English in public channels**, so staff can moderate what they can read.
 > Any language you like in DMs.
 >
-> **3 · Do not DM staff to negotiate.** Every job starts in <#request-a-quote>.
-> A private deal is one nobody can back you up on if it goes wrong — including us.
+> **3 · Every job starts in <#request-a-quote>.** Do not DM staff to arrange work
+> privately. A private deal is one nobody can back you up on if it goes wrong —
+> including us, and including you.
 >
-> **4 · No advertising other studios or services.** No exceptions for "just this
-> once".
+> **4 · Clients are the studio's, not an individual's.** If you are staff and you
+> bring a client in, tell the studio — you are paid a finder's cut for it. Taking
+> a studio client private is the one thing that ends a working relationship here
+> immediately.
 >
-> **5 · Do not haggle in public.** If a price does not work for you, say so in your
-> order channel and we will talk about scope.
+> **5 · Do not pretend to be someone you are not.** Not another staff member, not
+> a client, not the studio. This is treated as serious and is dealt with under the
+> staff handbook.
 >
-> **6 · No middlemen we did not agree to.** If somebody offers to "hold" payment
+> **6 · No advertising other studios or services.** No exceptions.
+>
+> **7 · Do not haggle in public.** If a price does not work, say so in your order
+> channel and we will talk about scope instead.
+>
+> **8 · No middlemen we did not agree to.** If somebody offers to "hold" payment
 > between us, tell us before you send anything.
 >
-> **7 · Keep it to the right channel.** Chat in <#general>, off-topic in
-> <#off-topic>, work in your own order channel.
+> **9 · Right channel, right thing.** Chat in <#general>, off-topic in
+> <#off-topic>, your job in your own order channel.
 >
-> **8 · What we say here, we record.** Approvals, changes and payments are all
-> kept dated. That protects you as much as us.
+> **10 · We keep records.** Approvals, changes, files and payments are all dated
+> and kept. That protects you as much as it protects us.
 >
-> Breaking these gets a warning, then a removal. Scamming gets a removal with no
-> warning.
+> Breaking these gets a warning, then removal. Scamming or impersonation gets
+> removal with no warning.
 
 ---
 
@@ -63,88 +80,97 @@ Pin every one of these. A rule nobody can find is a rule nobody follows.
 > # What we do
 >
 > **Modelling** — props, weapons, characters, hard-surface and stylised
-> **Building** — maps, lobbies, interiors, full game environments
+> **Building** — maps, lobbies, interiors, full environments
 > **Animation** — rigs, combat, idles, emotes, cutscenes
 > **VFX** — abilities, hit effects, weather, particles
-> **UI** — full interfaces, HUDs, shop and inventory screens
+> **UI / GUI** — interfaces, HUDs, shop and inventory screens
 > **GFX** — thumbnails, icons, banners, logos
-> **Scripting** — systems, mechanics, tooling, optimisation
 > **SFX** — sound design and audio passes
 >
-> ## How pricing works
+> ## Pricing
 >
-> **Every job is quoted individually.** We do not publish a price list, because a
-> "weapon model" can mean an hour or a fortnight and any number we posted would be
-> wrong for most of them.
+> **Every job is quoted individually.** We do not publish a price list, because
+> "a weapon model" can mean an afternoon or a fortnight, and any number we posted
+> would be wrong for most jobs.
 >
-> Tell us what you want in <#request-a-quote> and you will get a real number for
-> your actual job.
+> Tell us what you want in <#request-a-quote> and you get a real number.
 >
-> We take **[Robux / PayPal / — list what you accept]**.
+> ## Paying us
+>
+> **PayPal · Robux · crypto · card payment link**
+>
+> Robux is paid directly as in-game currency. We do not convert through DevEx, so
+> a Robux price is a Robux price — it is not a dollar figure in disguise.
 >
 > ## What you get
 >
-> Source files and exports, previews, and whatever the job specifically needs —
-> agreed in writing before anybody starts. Read <#terms>.
+> Source files and exports, previews, and whatever else the job needs — all agreed
+> in writing before anybody starts. Read <#terms>.
 
 ---
 
 ## 📄・terms
 
-Fill every bracket before posting. This is the document that decides a dispute.
+Revisions, ownership and portfolio use below are taken from the Staff Payment &
+Work Guidelines. **The deposit line is the one thing still to decide** — see
+`CONFLICTS.md`, because it decides whether your artists can be paid on time.
 
 > # Working with us
 >
 > ## Quotes
-> A quote covers exactly what is written in it. Anything added later is new work
-> and gets priced separately — we will always tell you before doing it, never
-> after.
+> A quote covers exactly what is written in it. Anything added afterwards is new
+> work, priced separately. We tell you before we do it, never after.
 >
 > Quotes hold for **[7] days**.
 >
 > ## Payment
-> **[50]% before work starts, the rest on delivery.** Work does not begin until
-> the deposit lands.
+> **[deposit % — decide this] before work starts, the rest on delivery.**
 >
-> We record every payment against your order. We will never ask for a password,
-> a card number, or a wallet phrase — if anyone claiming to be us does, it is not
-> us.
+> We record every payment against your order. **We will never ask for a password,
+> a card number, or a wallet phrase.** If anyone claiming to be us does, it is not
+> us — tell us.
 >
 > ## Revisions
-> **[2] rounds of changes are included**, within the scope you originally agreed.
+> **Three rounds of changes are included free.**
 >
-> A revision is a fix or an adjustment. A change of direction is new work. We will
-> say which one we think it is before we start, and we will not surprise you with
-> a bill.
+> The first two are yours by right — ask and we do them, as long as they bring the
+> work in line with what was agreed. A request does not have to be spelled out
+> word-for-word in the brief to count; it just has to be a fair reading of it.
+>
+> A genuine change of direction is new work, with its own scope and price. We will
+> say which one we think it is up front, and we will not surprise you with a bill.
+>
+> Requests also have to be reasonable in effort. Normal changes, not repeated
+> nitpicking. After two in-scope, reasonable rounds, we may decline further ones.
 >
 > ## Turnaround
-> Quoted per job, because it depends on the work and what is already booked. We
-> give you a date when we quote, and we tell you as soon as we know if it is going
-> to move.
+> Quoted per job. We give you a date when we quote, and we tell you as soon as we
+> know if it is going to move.
 >
 > ## What you receive
-> Everything listed in the quote — usually source files, exports and previews.
-> Formats agreed up front.
+> Everything listed in the quote — source files, exports, previews. Formats agreed
+> up front.
 >
 > ## Ownership
-> The work is yours once paid in full.
+> The finished work belongs to you and the studio once it is paid for. Our artists
+> may show it in their own portfolios, which is normal for creative work — that
+> means showing what they made, never handing over source files or your details.
 >
-> **We keep the right to show it in our portfolio unless you ask us not to.** Say
-> so at any point and we will take it down. If your project is unannounced, tell
-> us and we will not show anything until you say it is fine.
+> **We may show it in our portfolio unless you tell us not to.** Say so at any
+> point and it comes down. If your project is unannounced, tell us and we show
+> nothing until you say it is fine.
 >
 > ## Cancelling
-> Cancel before work starts and the deposit is returned in full.
+> Cancel before work starts and anything paid is returned.
 >
-> Cancel part-way and you pay for what has been done, and receive it. The deposit
-> covers that first.
+> Cancel part-way and you pay for what has been done, and you receive it.
 >
-> After delivery a job is finished. If something is wrong with it, that is a
-> revision, not a refund — tell us and we will fix it.
+> After delivery the job is finished. If something is wrong with it, that is a
+> revision — tell us and we fix it.
 >
 > ## If something goes wrong
 > Tell us in your order channel first. We keep a dated record of every approval,
-> every file sent and every payment, and we will go through it with you.
+> every file and every payment, and we will go through it with you.
 >
 > We would rather fix it than argue about it.
 
@@ -154,14 +180,14 @@ Fill every bracket before posting. This is the document that decides a dispute.
 
 > # Getting a quote
 >
-> Post here and we will come back with a price and a date. **Include all of this
-> or it just takes longer:**
+> Post here and you get a price and a date back. **Include all of this or it just
+> takes longer:**
 >
 > **1 · What you want** — as specific as you can. "A sword" and "12 stylised
-> low-poly swords, textured, matching a set I will send" are very different jobs.
+> low-poly swords, textured, matching a set I'll send" are very different jobs.
 >
-> **2 · References** — images, videos, links to a style you like. One picture
-> saves a hundred messages.
+> **2 · References** — images, videos, a style you like. One picture saves a
+> hundred messages.
 >
 > **3 · Your deadline** — a real one. "Whenever" gets scheduled like "whenever".
 >
@@ -170,8 +196,8 @@ Fill every bracket before posting. This is the document that decides a dispute.
 >
 > **5 · Your game** — a link if there is one, so we can match the style.
 >
-> Once we have that you get a written quote. Accept it and we open a private
-> channel for your order where everything happens from then on.
+> You get a written quote. Accept it and we open a private channel for your order,
+> where everything happens from then on.
 >
 > You can also request a quote on our site: **[your website URL]**
 
@@ -181,29 +207,38 @@ Fill every bracket before posting. This is the document that decides a dispute.
 
 > # Working for Cylops
 >
-> We take on modellers, builders, animators, VFX artists, UI and GFX designers,
-> scripters and sound designers.
+> We take on **builders, modellers, animators, VFX artists, UI/GUI and GFX
+> designers, and sound designers.**
 >
 > **Post here with:**
 >
 > **1 · What you do** — pick your craft. If you do two, say which is stronger.
-> **2 · Your portfolio** — a link. Work you made, not work you like.
-> **3 · Your timezone** — the actual zone, e.g. Europe/London.
-> **4 · Your availability** — hours a week, realistically.
-> **5 · Your software.**
-> **6 · What you expect to be paid** — per job or per hour, your call.
+> **2 · Your portfolio** — work you made, not work you like.
+> **3 · Proof it is yours** — we ask everybody for this. Project files, working
+> screenshots, the account it was uploaded from. It is not personal; it is how we
+> avoid hiring someone who took it from somebody else.
+> **4 · Your timezone** — the actual zone, e.g. Asia/Dubai.
+> **5 · Your availability** — hours a week, realistically.
+> **6 · Your software.**
+> **7 · What you expect to be paid.**
 >
 > ## What happens next
 >
-> We look at your portfolio. If it fits, you get a **paid trial brief** — a real
-> small job, with the terms and the pay written down before you start. You are
-> paid for it whether or not we take you on.
+> Your portfolio is reviewed by the lead for your craft. If it fits, you start on
+> a **trial** — a real, small, **paid** job with the terms and pay written down
+> before you start. You are paid for it whether or not we take you on.
 >
-> Pass the trial and you get your craft role, and work starts being offered to
-> you directly.
+> Pass, and you get your full craft role and work starts being offered to you
+> directly.
 >
-> **We do not ask anyone to work for free, ever**, including "to prove yourself".
-> Anyone claiming otherwise in our name is not us.
+> ## Two things we will never do
+>
+> **We do not ask anyone to work free**, including "to prove yourself". Every
+> trial is paid.
+>
+> **We do not ask for your account password**, ever, for any reason.
+>
+> Anyone doing either of those in our name is not us.
 
 ---
 
@@ -216,39 +251,37 @@ Fill every bracket before posting. This is the document that decides a dispute.
 > **Please include:**
 > - what you ordered
 > - whether it came out how you wanted
-> - whether it arrived when we said
+> - whether it arrived when we said it would
 >
 > Honest ones are worth more than glowing ones. If something was not right, say
-> that too — we would rather fix it than have it quietly go around.
+> that too — we would rather fix it than have it go around quietly.
 
 ---
 
 ## 🖼️・showcase
 
-Staff-posted only. Pin this so nobody posts something they should not:
-
 > # Showcase
 >
 > Our work, posted by staff.
 >
-> **Before posting, run `/archive portfolio`.** That is the list of work the
-> client has actually given us permission to show, and it is the only list you may
-> post from. Some jobs are under wraps until the client launches, and posting one
+> **Run `/archive portfolio` before posting.** That is the list of work clients
+> have actually given permission to show, and it is the only list you may post
+> from. Some projects are under wraps until the client launches, and posting one
 > early costs us the client.
 >
-> If it is not on that list, it does not go here — no matter how good it is.
+> If it is not on that list, it does not go here — however good it is.
 
 ---
 
 ## 🙋・introductions
 
-> Say hello. A short one is fine:
+> Say hello. Short is fine:
 >
-> **Name / what to call you** —
+> **Name** —
 > **Craft** —
 > **Timezone** —
 > **Software** —
-> **Something you are proud of** —
+> **Something you're proud of** —
 >
 > Then run `/profile me` and fill it in properly. That is what puts you on the
 > staff board with your local time, so people stop messaging you at 3am.
@@ -257,65 +290,91 @@ Staff-posted only. Pin this so nobody posts something they should not:
 
 ## 🧭・how-we-work
 
-The staff pipeline. Pin `COMMANDS-staff.pdf` here too.
+Pin `COMMANDS-staff.pdf` here too.
 
 > # How a job moves through the studio
 >
 > **1 · It comes in** — a client posts in <#request-a-quote> or uses the website.
-> It becomes an enquiry.
 >
-> **2 · It gets quoted** — a price is drafted and approved before it is ever sent.
-> Nobody quotes off the cuff.
+> **2 · It gets quoted** — priced and approved before it is sent. Nobody quotes
+> off the cuff.
 >
-> **3 · It becomes an order** — with a client channel, a deadline and a list of
-> tasks, each routed to a craft.
+> **3 · It becomes an order** — with a client channel, a deadline, and tasks
+> routed to each craft.
 >
-> **4 · Pay is set** — your group leader proposes what a task pays, the owner
-> approves it. **Work is never offered before the pay is agreed.**
+> **4 · Pay is agreed** — your lead proposes what a task pays, the owner approves
+> it. **Work is never offered before the pay is agreed**, so you always know what
+> you are accepting.
 >
 > **5 · It is offered to you** — by DM, with the brief, the deadline and the pay.
-> Accept or decline. Declining is fine; leaving it sitting is not.
+> Accept or decline. Declining is fine. Leaving it sitting is not.
 >
-> **6 · You do the work** — post updates with `/work progress`. If you get stuck,
-> `/work blocked` — that is not an admission of failure, it is how we see an order
-> has stopped.
+> **6 · You do the work** — post updates with `/work progress`. Stuck? `/work
+> blocked`. That is not admitting failure, it is how we see an order has stopped.
 >
-> **7 · You submit it** — `/work submit`, with the checklist for your craft.
+> **7 · You submit** — `/work submit`, with the checklist for your craft.
 >
-> **8 · Your leader reviews it** — passes it for the client, or asks for changes.
-> This happens privately. Nobody gets corrected in front of the server.
+> **8 · Your lead reviews it** — passes it on, or asks for changes. This happens
+> privately. Nobody is corrected in front of the server.
 >
-> **9 · The client decides** — approval is recorded against the exact version they
-> saw, so "I approved a different one" cannot happen.
+> **9 · The client decides** — their approval is recorded against the exact
+> version they saw, so "I approved a different one" cannot happen.
 >
-> **10 · It is delivered, and you are paid** — once the client's money is in.
-> Check yours any time with `/work earnings`.
+> **10 · It is delivered and you are paid.** Check yours any time with
+> `/work earnings`.
+>
+> ## Revisions
+>
+> Three rounds are included free per task. The first two you do — they are part of
+> the job, as long as they bring the work in line with the agreed scope. Something
+> genuinely new is a separate task with its own pay; say so rather than absorbing
+> it.
+>
+> ## If you need to step away
+>
+> Tell your lead, hand over what you have finished, and you are paid fairly for
+> the usable part. That is allowed and it is not held against you. Disappearing
+> is a different thing.
 >
 > ---
 >
-> **Your commands:** `/go` first thing. `/desk me` for everything of yours.
-> `/find` when you cannot remember a code.
->
-> Full list pinned below.
+> `/go` first thing. `/desk me` for everything of yours. `/find` when you cannot
+> remember a code. Full list pinned below.
 
 ---
 
 ## 📕・staff-rules
 
-Keep this channel as a pointer. The real rules go in `/procedure set`, because
-that records who has acknowledged each version — a pinned message cannot.
-
 > # Staff rules
 >
-> The rules live in the bot, not in this channel, so we can see who has read them.
+> Two handbooks apply to you:
 >
-> **Run `/procedure list`** — it shows every procedure and which ones you still
-> owe an acknowledgement on. Read each with `/procedure read`.
+> **Staff Payment & Work Guidelines** — everyone. Pay, revisions, approvals,
+> confidentiality, portfolio rights, what happens if things go wrong.
+> **Leader Handbook** — additional, if you lead a team.
 >
-> You are expected to be current on all of them. If one changes you will be asked
-> to acknowledge it again.
+> [link both here]
 >
-> This channel is for questions about them.
+> ## The short version
+>
+> - **Pay is per task**, agreed before you start
+> - **Three revisions free per task**, first two compulsory and in-scope
+> - **What you learn here stays here** — client names, what a client pays, other
+>   people's pay, unreleased projects, how our splits work
+> - **Finished work belongs to the studio and the client** — your own portfolio is
+>   fine, reselling or reuploading is not
+> - **Clients are the studio's.** Bring one in and you are paid 20% for it
+> - **Bring in a recruit** who gets paid work and you are paid 20% of their pay
+>
+> ## Acknowledging them
+>
+> Run **`/procedure list`** — it shows every procedure and which you still owe an
+> acknowledgement on. Read each with `/procedure read`.
+>
+> That is how we know who has actually read what, which a pinned message cannot
+> tell us. If a handbook changes you will be asked to acknowledge it again.
+>
+> Questions about any of it go here.
 
 ---
 
@@ -326,23 +385,26 @@ that records who has acknowledged each version — a pinned message cannot.
 > Plugins, rigs, templates, reference packs — anything that saves someone else an
 > afternoon.
 >
-> **Posting something:** say what it is, what it is for, and which craft in one
+> **Posting something:** say what it is, what it is for, and which craft, in one
 > line. A bare link helps nobody in three months.
 >
 > **Only post what we are allowed to share.** No paid assets, no leaked files, no
-> client source from another job. If you are not sure, ask in <#help-desk>.
+> client source from another job. Unsure? Ask in <#help-desk>.
 
 ---
 
 ## 💵・price-guide
 
-Leads and owner only. **These are artist pay bands, not client prices** — keep
-the two apart, and keep this channel locked down.
+Leads and owner only. The Staff Guidelines put "how the studio's payment and
+revenue-split system works" under the NDA, so this channel is covered by it.
 
 > # Internal pay guide
 >
-> What we pay artists for typical work. A starting point for `/task pay`, not a
-> rule — adjust for scope, deadline and difficulty, and say why in the task.
+> **This is what we pay artists. It is not what clients pay.** Both figures are
+> under the NDA — neither goes outside this channel.
+>
+> Pay is per task and varies by complexity and by who is doing it — there is no
+> rate card. These are starting points for `/task pay`, not rules.
 >
 > | Work | Typical pay |
 > |---|---|
@@ -350,21 +412,36 @@ the two apart, and keep this channel locked down.
 > | Simple prop, textured | [ ] |
 > | Weapon, textured | [ ] |
 > | Character model | [ ] |
-> | Small map / interior | [ ] |
+> | Terrain / environment build | [ ] |
+> | Lowpoly map | [ ] |
+> | Stud build | [ ] |
+> | Realistic build | [ ] |
+> | Interior / exterior | [ ] |
 > | Full lobby | [ ] |
 > | Animation, single | [ ] |
 > | Animation set | [ ] |
 > | VFX, single ability | [ ] |
-> | UI screen | [ ] |
+> | UI / GUI screen | [ ] |
 > | Full UI set | [ ] |
 > | Thumbnail / icon | [ ] |
-> | Scripting, per system | [ ] |
 > | SFX pass | [ ] |
 >
-> **Rush work** — add [ ]% when a deadline is inside [ ] days.
+> **Rush work** — add [ ]% when the deadline is inside [ ] days.
 >
-> The budget guard refuses pay that would commit more than the client is paying.
-> If you hit it, the fix is a bigger quote, not a smaller artist.
+> ## The splits
+>
+> - **Finder** — 20% for bringing the client in
+> - **Recruiter** — 20% of a recruit's pay, if you brought them in
+> - **Lead** — 20%
+> - **Mod** — 10%
+> - **Owner** — the rest
+>
+> The finder and recruiter cuts are different things and both can apply.
+>
+> ## The budget guard
+>
+> The bot refuses pay that would commit more than the client is paying. If you hit
+> it, the answer is a bigger quote — not a smaller artist.
 
 ---
 
@@ -374,7 +451,7 @@ the two apart, and keep this channel locked down.
 >
 > Nearly every reply is private to you, so this channel stays quiet either way.
 >
-> Not sure what you can run? `/help` — it only shows commands you actually have.
+> `/help` shows only the commands you can actually use.
 
 ---
 
@@ -393,25 +470,24 @@ Post this when you open a client's channel, then run `/clients dashboard`.
 > **What we need from you:**
 > - Reply when we ask for a decision — approvals are what unblock the next stage
 > - Tell us early if something changes, not after we have built it
-> - Keep everything in this channel, not in DMs, so it is all on the record
+> - Keep it in this channel, not in DMs, so it is all on the record
 >
 > **What you get from us:**
 > - A preview before anything is final
-> - Notice as soon as we know a date is going to move
+> - Notice as soon as we know a date is moving
 > - A dated record of every approval, file and payment
 >
-> Terms are in <#terms>. Anything unclear, ask here.
+> Terms are in <#terms>. Anything unclear, just ask here.
 
 ---
 
 ## Before you post any of this
 
-1. **Fill in every `[bracket]`.** Turnaround, revision count, deposit size and
-   pay bands are business decisions — I have deliberately left them blank rather
-   than invent numbers you would then be held to.
-2. **Decide your revision count first.** It is the single biggest cause of
-   arguments in commission work, and the bot records revisions per task, so the
-   number you post here should match what you set on your tasks.
-3. **Put the staff rules in `/procedure set`**, not only in a channel.
-4. Run `/studio doctor` afterwards to catch anything you pointed the bot at but
-   never finished setting up.
+1. **Read `CONFLICTS.md`.** Four things in your handbooks and the bot disagree.
+   Two are about money and one is a promise already made to a named person.
+2. **Decide the deposit.** It is the only blank left in `#terms`, and it decides
+   whether your artists can actually be paid when your handbook says they will be.
+3. **Fill the pay guide.** The numbers are yours; the shape is there.
+4. **Link both handbooks in `#staff-rules`**, and put them in `/procedure set` so
+   acknowledgements are tracked.
+5. **Run `/studio doctor`** afterwards to catch anything pointed at but unfinished.
