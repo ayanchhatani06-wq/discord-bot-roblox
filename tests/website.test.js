@@ -712,3 +712,79 @@ test('expired sessions and spent login links are eventually cleared away', () =>
   assert.ok(webRepo.sessionByHash(db, httpLib.hashToken('live')), 'a live session survives');
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM web_sessions').get().n, 1);
 });
+
+// ---------------------------------------------------------------------------
+// Optional sign-in routes: Discord, and email delivery
+// ---------------------------------------------------------------------------
+
+const discordAuth = require('../web/lib/discordAuth');
+const mailer = require('../web/lib/mailer');
+
+test('Discord sign-in is off unless it is fully configured', () => {
+  assert.equal(discordAuth.isConfigured({}), false);
+  assert.equal(discordAuth.isConfigured({ DISCORD_CLIENT_ID: 'a' }), false, 'half-configured is off');
+  assert.equal(discordAuth.isConfigured({
+    DISCORD_CLIENT_ID: 'a', DISCORD_CLIENT_SECRET: 'b', WEB_APP_URL: 'https://x',
+  }), true);
+});
+
+test('the Discord sign-in button only appears when it would work', async () => {
+  const db = setup();
+  await withServer(db, async ({ get }) => {
+    const body = await (await get('/client/sign-in')).text();
+    assert.doesNotMatch(body, /Sign in with Discord/, 'not configured in this test run');
+  });
+});
+
+test('a Discord sign-in state cannot be forged or replayed', () => {
+  const env = { DISCORD_CLIENT_SECRET: 'a-secret' };
+  const state = discordAuth.makeState({ env });
+
+  assert.equal(discordAuth.verifyState(state, { env }), true);
+  assert.equal(discordAuth.verifyState('made.up.state', { env }), false);
+  assert.equal(discordAuth.verifyState(state, { env: { DISCORD_CLIENT_SECRET: 'different' } }), false,
+    'a state signed by somebody else is not ours');
+
+  const stale = discordAuth.makeState({ env, ttlMs: -1000 });
+  assert.equal(discordAuth.verifyState(stale, { env }), false, 'an old state cannot be replayed');
+});
+
+test('Discord sign-in asks only for the account id', () => {
+  assert.equal(discordAuth.SCOPE, 'identify');
+  const url = discordAuth.authorizeUrl({
+    state: 'x',
+    env: { DISCORD_CLIENT_ID: 'id', WEB_APP_URL: 'https://x' },
+  });
+  assert.match(url, /scope=identify/);
+  assert.doesNotMatch(url, /email/, 'the studio has no use for their email from Discord');
+  assert.doesNotMatch(url, /guilds/);
+});
+
+test('email sending stays off until a mail server is configured', async () => {
+  assert.equal(mailer.isConfigured({}), false);
+  assert.equal(mailer.isConfigured({ SMTP_HOST: 'mail.example.com', SMTP_FROM: 'studio@example.com' }), true);
+
+  const result = await mailer.send({ to: 'a@b', subject: 's', body: 'b' }, { env: {} });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'not_configured');
+});
+
+test('a newline in a header cannot smuggle in another header', () => {
+  const message = mailer.buildMessage({
+    from: 'studio@example.com',
+    to: 'client@example.com',
+    subject: 'Your link\r\nBcc: somebody@else.invalid',
+    body: 'Hello',
+  });
+
+  assert.doesNotMatch(message, /\nBcc:/, 'a second Bcc would send the link somewhere else entirely');
+  assert.match(message, /Subject: Your link Bcc: somebody@else\.invalid/);
+});
+
+test('a line that is only a dot cannot end the message early', () => {
+  const message = mailer.buildMessage({
+    from: 'a@b', to: 'c@d', subject: 's',
+    body: 'first\n.\nsecond',
+  });
+  assert.match(message, /\r\n\.\.\r\n/, 'the dot is escaped, so "second" is still part of the message');
+});

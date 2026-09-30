@@ -217,8 +217,8 @@ client login that must also work for clients who are not in the Discord server.
 | Portfolio populated only from assets the client permitted | ✅ (only `publishablePortfolio`; no client, project, price or date shown) |
 | Separate web process, read-only on a curated subset | ✅ (writes only enquiries, sessions and login tokens) |
 | Reverse proxy and TLS for a real domain | 🟡 documented; needs the owner's hostname |
-| Client login via Discord OAuth2 | ⬜ needs a CLIENT_SECRET; the magic-link path covers both audiences meanwhile |
-| Client login via email magic link, for clients not in Discord | ✅ (link generated and spent once; delivery is manual until an email provider is set) |
+| Client login via Discord OAuth2 | ✅ (off unless configured; only the `identify` scope, and access still comes only from a recorded account) |
+| Client login via email magic link, for clients not in Discord | ✅ (sent by SMTP when configured, handed over by staff otherwise) |
 | Staff/owner dashboards, archive search, automation rule builder | 🟡 read-only staff desk and queues built; archive search and rule builder stay in Discord |
 
 ---

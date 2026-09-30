@@ -16,6 +16,8 @@ const pages = require('./lib/pages');
 const clientPages = require('./lib/clientPages');
 const staffPages = require('./lib/staffPages');
 const staffView = require('./lib/staffView');
+const discordAuth = require('./lib/discordAuth');
+const mailer = require('./lib/mailer');
 const { errorPage } = require('./lib/render');
 
 /**
@@ -33,6 +35,7 @@ const PORT = Number(process.env.WEB_PORT || 8080);
 const GUILD_ID = process.env.WEB_GUILD_ID || process.env.GUILD_ID || null;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const SESSION_COOKIE = 'studio_session';
+const OAUTH_STATE_COOKIE = 'studio_oauth_state';
 const SECURE = process.env.WEB_INSECURE !== '1';
 // Set TRUST_PROXY=1 only when something in front really does set the header.
 const TRUST_PROXY = process.env.TRUST_PROXY === '1';
@@ -226,7 +229,74 @@ function buildRouter({ db, guildId }) {
   // ---- client area ----
 
   router.get('/client/sign-in', (_req, res) => {
-    httpLib.send(res, 200, clientPages.signIn({ studio: snapshot().studio.name }));
+    httpLib.send(res, 200, clientPages.signIn({
+      studio: snapshot().studio.name,
+      // Only offered when it is actually configured, so nothing half-set-up
+      // can half-work.
+      discordUrl: discordAuth.isConfigured() ? '/client/discord' : null,
+    }));
+  });
+
+  router.get('/client/discord', (_request, response) => {
+    if (!discordAuth.isConfigured()) return httpLib.redirect(response, '/client/sign-in');
+
+    // The state is signed rather than stored: it carries its own expiry, so a
+    // state this server did not issue cannot be presented back to it, and no
+    // server-side record is needed before the visitor has a session.
+    const state = discordAuth.makeState();
+    return httpLib.redirect(response, discordAuth.authorizeUrl({ state }), {
+      'Set-Cookie': httpLib.cookie(OAUTH_STATE_COOKIE, state, { secure: SECURE, maxAge: 600 }),
+    });
+  });
+
+  router.get('/client/discord/callback', async (request, response) => {
+    const studio = snapshot().studio.name;
+    const refuse = (error) => httpLib.send(response, 400, clientPages.signIn({
+      studio, error, discordUrl: discordAuth.isConfigured() ? '/client/discord' : null,
+    }));
+
+    if (!discordAuth.isConfigured()) return httpLib.redirect(response, '/client/sign-in');
+
+    const url = new URL(request.url, 'http://localhost');
+    const jar = httpLib.parseCookies(request.headers.cookie);
+    const state = url.searchParams.get('state');
+
+    // The state must be one we issued *and* the one this browser was given.
+    if (!state || !httpLib.safeEqual(state, jar[OAUTH_STATE_COOKIE] || '') || !discordAuth.verifyState(state)) {
+      return refuse('That sign-in attempt could not be verified. Please start again.');
+    }
+
+    const code = url.searchParams.get('code');
+    if (!code) return refuse('Discord did not complete the sign-in. Please try again.');
+
+    const result = await discordAuth.exchange(code);
+    if (!result.ok) return refuse('Discord could not confirm who you are. Please try again.');
+
+    // Being a Discord user proves nothing by itself. Access comes only from an
+    // account the studio explicitly recorded against a client, exactly as in
+    // the bot.
+    const account = db.prepare(`
+      SELECT a.*, c.display_name FROM client_accounts a
+      JOIN clients c ON c.id = a.client_id
+      WHERE a.user_id = ? AND a.revoked_at IS NULL AND c.guild_id = ?
+    `).get(result.userId, guildId);
+
+    if (!account) {
+      return refuse('That Discord account is not on any of our orders. Ask us to add it.');
+    }
+
+    const sessionToken = startSession(db, guildId, {
+      clientId: account.client_id,
+      email: null,
+      displayName: account.display_name,
+    });
+
+    return httpLib.redirect(response, '/client', {
+      'Set-Cookie': [
+        httpLib.cookie(SESSION_COOKIE, sessionToken, { secure: SECURE }),
+        httpLib.clearCookie(OAUTH_STATE_COOKIE, { secure: SECURE }),
+      ],
+    });
   });
 
   router.post('/client/sign-in', async (request, response) => {
@@ -251,9 +321,23 @@ function buildRouter({ db, guildId }) {
         tokenHash: httpLib.hashToken(token),
         email,
       });
-      // Delivery is the studio's job until an email provider is configured;
-      // the link is recorded and staff pass it on.
-      console.log(`[web] sign-in link for client ${match.client_id}: /client/enter?token=${token}`);
+
+      const base = String(process.env.WEB_APP_URL || '').replace(/\/$/, '');
+      const link = `${base}/client/enter?token=${token}`;
+
+      if (mailer.isConfigured()) {
+        const letter = mailer.signInEmail({ studio, url: link });
+        const sent = await mailer.send({ to: email, ...letter });
+        // A failure to send is not an emergency: staff can always hand the
+        // link over. It is logged so somebody knows to.
+        if (!sent.ok) {
+          console.warn(`[web] could not email a sign-in link (${sent.reason}): ${link}`);
+        }
+      } else {
+        // No mail server configured, so the studio delivers it by hand. This
+        // is the documented default, not a failure.
+        console.log(`[web] sign-in link for client ${match.client_id}: ${link}`);
+      }
     }
 
     // The same answer either way. Saying "no such address" would tell anybody
@@ -510,4 +594,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { createServer, createLimiter, buildRouter, SESSION_COOKIE };
+module.exports = { createServer, createLimiter, buildRouter, SESSION_COOKIE, OAUTH_STATE_COOKIE };
