@@ -16,6 +16,8 @@ const { parseAmount, formatAmount, formatTotals, isSupportedCurrency, CURRENCIES
 const { TASK_STATES } = require('../domain/taskState');
 const { discordTimestamp } = require('../utils/time');
 const { priv } = require('../utils/reply');
+const { brief, count } = require('../utils/brief');
+const { registerView } = require('../services/detailViews');
 
 const CURRENCY_CHOICES = Object.keys(CURRENCIES).map((code) => ({ name: code, value: code }));
 
@@ -358,48 +360,23 @@ module.exports = {
     if (sub === 'outstanding') {
       assertCan(actor, CAPABILITIES.FINANCE_VIEW_ALL);
 
-      const pending = paymentState.pendingPayouts(db, guildId);
-      const splits = allocationFlow.outstandingAllocations(db, guildId);
+      const owed = outstandingTotals(db, guildId);
 
-      const embed = new EmbedBuilder().setTitle('Outstanding payouts').setColor(0xfaa61a);
-
-      embed.addFields({
-        name: `Artist pay owed (${pending.payable.length})`,
-        value: pending.payable.length === 0
-          ? '_nothing payable right now_'
-          : pending.payable.flatMap((task) =>
-              paymentState.owedOnTask(db, task)
-                .filter((entry) => entry.remainingMinor > 0)
-                .map((entry) =>
-                  `**${task.code}** <@${entry.userId}> — ${formatAmount(entry.remainingMinor, entry.currency)}${entry.paidMinor > 0 ? ' (part paid)' : ''}`)
-            ).join('\n').slice(0, 1024) || '_nothing payable right now_',
-        inline: false,
-      });
-
-      if (pending.awaitingClientMoney.length > 0) {
-        embed.addFields({
-          name: `Approved but the client has not paid (${pending.awaitingClientMoney.length})`,
-          value: pending.awaitingClientMoney.map((task) => {
-            const owed = paymentState.owedOnTask(db, task);
-            return owed.length === 0
-              ? `**${task.code}** — no pay set`
-              : `**${task.code}** ${owed.map((entry) => `<@${entry.userId}> ${formatAmount(entry.agreedMinor, entry.currency)}`).join(', ')}`;
-          }).join('\n').slice(0, 1024),
-          inline: false,
-        });
-      }
-
-      if (splits.length > 0) {
-        embed.addFields({
-          name: `Shares owed (${splits.length})`,
-          value: splits.map((row) =>
-            `**${row.task_code}** ${row.recipient_kind} → <@${row.recipient_user_id}> — ${formatAmount(row.outstanding_minor, row.currency)}`
-          ).join('\n').slice(0, 1024),
-          inline: false,
-        });
-      }
-
-      await interaction.reply(priv({ embeds: [embed] }));
+      // The answer is who is waiting and how much. The breakdown is a button
+      // away, because most days you only want to know whether there is one.
+      await interaction.reply(brief({
+        title: 'Outstanding payouts',
+        tone: owed.peopleWaiting === 0 ? 'good' : 'warn',
+        headline: owed.peopleWaiting === 0
+          ? 'Nobody is waiting on money you can pay right now.'
+          : `${count(owed.peopleWaiting, 'person', 'people')} waiting — **${owed.payableText}** you can pay now.` +
+            (owed.blocked > 0
+              ? `\n\n${count(owed.blocked, 'task')} approved but the client has not paid yet.`
+              : ''),
+        viewId: owed.peopleWaiting === 0 && owed.blocked === 0 ? null : 'pay.outstanding',
+        buttonLabel: 'Who and how much',
+        emoji: '\u{1F4B0}',
+      }));
       return;
     }
 
@@ -867,3 +844,75 @@ module.exports = {
     }
   },
 };
+
+
+/** What is owed right now, summarised. Shared by the command and its button. */
+function outstandingTotals(db, guildId) {
+  const pending = paymentState.pendingPayouts(db, guildId);
+  const splits = allocationFlow.outstandingAllocations(db, guildId);
+
+  const lines = pending.payable.flatMap((task) =>
+    paymentState.owedOnTask(db, task)
+      .filter((entry) => entry.remainingMinor > 0)
+      .map((entry) => ({ task, ...entry })));
+
+  const byCurrency = new Map();
+  for (const line of [...lines, ...splits.map((row) => ({
+    remainingMinor: row.outstanding_minor, currency: row.currency,
+  }))]) {
+    byCurrency.set(line.currency, (byCurrency.get(line.currency) || 0) + line.remainingMinor);
+  }
+
+  return {
+    pending,
+    splits,
+    lines,
+    peopleWaiting: new Set([...lines.map((l) => l.userId), ...splits.map((s) => s.recipient_user_id)]).size,
+    blocked: pending.awaitingClientMoney.length,
+    payableText: [...byCurrency.entries()]
+      .map(([currency, minor]) => formatAmount(minor, currency)).join(' + ') || 'nothing',
+  };
+}
+
+registerView('pay.outstanding', ({ db, guildId, actor }) => {
+  // Re-checked here: a button must not be a way around the permission.
+  assertCan(actor, CAPABILITIES.FINANCE_VIEW_ALL);
+  const owed = outstandingTotals(db, guildId);
+
+  const embed = new EmbedBuilder().setTitle('Outstanding payouts').setColor(0xfaa61a);
+
+  embed.addFields({
+    name: `Artist pay owed (${owed.lines.length})`,
+    value: owed.lines.length === 0
+      ? '_nothing payable right now_'
+      : owed.lines.map((line) =>
+          `**${line.task.code}** <@${line.userId}> — ${formatAmount(line.remainingMinor, line.currency)}` +
+          `${line.paidMinor > 0 ? ' (part paid)' : ''}`).join('\n').slice(0, 1024),
+    inline: false,
+  });
+
+  if (owed.pending.awaitingClientMoney.length > 0) {
+    embed.addFields({
+      name: `Approved but the client has not paid (${owed.pending.awaitingClientMoney.length})`,
+      value: owed.pending.awaitingClientMoney.map((task) => {
+        const lines = paymentState.owedOnTask(db, task);
+        return lines.length === 0
+          ? `**${task.code}** — no pay set`
+          : `**${task.code}** ${lines.map((entry) => `<@${entry.userId}> ${formatAmount(entry.agreedMinor, entry.currency)}`).join(', ')}`;
+      }).join('\n').slice(0, 1024),
+      inline: false,
+    });
+  }
+
+  if (owed.splits.length > 0) {
+    embed.addFields({
+      name: `Shares owed (${owed.splits.length})`,
+      value: owed.splits.map((row) =>
+        `**${row.task_code}** ${row.recipient_kind} \u2192 <@${row.recipient_user_id}> — ${formatAmount(row.outstanding_minor, row.currency)}`
+      ).join('\n').slice(0, 1024),
+      inline: false,
+    });
+  }
+
+  return { embeds: [embed] };
+});
