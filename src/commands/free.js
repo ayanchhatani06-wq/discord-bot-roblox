@@ -115,16 +115,24 @@ module.exports = {
 
     // Said out loud, because it is the difference between a forecast you can act
     // on and one that quietly overbooks people.
-    const caveats = [
-      'No maximum workload is recorded for anybody, so this shows what each person is carrying rather than judging them over a limit.',
-    ];
+    const caveats = [];
+    if (result.withoutCap.length > 0) {
+      caveats.push(
+        `No task cap is set for ${result.withoutCap.slice(0, 4).join(', ')}` +
+        `${result.withoutCap.length > 4 ? ` and ${result.withoutCap.length - 4} more` : ''}, ` +
+        'so for those this shows the load without judging anybody over a limit. ' +
+        'Set one with `/studio department task_cap:`.'
+      );
+    }
     if (result.unknownDeadlines > 0) {
       caveats.push(
         `${result.unknownDeadlines} task(s) have no deadline, so there is no telling whether they land in this window. ` +
         'They are counted as work, not assumed finished.'
       );
     }
-    embed.addFields({ name: 'What this cannot know', value: caveats.join('\n\n').slice(0, 1024) });
+    if (caveats.length > 0) {
+      embed.addFields({ name: 'What this cannot know', value: caveats.join('\n\n').slice(0, 1024) });
+    }
 
     if (result.people.length > 20) {
       embed.setFooter({ text: `Showing 20 of ${result.people.length}. Narrow it with the "group" option.` });

@@ -192,11 +192,24 @@ Remove it with `/studio sample action:Remove sample data`.
 
 ## Command reference
 
-There is also **[a printable PDF of every command](docs/COMMANDS.pdf)** — all 36
-commands and 222 subcommands, each with who can use it and what it does. It is
-generated from the command definitions themselves, so it cannot drift from the
-bot: `npm run reference` rebuilds it, and the test suite fails if a command is
-added without saying who it is for.
+There are printable PDFs, one per person, each holding only what that person can
+actually use — no permissions column, grouped by what you are trying to do, and
+with a page on **where the bot's output actually lands** (which channel, which
+board, what arrives by DM):
+
+| Sheet | For | Length |
+| --- | --- | --- |
+| **[For the team](docs/COMMANDS-staff.pdf)** | Everyone on the team | 5 pages |
+| **[For group leaders](docs/COMMANDS-leader.pdf)** | Running a department | 4 pages |
+| **[For the owner](docs/COMMANDS-owner.pdf)** | Money, clients, setup — includes a suggested Discord channel layout | 11 pages |
+
+[The full reference](docs/COMMANDS.pdf) has all 36 commands and 222 subcommands in
+one place with the exact capability each needs — for looking something up, rather
+than reading.
+
+All four are generated from the command definitions themselves, so they cannot
+drift from the bot: `npm run reference` rebuilds them, and the test suite fails if
+a command is added that has no stated audience or lands on no sheet.
 
 The tables below are the short version.
 
@@ -485,10 +498,11 @@ finished), due inside it (competes with anything new), running past it, and
 
 Two things it deliberately does not do:
 
-- **It does not invent a limit.** No maximum workload is recorded for anybody, so
-  it shows what each person carries instead of declaring them over a threshold
-  the studio never set. A made-up "three tasks each" would look authoritative and
-  be wrong for everybody.
+- **It uses your cap, or none at all.** Where a department has a task cap set
+  (`/studio department task_cap:`), that is the limit — the same figure the assign
+  flow already warns you about, so the two cannot disagree. Where no cap is set it
+  shows the load and names the departments it cannot measure, instead of inventing
+  a threshold the studio never chose.
 - **It does not assume undated work is finished.** Work with no deadline is
   counted as work and the count is stated, because assuming otherwise is exactly
   what overbooks people.

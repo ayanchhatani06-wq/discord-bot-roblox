@@ -457,3 +457,41 @@ test('a share of somebody else\'s task still counts as their work', () => {
   assert.equal(helper.load.tasks.length, 1, 'contributing to a task is doing work');
   db.close();
 });
+
+test('a department task cap is the limit the forecast uses', () => {
+  const db = setup();
+  staffRepo.ensureStaff(db, GUILD, ARTIST, 'Capped Artist');
+  configRepo.upsertDepartment(db, GUILD, {
+    key: 'modelling', name: 'Modelling', taskCap: 2,
+  }, OWNER);
+  db.prepare('UPDATE staff SET department_id = ? WHERE guild_id = ? AND user_id = ?')
+    .run(departmentId(db, 'modelling'), GUILD, ARTIST);
+
+  const project = projectsRepo.createProject(db, GUILD, { name: 'Order' }, OWNER);
+  makeTask(db, project, { title: 'One', artist: ARTIST });
+
+  let result = capacity.forecast(db, GUILD, { days: 7 });
+  assert.equal(result.people[0].cap, 2);
+  assert.notEqual(result.people[0].outlook, capacity.OUTLOOK.FULL, 'one of two is not full');
+
+  makeTask(db, project, { title: 'Two', artist: ARTIST });
+  result = capacity.forecast(db, GUILD, { days: 7 });
+  assert.equal(
+    result.people[0].outlook, capacity.OUTLOOK.FULL,
+    'at the cap the studio already warns when assigning, so the forecast must agree'
+  );
+  assert.equal(result.withoutCap.includes('Modelling'), false);
+  db.close();
+});
+
+test('a department with no cap is named rather than claiming no limits exist', () => {
+  const db = setup();
+  staffRepo.ensureStaff(db, GUILD, ARTIST, 'Uncapped Artist');
+  db.prepare('UPDATE staff SET department_id = ? WHERE guild_id = ? AND user_id = ?')
+    .run(departmentId(db, 'modelling'), GUILD, ARTIST);
+
+  const result = capacity.forecast(db, GUILD, { days: 7 });
+  assert.equal(result.people[0].cap, null);
+  assert.ok(result.withoutCap.includes('Modelling'), 'says which departments have no cap set');
+  db.close();
+});

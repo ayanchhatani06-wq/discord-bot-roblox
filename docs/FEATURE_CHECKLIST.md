@@ -248,14 +248,14 @@ by name rather than something that seemed like a good idea.
 | Bulk approve proposed pay | ✅ (`/finance approve-all`, each figure budget-checked in turn; refuses only what does not fit) |
 | Roblox asset IDs recorded and searchable | ✅ (`/archive roblox-id`, `/archive roblox-ids`; digits extracted from a pasted URL) |
 | Capacity forecast — who is free next week | ✅ (`/free`) |
-| Forecast states what it cannot know | ✅ (no per-person limit is recorded, so it reports load rather than inventing a threshold; undated work is counted, not assumed finished) |
+| Forecast states what it cannot know | ✅ (uses the department task cap where one is set; names the departments with no cap rather than inventing a threshold; undated work is counted, not assumed finished) |
 
 Not built, and deliberately:
 
 | Item | Why not |
 | --- | --- |
 | Reversing a client receipt (a chargeback) | The columns exist but nothing sets them. Un-receiving money would retroactively unfund artists already paid, and how to handle that is the owner's call to make, not a default to guess. Stated here rather than half-built. |
-| A per-person workload limit | Nothing in the studio records one. `/free` shows load and says it is doing so, instead of judging people against a number nobody set. |
+| A per-person workload limit | Departments carry a task cap; individuals do not. `/free` uses the department cap where set and names the departments without one, rather than judging anybody against a number nobody chose. |
 
 ---
 

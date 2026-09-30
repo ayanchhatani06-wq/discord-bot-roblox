@@ -123,3 +123,33 @@ test('the command reference covers every subcommand', () => {
     }
   }
 });
+
+test('every command lands on at least one of the three sheets', () => {
+  // The per-audience sheets are the ones people actually read. A command that
+  // falls through the tier split appears on none of them, so somebody's job
+  // goes missing from the only page they will ever look at.
+  const { readCommands, resolve } = require('../docs/reference/build');
+  const { SHEETS, sectionsFor } = require('../docs/reference/sheets');
+  const { COMMAND_GROUPS } = require('../docs/reference/groups');
+
+  const commands = resolve(readCommands());
+  const covered = new Set();
+
+  for (const sheet of SHEETS) {
+    for (const group of sectionsFor(commands, sheet)) {
+      for (const entry of group.entries) {
+        for (const row of entry.rows) covered.add(`${entry.command.name}:${row.name ?? ''}`);
+      }
+    }
+  }
+
+  for (const command of commands) {
+    assert.ok(COMMAND_GROUPS[command.name], `/${command.name} is in no group in groups.js`);
+    for (const row of command.rows) {
+      assert.ok(
+        covered.has(`${command.name}:${row.name ?? ''}`),
+        `/${command.name}${row.name ? ` ${row.name}` : ''} is on no sheet`
+      );
+    }
+  }
+});

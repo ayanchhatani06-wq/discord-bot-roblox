@@ -9,12 +9,15 @@ const { ACTIVE_STATES } = require('../domain/taskState');
  * can we take this on next week? Guessing it wrong is how a studio ends up
  * either turning away work it could have done or promising work it cannot.
  *
- * What it will not do is invent a limit. Nobody's maximum workload is recorded
- * anywhere, so this reports how loaded each person is and lets the reader
- * decide — a made-up "3 tasks per person" threshold would look authoritative
- * and be wrong for everybody. Work with no deadline is counted and named as
- * unknown rather than assumed finished, because assuming it finishes is exactly
- * the mistake that overbooks people.
+ * Where a department records a cap (`/studio department task_cap:`), that is the
+ * limit used — the same figure the assign flow already warns against, so the two
+ * cannot disagree. Where no cap is set this reports the load and says plainly
+ * that there is nothing to measure it against, rather than inventing a threshold
+ * the studio never chose.
+ *
+ * Work with no deadline is counted and named as unknown rather than assumed
+ * finished, because assuming it finishes is exactly the mistake that overbooks
+ * people.
  */
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -69,6 +72,8 @@ function loadFor(db, guildId, userId, from, until) {
 
   return {
     tasks: all,
+    // What a department cap counts: tasks actually out with them right now.
+    activeCount: all.length,
     dueBefore: all.filter((task) => task.deadline_utc !== null && task.deadline_utc < from),
     dueInWindow: all.filter((task) => task.deadline_utc !== null && task.deadline_utc >= from && task.deadline_utc <= until),
     dueAfter: all.filter((task) => task.deadline_utc !== null && task.deadline_utc > until),
@@ -84,9 +89,12 @@ function awayDuring(member, from, until) {
   return member.away_until >= from;
 }
 
-function outlookFor(member, load, from, until) {
+function outlookFor(member, load, from, until, department = null) {
   if (awayDuring(member, from, until)) return OUTLOOK.AWAY;
   if (member.availability === staffRepo.AVAILABILITY.AT_CAPACITY) return OUTLOOK.FULL;
+
+  // A department cap is a real limit somebody chose, so it decides.
+  if (department?.task_cap && load.activeCount >= department.task_cap) return OUTLOOK.FULL;
 
   const committed = load.dueInWindow.length + load.dueAfter.length + load.noDeadline.length;
   if (committed === 0) {
@@ -111,11 +119,13 @@ function forecast(db, guildId, { from = Date.now(), days = 7, departmentId = und
 
   const people = members.map((member) => {
     const load = loadFor(db, guildId, member.user_id, from, until);
+    const department = member.department_id ? departments.get(member.department_id) || null : null;
     return {
       member,
-      department: member.department_id ? departments.get(member.department_id) || null : null,
+      department,
+      cap: department?.task_cap ?? null,
       load,
-      outlook: outlookFor(member, load, from, until),
+      outlook: outlookFor(member, load, from, until, department),
       returnsAt: member.availability === staffRepo.AVAILABILITY.AWAY ? member.away_until : null,
     };
   });
@@ -140,6 +150,10 @@ function forecast(db, guildId, { from = Date.now(), days = 7, departmentId = und
     counts,
     // Named so a reader knows what the forecast cannot see.
     unknownDeadlines: people.reduce((sum, person) => sum + person.load.noDeadline.length, 0),
+    // Departments with nobody's limit written down, so the caveat can name them
+    // instead of claiming the studio records no limits at all.
+    withoutCap: [...new Set(people.filter((person) => !person.cap && person.department)
+      .map((person) => person.department.name))],
     byDepartment: [...departments.values()].map((dept) => ({
       department: dept,
       free: people.filter((person) => person.department?.id === dept.id
@@ -160,7 +174,8 @@ function describePerson(person) {
 
   return `${OUTLOOK_EMOJI[person.outlook]} **${person.member.display_name || person.member.user_id}**` +
     `${person.department ? ` · ${person.department.name}` : ''}\n` +
-    `┗ ${bits.length > 0 ? bits.join(', ') : 'nothing on'}`;
+    `┗ ${person.cap ? `**${load.activeCount} of ${person.cap}** on now` : `${load.activeCount} on now`}` +
+    `${bits.length > 0 ? ` — ${bits.join(', ')}` : ''}`;
 }
 
 module.exports = {

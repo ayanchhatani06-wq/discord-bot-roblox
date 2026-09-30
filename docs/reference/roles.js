@@ -75,8 +75,8 @@ const ROLES = Object.freeze({
   TASK_HOLD_DEPT: { tier: TIERS.LEADER, who: 'Group leader (own department)', capability: CAPABILITIES.TASK_HOLD },
   TASK_REASSIGN_DEPT: { tier: TIERS.LEADER, who: 'Group leader (own department)', capability: CAPABILITIES.TASK_REASSIGN },
   REVIEW_INTERNAL_DEPT: { tier: TIERS.LEADER, who: 'Group leader (own department)', capability: CAPABILITIES.REVIEW_INTERNAL },
-  TASK_CREATE: { tier: TIERS.LEADER, who: 'Leader or manager', capability: CAPABILITIES.TASK_CREATE },
-  SUMMARY_VIEW: { tier: TIERS.LEADER, who: 'Leader, manager or owner', capability: CAPABILITIES.SUMMARY_VIEW },
+  TASK_CREATE: { tier: TIERS.MANAGER, who: 'Manager or owner', capability: CAPABILITIES.TASK_CREATE },
+  SUMMARY_VIEW: { tier: TIERS.MANAGER, who: 'Manager or owner', capability: CAPABILITIES.SUMMARY_VIEW },
   LEADER_OR_SUMMARY: {
     tier: TIERS.LEADER,
     who: 'Leader or owner',
@@ -93,17 +93,17 @@ const ROLES = Object.freeze({
     why: 'A leader can put a figure forward. Only the owner makes it the agreed pay.',
   },
   TASK_VIEW: {
-    tier: TIERS.LEADER,
+    tier: TIERS.ARTIST,
     who: 'Your task, your department, or owner',
     why: 'You see tasks assigned to you, tasks in a department you lead, or everything if you hold finance access.',
   },
   TASK_FINANCE_SCOPED: {
-    tier: TIERS.LEADER,
+    tier: TIERS.ARTIST,
     who: 'Leader or owner sees all; others their own',
     why: 'Everybody’s figures on a shared task are a leader-and-above view.',
   },
   BLOCKER_CLEAR: {
-    tier: TIERS.LEADER,
+    tier: TIERS.ARTIST,
     who: 'Whoever raised it, their leader, or the owner',
     why: 'The person who hit the blocker usually knows first that it is gone.',
   },
