@@ -14,7 +14,7 @@ const { priv } = require('../utils/reply');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('plan')
+    .setName('deadlines')
     .setDescription('Templates, dependencies, blockers and deadline changes')
     .addSubcommand((sub) =>
       sub
@@ -145,7 +145,7 @@ module.exports = {
           .setTitle('Task templates')
           .setColor(0x5865f2)
           .setDescription(templates.length === 0
-            ? 'None yet. Save one with `/plan template`.'
+            ? 'None yet. Save one with `/deadlines template`.'
             : templates.map((row) => {
                 const department = configRepo.getDepartment(db, guildId, row.department_id);
                 return `**${row.label}** (\`${row.key}\`) — ${department?.name || 'no department'}` +
@@ -182,7 +182,7 @@ module.exports = {
 
       await interaction.reply(priv(
         `✅ Saved template **${template.label}** (\`${template.key}\`) for ${department.name}.\n` +
-        `Create work from it with \`/plan batch template:${template.key} count:5\`.`
+        `Create work from it with \`/deadlines batch template:${template.key} count:5\`.`
       ));
       return;
     }
@@ -283,7 +283,7 @@ module.exports = {
                 `**#${row.id}** ${row.code} ${row.title} · raised by <@${row.raised_by}> ${discordTimestamp(row.created_at, 'R')}\n` +
                 `┗ ${row.reason.slice(0, 200)}${row.attachment ? `\n┗ ${row.attachment}` : ''}`
               ).join('\n').slice(0, 4000))
-          .setFooter({ text: 'Clear one with /plan clear-blocker id:<number>' })],
+          .setFooter({ text: 'Clear one with /deadlines clear-blocker id:<number>' })],
       }));
       return;
     }
@@ -335,7 +335,7 @@ module.exports = {
                 `┗ ${row.previous_deadline ? discordTimestamp(row.previous_deadline, 'd') : 'no date'} → ` +
                 `**${discordTimestamp(row.requested_deadline, 'd')}**\n┗ ${row.reason.slice(0, 200)}`
               ).join('\n').slice(0, 4000))
-          .setFooter({ text: 'Decide with /plan decide-extension id:<number> approve:true' })],
+          .setFooter({ text: 'Decide with /deadlines decide-extension id:<number> approve:true' })],
       }));
       return;
     }
@@ -470,7 +470,7 @@ module.exports = {
             `📅 <@${userId}> asked to move **${task.code} · ${task.title}** to ${discordTimestamp(parsed.utcMs, 'F')}` +
             `${task.deadline_utc ? ` (from ${discordTimestamp(task.deadline_utc, 'd')})` : ''}.\n` +
             `> ${interaction.options.getString('reason', true)}\n` +
-            `Decide with \`/plan decide-extension id:${request.id} approve:true\`.`,
+            `Decide with \`/deadlines decide-extension id:${request.id} approve:true\`.`,
         }).catch(() => null);
       }
       return;

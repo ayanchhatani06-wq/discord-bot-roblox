@@ -19,7 +19,7 @@ const TRIGGER_CHOICES = Object.entries(messagingRepo.TRIGGER_LABELS)
  */
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('outreach')
+    .setName('messages')
     .setDescription('Automated client messages: templates, queue and history')
     .addSubcommand((sub) =>
       sub
@@ -27,7 +27,7 @@ module.exports = {
         .setDescription('Write or rewrite a message template (it starts as a draft)')
         .addStringOption((opt) => opt.setName('key').setDescription('Short id, e.g. delivery-note').setRequired(true))
         .addStringOption((opt) => opt.setName('label').setDescription('What it is for, in your words').setRequired(true))
-        .addStringOption((opt) => opt.setName('body').setDescription('The message. Use {{placeholders}} — see /outreach placeholders').setRequired(true))
+        .addStringOption((opt) => opt.setName('body').setDescription('The message. Use {{placeholders}} — see /messages placeholders').setRequired(true))
         .addStringOption((opt) =>
           opt.setName('kind').setDescription('Transactional or promotional').setRequired(true)
             .addChoices(
@@ -64,7 +64,7 @@ module.exports = {
       sub
         .setName('cancel')
         .setDescription('Cancel a queued message before it sends')
-        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /outreach queue').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /messages queue').setRequired(true))
     )
     .addSubcommand((sub) =>
       sub
@@ -88,7 +88,7 @@ module.exports = {
       sub
         .setName('handled')
         .setDescription('Mark a client reply dealt with, which lets automation resume')
-        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /outreach replies').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /messages replies').setRequired(true))
     )
     .addSubcommand((sub) =>
       sub
@@ -157,7 +157,7 @@ module.exports = {
             `${template.status === 'approved' && template.active ? '🟢' : '⚪'} **${template.key}** — ${template.label}\n` +
             `┗ ${template.kind}${template.trigger_event ? ` · ${messagingRepo.TRIGGER_LABELS[template.trigger_event] || template.trigger_event}` : ' · not attached to an event'}` +
             ` · v${template.version} · ${template.status}`
-          ).join('\n').slice(0, 4000) || '_No templates yet. Write one with `/outreach template-set`._')
+          ).join('\n').slice(0, 4000) || '_No templates yet. Write one with `/messages template-set`._')
           .setFooter({ text: 'Only approved, active templates ever send.' })],
       }));
       return;
@@ -193,7 +193,7 @@ module.exports = {
       if (!result.ok) {
         await interaction.reply(priv(
           `❌ Unknown placeholder(s): ${result.unknown.map((name) => `\`{{${name}}}\``).join(', ')}.\n` +
-          'See `/outreach placeholders` for the ones that exist.'
+          'See `/messages placeholders` for the ones that exist.'
         ));
         return;
       }
@@ -201,8 +201,8 @@ module.exports = {
       await interaction.reply(priv(
         `✅ **${result.template.key}** saved as a **draft** (v${result.template.version}).\n` +
         `${result.wordingChanged ? '⚠️ The wording changed, so its approval was withdrawn.\n' : ''}` +
-        `Check it with \`/outreach preview key:${result.template.key}\`, then approve it with ` +
-        `\`/outreach template-approve key:${result.template.key}\`. Nothing sends until then.`
+        `Check it with \`/messages preview key:${result.template.key}\`, then approve it with ` +
+        `\`/messages template-approve key:${result.template.key}\`. Nothing sends until then.`
       ));
       return;
     }
@@ -273,7 +273,7 @@ module.exports = {
             `**#${reply.id}** <@${reply.user_id}> in <#${reply.channel_id}> · ${discordTimestamp(reply.received_at, 'R')}\n` +
             `┗ ${reply.excerpt.slice(0, 200)}`
           ).join('\n').slice(0, 4000) || '_Nobody is waiting._')
-          .setFooter({ text: 'Automated messages to these clients are paused. Clear with /outreach handled id:<number>' })],
+          .setFooter({ text: 'Automated messages to these clients are paused. Clear with /messages handled id:<number>' })],
       }));
       return;
     }
@@ -303,7 +303,7 @@ module.exports = {
       }
 
       await interaction.reply(priv(result.created
-        ? `✅ Queued for ${project.code}. It goes out on the next pass unless you cancel it — \`/outreach queue\`.`
+        ? `✅ Queued for ${project.code}. It goes out on the next pass unless you cancel it — \`/messages queue\`.`
         : 'That offer was already queued for this order today.'));
       return;
     }

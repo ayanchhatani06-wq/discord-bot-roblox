@@ -223,14 +223,14 @@ The tables below are the short version.
 | `/profile availability status:` | Accepting / at capacity / away, with optional return date |
 | `/time member:` | Somebody's current local date and time |
 | `/time department:` | Local times across a department, sorted west to east |
-| `/work progress task: note:` | Post a progress update |
-| `/work submit task:` | Submit finished work (checklist, then links) |
-| `/work history task:` | Submissions, reviews and client decisions on a task |
+| `/my-work progress task: note:` | Post a progress update |
+| `/my-work submit task:` | Submit finished work (checklist, then links) |
+| `/my-work history task:` | Submissions, reviews and client decisions on a task |
 | **`/go`** | **Start here.** Everything waiting on you, with the command for each |
 | `/desk web-link` | A one-time link to open your desk in a browser |
-| `/work earnings` | Your own pay and payment history, private to you |
-| `/bonus mine` | Your progress towards milestone bonuses, and your awards |
-| `/procedure list` / `read key:` | Studio procedures, and acknowledging them |
+| `/my-work earnings` | Your own pay and payment history, private to you |
+| `/bonuses mine` | Your progress towards milestone bonuses, and your awards |
+| `/staff-rules list` / `read key:` | Studio procedures, and acknowledging them |
 | `/trial mine` / `submit code:` | Your trial briefs, if you are on trial |
 | `/task mine` | Your offers and current assignments |
 | **`/find query:`** | Search everything at once — work, orders, clients, people, files. Scoped to what you may see |
@@ -250,63 +250,63 @@ The tables below are the short version.
 | `/review queue` | Work awaiting your internal review |
 | `/review decide task:` | Request changes, or mark ready for the client |
 | `/review awaiting-client` | Work sent to clients with no decision recorded yet |
-| `/manage reassign task: artist: reason:` | Move work, keeping the original record |
-| `/manage hold task: reason:` / `/manage resume task:` | Pause and unpause |
+| `/change reassign task: artist: reason:` | Move work, keeping the original record |
+| `/change hold task: reason:` / `/change resume task:` | Pause and unpause |
 | `/recommend new person: kind: note:` | Put somebody forward for a trial or promotion |
-| `/free [days:] [group:]` | Who has room for more work, and who has not |
+| `/who-is-free [days:] [group:]` | Who has room for more work, and who has not |
 
 ### Owner
 
 | Command | What it does |
 | --- | --- |
-| `/project create name: …` | Create a project (budget, deadline, manager, finder, mod, ticket link) |
-| `/project bulk project: spec:` | `"12 models, 4 vfx, 2 animations"` → 18 routed tasks |
-| `/project view` / `list` / `tasks` / `edit` | Project views and edits |
+| `/orders create name: …` | Create a project (budget, deadline, manager, finder, mod, ticket link) |
+| `/orders bulk project: spec:` | `"12 models, 4 vfx, 2 animations"` → 18 routed tasks |
+| `/orders view` / `list` / `tasks` / `edit` | Project views and edits |
 | `/task create` | A single task |
 | `/task pay` / `/task approve-pay` | Set or approve agreed pay |
 | `/review client task: decision:` | Record what the client decided |
-| `/finance client-receipt project: amount:` | Record money received from a client |
-| `/finance pay task: [person:]` | Record a payout to somebody who worked on the task |
-| `/finance pay-split task: share:` | Record a finder / leader / mod / owner share |
-| `/finance splits task:` | See how a task's pool divides |
-| `/finance set-pool task: amount: currency:` | Enter the pool by hand when currencies differ |
-| `/finance mark-payable task: reason:` | Make approved work payable before the client pays |
-| `/finance ledger` / `outstanding` / `balance member:` | Money views |
-| `/finance budget project:` | Committed pay against what the client pays |
-| `/finance budget-override project: reason:` | Deliberately allow over-budget pay, on the record |
-| `/finance budget-restore project:` | Put the guard back |
-| `/finance approve-all [project:] [preview:]` | Approve every pay figure your leaders proposed, budget-checked one by one |
-| `/finance confirm-received payment:` | They say the money actually reached them |
-| `/finance mark-failed payment: reason:` | Sent and never arrived — they are owed it again |
-| `/finance sent` | Payments sent that nobody has confirmed either way |
-| `/deposit add project: label: amount:` | Split what a client owes into named parts |
-| `/deposit list project:` | Which parts are covered, and what is still to come |
-| `/deposit invoiced id:` / `waive id: reason:` / `remove id:` | Asked for, not charging, or entered by mistake |
-| `/bonus rule-set key: label: threshold: amount:` | A milestone rule, e.g. every 10 approved animations |
-| `/bonus pending` / `approve id:` / `decline id: reason:` / `pay id:` | Decide and record bonuses |
-| `/manage cancel task: reason:` | Cancel, preserving history |
-| `/manage compensate task: member: amount:` | Pay for work done on cancelled or moved work |
-| `/manage flags` | Everything waiting on a decision from you |
+| `/pay client-receipt project: amount:` | Record money received from a client |
+| `/pay pay task: [person:]` | Record a payout to somebody who worked on the task |
+| `/pay pay-split task: share:` | Record a finder / leader / mod / owner share |
+| `/pay splits task:` | See how a task's pool divides |
+| `/pay set-pool task: amount: currency:` | Enter the pool by hand when currencies differ |
+| `/pay mark-payable task: reason:` | Make approved work payable before the client pays |
+| `/pay ledger` / `outstanding` / `balance member:` | Money views |
+| `/pay budget project:` | Committed pay against what the client pays |
+| `/pay budget-override project: reason:` | Deliberately allow over-budget pay, on the record |
+| `/pay budget-restore project:` | Put the guard back |
+| `/pay approve-all [project:] [preview:]` | Approve every pay figure your leaders proposed, budget-checked one by one |
+| `/pay confirm-received payment:` | They say the money actually reached them |
+| `/pay mark-failed payment: reason:` | Sent and never arrived — they are owed it again |
+| `/pay sent` | Payments sent that nobody has confirmed either way |
+| `/money-in add project: label: amount:` | Split what a client owes into named parts |
+| `/money-in list project:` | Which parts are covered, and what is still to come |
+| `/money-in invoiced id:` / `waive id: reason:` / `remove id:` | Asked for, not charging, or entered by mistake |
+| `/bonuses rule-set key: label: threshold: amount:` | A milestone rule, e.g. every 10 approved animations |
+| `/bonuses pending` / `approve id:` / `decline id: reason:` / `pay id:` | Decide and record bonuses |
+| `/change cancel task: reason:` | Cancel, preserving history |
+| `/change compensate task: member: amount:` | Pay for work done on cancelled or moved work |
+| `/change flags` | Everything waiting on a decision from you |
 | `/summary now` / `post` / `schedule` / `run-reminders` | Management digest and reminder controls |
 | `/trial offer person: title: brief: terms:` | Send a paid trial brief |
 | `/trial decide code: outcome: feedback:` | Pass or fail a submitted trial |
 | `/recommend list` / `decide id:` | Recommendations from your leaders |
 | `/people stand-in grant person: department: until:` | Temporary leadership cover |
 | `/people offboard preview person:` / `start` | What somebody leaves behind |
-| `/procedure set key: title: body:` | Write a procedure everyone acknowledges |
-| `/procedure who key:` | Who has read the current version |
-| `/outreach template-set` / `template-approve` | Write and approve client message wording |
-| `/outreach queue` / `history client:` | What is waiting to send, and what was sent |
-| `/outreach prefs client:` | Opt-in, weekly limit, pause, follow-up owner |
-| `/outreach replies` / `handled id:` | Clients waiting on an answer |
-| `/outreach offer project:` | Queue the approved cross-service offer |
+| `/staff-rules set key: title: body:` | Write a procedure everyone acknowledges |
+| `/staff-rules who key:` | Who has read the current version |
+| `/messages template-set` / `template-approve` | Write and approve client message wording |
+| `/messages queue` / `history client:` | What is waiting to send, and what was sent |
+| `/messages prefs client:` | Opt-in, weekly limit, pause, follow-up owner |
+| `/messages replies` / `handled id:` | Clients waiting on an answer |
+| `/messages offer project:` | Queue the approved cross-service offer |
 | `/clients add-requirement client:` | Something this client always asks for |
-| `/repeat from project:` | Start a repeat order from a past one |
-| `/repeat scope` / `price` / `deadline` / `create` | Confirm each term, then create it |
-| `/report overview` / `filter which:` | Nine filters phrased as plain questions |
-| `/report waiting project:` | Where an order's time actually went |
-| `/report person:` / `team` | A rounded picture of somebody's work — no score |
-| `/report payouts` / `attention` | Who is owed, and which orders have stalled |
+| `/reorder from project:` | Start a repeat order from a past one |
+| `/reorder scope` / `price` / `deadline` / `create` | Confirm each term, then create it |
+| `/reports overview` / `filter which:` | Nine filters phrased as plain questions |
+| `/reports waiting project:` | Where an order's time actually went |
+| `/reports person:` / `team` | A rounded picture of somebody's work — no score |
+| `/reports payouts` / `attention` | Who is owed, and which orders have stalled |
 | `/automation set` / `preview` / `on` / `off` | Rules that watch for something and tell somebody |
 | `/backup now` / `verify` / `restore` | A copy you can restore from, and how to do it |
 | `/backup export what:` | Readable CSV — explicitly not a backup |
@@ -316,8 +316,8 @@ The tables below are the short version.
 | `/proof add file: kind:` | Keep a screenshot as proof — the file itself, not a link to it |
 | `/proof list` / `show id:` / `verify` | What is filed, get one back, check none have changed |
 | `/proof record project:` | The whole record of an order, as a file, for a dispute |
-| `/archive roblox-id asset: id:` | Record the Roblox asset ID a file was uploaded as |
-| `/archive roblox-ids project:` | Every Roblox asset ID on an order |
+| `/files roblox-id asset: id:` | Record the Roblox asset ID a file was uploaded as |
+| `/files roblox-ids project:` | Every Roblox asset ID on an order |
 | `/studio doctor` | Everything quietly misconfigured, worst first |
 | `/studio …` | All configuration |
 
@@ -363,7 +363,7 @@ Three things follow from that, deliberately:
 - **Nobody sees anyone else's rate.** `/contrib list` shows full figures to you
   and to the department's leader; everybody else sees their own figure and only
   "pay agreed" against their colleagues.
-- **The task is paid when the last person is paid.** `/finance pay` asks which
+- **The task is paid when the last person is paid.** `/pay pay` asks which
   person the payout is for, and the task stays *partially paid* until everybody
   on it is settled.
 
@@ -376,35 +376,35 @@ Pay that would commit more than the client is paying for a project is
 **refused**, not merely flagged. You have three honest ways past it:
 
 1. lower the figure,
-2. record more client money (`/finance client-receipt` and the project amount),
+2. record more client money (`/pay client-receipt` and the project amount),
 3. or decide deliberately to take the loss —
-   `/finance budget-override project: reason:`, which is recorded against the
+   `/pay budget-override project: reason:`, which is recorded against the
    project and shown wherever the budget is.
 
-`/finance budget project:` shows committed pay against the client payment at any
+`/pay budget project:` shows committed pay against the client payment at any
 time. Pay in a currency the client did not use is listed separately and **not**
 measured against the budget, because there is no conversion rate to measure it
 with.
 
 ### Bonus milestones
 
-`/bonus rule-set` creates a rule such as *every 10 approved animations earns
+`/bonuses rule-set` creates a rule such as *every 10 approved animations earns
 $20*, optionally limited to one department. Only client-approved work counts,
 and a task counts once per person however they contributed to it.
 
 When a milestone is reached the bot **flags it for you and stops**. Nothing is
-owed until `/bonus approve`, and nothing is recorded as paid until `/bonus pay`.
+owed until `/bonuses approve`, and nothing is recorded as paid until `/bonuses pay`.
 Each milestone is indexed, so re-running the check — or two approvals landing at
 the same moment — cannot award the same milestone twice.
 
 ### Reports, and two things they refuse to do
 
-`/report waiting project:<code>` splits an order's elapsed time into **time with
+`/reports waiting project:<code>` splits an order's elapsed time into **time with
 us** and **time with the client**, reconstructed from the audit trail. A report
 that cannot tell those apart gets the wrong person blamed, so they are never
 added together.
 
-`/report person:` and `/report team` give a rounded picture — approved work, how
+`/reports person:` and `/reports team` give a rounded picture — approved work, how
 much is in hand, on-time record measured only against deadlines that were
 actually agreed, revision rounds — and deliberately produce **no score**. There
 is no single number here to sort by, the team list is in name order, and it says
@@ -482,7 +482,7 @@ A gap said out loud is worth more than one you discover mid-chargeback.
 
 ### Roblox asset IDs
 
-`/archive roblox-id asset: id:` records what a file was actually uploaded as. The
+`/files roblox-id asset: id:` records what a file was actually uploaded as. The
 ID is what lasts — it is what goes in a script, and it stays findable when the
 original file does not. Paste the ID or any link containing it; the digits are
 kept, so a pasted store URL is not stored as if it were an ID. `/find` searches
@@ -490,7 +490,7 @@ them, which is the point of recording them.
 
 ### Who has room for more work
 
-`/free [days:] [group:]` answers the question you ask before saying yes to a
+`/who-is-free [days:] [group:]` answers the question you ask before saying yes to a
 client. It reads availability, recorded absences with their return dates, and
 what each person is carrying — split into work due before the window (should be
 finished), due inside it (competes with anything new), running past it, and
@@ -511,7 +511,7 @@ Leaders see the departments they lead; the owner sees the studio.
 
 ### Approving pay in bulk
 
-`/finance approve-all` says yes to every figure your leaders have proposed. Work
+`/pay approve-all` says yes to every figure your leaders have proposed. Work
 cannot be offered until pay is decided, so on a busy week that queue is the
 bottleneck.
 
@@ -524,7 +524,7 @@ budget. `preview:true` shows what would happen and changes nothing.
 
 ### Repeat orders
 
-`/repeat from project:<code>` copies what a previous order **was** — its brief,
+`/reorder from project:<code>` copies what a previous order **was** — its brief,
 its references, its list of items — and deliberately **not** what it cost or
 when it was due. Carrying last time's price silently into a new job is how a
 studio ends up honouring a figure it never agreed to.
@@ -547,10 +547,10 @@ modellers without becoming noise for everybody else.
 ### Talking to clients
 
 The bot sends clients only wording **you wrote and approved**. A template is a
-draft until `/outreach template-approve`, and rewriting an approved one takes
+draft until `/messages template-approve`, and rewriting an approved one takes
 the approval away again, so nothing goes out in words nobody signed off.
 
-Templates are filled from a closed list of placeholders (`/outreach
+Templates are filled from a closed list of placeholders (`/messages
 placeholders`) read straight from records. An invented placeholder is refused
 when you write the template; a placeholder with nothing recorded behind it stops
 the message entirely rather than sending a sentence with a gap in it.
@@ -576,8 +576,8 @@ Before anything sends, and **again at the moment of sending**, the bot checks:
 The guards run twice on purpose: a client can complain between a chase being
 scheduled and it falling due, and the later fact is the one that should win.
 
-Everything sent, held back or failed is on the record — `/outreach queue` and
-`/outreach history`. A send that fails is marked failed with the reason, never
+Everything sent, held back or failed is on the record — `/messages queue` and
+`/messages history`. A send that fails is marked failed with the reason, never
 silently dropped.
 
 Noticing a client reply needs Discord's **Message Content** intent. Without it
@@ -588,7 +588,7 @@ the bot still knows somebody wrote and still pauses, it just cannot quote them.
 **Procedures** are text the studio expects staff to have read. Acknowledgement
 is bound to a *version*: editing the text raises the version, which makes every
 earlier acknowledgement stale rather than quietly carrying it forward. Agreeing
-to version 1 is not agreeing to version 2, and the record says so. `/procedure
+to version 1 is not agreeing to version 2, and the record says so. `/staff-rules
 who` shows who has read the current version and who has not, counting only the
 people it applies to.
 
@@ -622,7 +622,7 @@ department that actually did that task** — never split between leaders.
 
 A task's share of the client payment comes from one of three places, in order:
 
-1. a pool you entered by hand (`/finance set-pool`)
+1. a pool you entered by hand (`/pay set-pool`)
 2. an explicit per-task client price
 3. otherwise, a pro-rata slice of the project's client payment, weighted by
    artist pay — so you don't have to price all 18 tasks of a bulk order
@@ -647,7 +647,7 @@ rate, no implicit rate. Consequences:
 - Client receipts and staff payouts are separate ledgers.
 - If a client pays USD and the artist is paid Robux, the pool **cannot** be
   computed. The bot says so and asks you to enter the distributable pool
-  yourself with `/finance set-pool`, so the figure on record is one you chose.
+  yourself with `/pay set-pool`, so the figure on record is one you chose.
 
 ### Gift cards
 
@@ -677,7 +677,7 @@ Currencies never mix. Robux received does not make a dollar payout payable,
 because there is no rate that would make that true — and the bot has no
 conversion function anywhere, on purpose.
 
-`/finance mark-payable` still overrides all of it, with your reason kept on the
+`/pay mark-payable` still overrides all of it, with your reason kept on the
 record, for when you are paying somebody out of studio funds.
 
 Recording more than is outstanding is refused, which catches a mistyped amount
@@ -686,15 +686,15 @@ separate instalment still can.
 
 ### Deposits, in named parts
 
-`/deposit add project: label: amount:` splits what a client owes into parts you
+`/money-in add project: label: amount:` splits what a client owes into parts you
 name — "Deposit", "On delivery", "Rush fee". Receipts fill the parts in order:
 there is no guessing which payment was meant for which part, because the client
 sent money and it counts towards whatever they owe soonest.
 
 ```
-/deposit add project:PRJ-0004 label:Deposit amount:40 due:before work starts
-/deposit add project:PRJ-0004 label:On delivery amount:60
-/deposit list project:PRJ-0004
+/money-in add project:PRJ-0004 label:Deposit amount:40 due:before work starts
+/money-in add project:PRJ-0004 label:On delivery amount:60
+/money-in list project:PRJ-0004
 ```
 
 Three things it refuses or reports rather than smoothing over:
@@ -708,8 +708,8 @@ Three things it refuses or reports rather than smoothing over:
 - **Parts that do not add up to the order's price are flagged** when you add
   one, because that is a miscount you want to hear about now.
 
-`/deposit waive id: reason:` stops charging a part — it stops counting as owed,
-which can make more work payable. `/deposit invoiced id:` records that you asked
+`/money-in waive id: reason:` stops charging a part — it stops counting as owed,
+which can make more work payable. `/money-in invoiced id:` records that you asked
 the client for it. A part already asked for cannot be deleted, only waived, so
 the record of having asked survives.
 
@@ -725,10 +725,10 @@ place to end up. So the two are separate facts:
 
 | Command | What it records |
 | --- | --- |
-| `/finance pay` | The studio sent it |
-| `/finance confirm-received payment:` | They say it arrived |
-| `/finance mark-failed payment: reason:` | It was sent and never arrived |
-| `/finance sent` | Everything sent that nobody has confirmed either way |
+| `/pay pay` | The studio sent it |
+| `/pay confirm-received payment:` | They say it arrived |
+| `/pay mark-failed payment: reason:` | It was sent and never arrived |
+| `/pay sent` | Everything sent that nobody has confirmed either way |
 
 A failed payment is **not deleted**. The attempt happened, and erasing it would
 leave the ledger claiming money went out when it did not. It stops counting as
@@ -776,10 +776,10 @@ to be recalled:
 ┗ /task approve-pay
 
 🔴 2 of your tasks are past the deadline: TSK-0012, TSK-0019
-┗ /work progress to say where it stands, or /work blocked if something is in the way
+┗ /my-work progress to say where it stands, or /my-work blocked if something is in the way
 
 💬 1 client has written in and nobody has answered — their automated messages are paused until somebody does
-┗ /outreach replies
+┗ /messages replies
 ```
 
 Nothing appears there that you would then be refused: every item is gathered
@@ -1050,7 +1050,7 @@ only discover you needed after losing them.
 | A stand-in's cover lapses while the bot is offline | Nothing is needed: the window is checked at every permission lookup, so the powers were already gone |
 | Somebody leaves owed money | It is reported and kept. Leaving does not cancel it, and nothing about their history is deleted |
 | A second person joins a task that already has agreed pay | The first artist is copied into a contributor row on their existing terms, so the two records can never both be counted |
-| Two people on one task are paid in different currencies | The split pool is left uncomputed and says so, rather than converting; enter it by hand with `/finance set-pool` |
+| Two people on one task are paid in different currencies | The split pool is left uncomputed and says so, rather than converting; enter it by hand with `/pay set-pool` |
 | The same bonus milestone is evaluated twice | The second award is rejected by a unique key on rule, person and milestone |
 
 ---

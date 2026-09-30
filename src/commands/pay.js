@@ -25,7 +25,7 @@ function methodChoices(config) {
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('finance')
+    .setName('pay')
     .setDescription('Client receipts, staff payouts and the studio ledger')
     .addSubcommand((sub) =>
       sub
@@ -117,14 +117,14 @@ module.exports = {
       sub
         .setName('confirm-received')
         .setDescription('The person says the money actually reached them')
-        .addIntegerOption((opt) => opt.setName('payment').setDescription('Payment number from /finance sent').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('payment').setDescription('Payment number from /pay sent').setRequired(true))
         .addStringOption((opt) => opt.setName('note').setDescription('Anything worth recording').setRequired(false).setMaxLength(200))
     )
     .addSubcommand((sub) =>
       sub
         .setName('mark-failed')
         .setDescription('A payment was sent and did not arrive — they are owed it again')
-        .addIntegerOption((opt) => opt.setName('payment').setDescription('Payment number from /finance sent').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('payment').setDescription('Payment number from /pay sent').setRequired(true))
         .addStringOption((opt) => opt.setName('reason').setDescription('What went wrong').setRequired(true).setMaxLength(200))
     )
     .addSubcommand((sub) =>
@@ -183,7 +183,7 @@ module.exports = {
         await interaction.reply(priv(
           `✅ Pay on **${project.code}** may now exceed the recorded client payment.\n` +
           `Reason recorded: ${reason}\n` +
-          `Put the guard back with \`/finance budget-restore project:${project.code}\`.`
+          `Put the guard back with \`/pay budget-restore project:${project.code}\`.`
         ));
         return;
       }
@@ -457,7 +457,7 @@ module.exports = {
       if (!computed.ok) {
         await interaction.reply(priv(
           `❌ Cannot work out the split for **${task.code}**: ${computed.detail || computed.reason}.` +
-          `${computed.reason === 'currency_mismatch' ? `\nEnter the pool yourself with \`/finance set-pool task:${task.code}\`.` : ''}` +
+          `${computed.reason === 'currency_mismatch' ? `\nEnter the pool yourself with \`/pay set-pool task:${task.code}\`.` : ''}` +
           `${computed.reason === 'negative_pool' ? `\nThe shortfall is ${formatAmount(computed.shortfallMinor, task.artist_pay_currency)} — this job is sold below cost.` : ''}`
         ));
         return;
@@ -555,7 +555,7 @@ module.exports = {
           `**${task.code}** has ${owed.length} people on it, so name who was paid:`,
           ...owed.map((entry) => `• <@${entry.userId}> — outstanding ${formatAmount(entry.remainingMinor, entry.currency)}`),
           '',
-          `Run it again as \`/finance pay task:${task.code} person:@them\`.`,
+          `Run it again as \`/pay pay task:${task.code} person:@them\`.`,
         ].join('\n')));
         return;
       }
@@ -590,7 +590,7 @@ module.exports = {
       if (task.payment_state === tasksRepo.PAYMENT_STATES.PENDING_CLIENT_PAYMENT) {
         await interaction.reply(priv(
           `❌ **${task.code}** is not payable yet: the client payment for ${project?.code} has not been recorded as received.\n` +
-          `Record it with \`/finance client-receipt\`, or override with \`/finance mark-payable task:${task.code}\`.`
+          `Record it with \`/pay client-receipt\`, or override with \`/pay mark-payable task:${task.code}\`.`
         ));
         return;
       }
@@ -631,7 +631,7 @@ module.exports = {
         content:
           `💰 A payment of **${formatAmount(amountMinor, entry.currency)}** for **${task.code} · ${task.title}** has been recorded.` +
           `${stillOwed > 0 ? `\nStill outstanding: ${formatAmount(stillOwed, entry.currency)}.` : ''}` +
-          '\nCheck your own record any time with `/work earnings`.',
+          '\nCheck your own record any time with `/my-work earnings`.',
       }).catch(() => null);
       return;
     }
@@ -720,8 +720,8 @@ module.exports = {
               ).join('\n\n').slice(0, 4000)
           )
           .setFooter({ text:
-            'Sending is not arriving. Confirm with /finance confirm-received, or ' +
-            '/finance mark-failed if it never landed.' })],
+            'Sending is not arriving. Confirm with /pay confirm-received, or ' +
+            '/pay mark-failed if it never landed.' })],
       }));
       return;
     }
@@ -740,7 +740,7 @@ module.exports = {
 
       if (!result.ok) {
         const reasons = {
-          not_found: '❌ No payment with that number. Check `/finance sent`.',
+          not_found: '❌ No payment with that number. Check `/pay sent`.',
           not_a_payout: '❌ That is money the client sent in, not a payment out. Only payments out are confirmed this way.',
           already_failed: '❌ That payment is already recorded as having failed. Record a fresh payment for the new attempt.',
           already_confirmed: '❌ That payment is already confirmed as arrived, so it cannot be marked failed. ' +

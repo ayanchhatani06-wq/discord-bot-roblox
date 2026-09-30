@@ -183,7 +183,7 @@ function sweepGuild(db, guildId, { now = Date.now() } = {}) {
     const added = batch.add(
       task.artist_user_id, KINDS.STALE_PROGRESS, 'task', task.id,
       `**${task.code}** ${task.title} — nothing posted since ${discordTimestamp(since, 'R')}. ` +
-      `A quick note with \`/work progress\` is enough.`
+      `A quick note with \`/my-work progress\` is enough.`
     );
     if (!added) {
       batch.add(
@@ -220,7 +220,7 @@ function sweepGuild(db, guildId, { now = Date.now() } = {}) {
       batch.add(
         config.owner_user_id, KINDS.APPROVED_UNPAID, 'task', task.id,
         `**${task.code}** — ${outstanding.map((entry) => `<@${entry.userId}> is owed ${formatAmount(entry.remainingMinor, entry.currency)}`).join('; ')}. ` +
-        `Record it with \`/finance pay task:${task.code}\`.`
+        `Record it with \`/pay pay task:${task.code}\`.`
       );
     }
   }

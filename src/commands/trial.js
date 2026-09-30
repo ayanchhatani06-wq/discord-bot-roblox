@@ -331,7 +331,7 @@ module.exports = {
         `${outcome === 'passed'
           ? 'Give them their Discord roles yourself — the bot does not grant roles.'
           : ''}` +
-        `${trial.pay_minor !== null ? `\n💰 Trial pay of ${formatAmount(trial.pay_minor, trial.pay_currency)} is still owed either way. Record it with \`/finance pay\` once paid.` : ''}`
+        `${trial.pay_minor !== null ? `\n💰 Trial pay of ${formatAmount(trial.pay_minor, trial.pay_currency)} is still owed either way. Record it with \`/pay pay\` once paid.` : ''}`
       ));
 
       await notifyUser(interaction.client, db, guildId, trial.user_id, {

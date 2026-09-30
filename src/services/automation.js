@@ -55,7 +55,7 @@ const ACTION_LABELS = Object.freeze({
   tell_owner: 'Send you a private message',
   tell_leader: "Send the task's group leader a private message",
   tell_person: 'Send one named person a private message',
-  flag_for_review: 'Flag the task for a decision (it appears on /manage flags)',
+  flag_for_review: 'Flag the task for a decision (it appears on /change flags)',
 });
 
 // ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ const DAY_MS = reports.DAY_MS;
  * Which tasks a rule currently applies to.
  *
  * Reuses the same filters the reports use, so a rule cannot quietly mean
- * something different from what `/report` shows for the same words.
+ * something different from what `/reports` shows for the same words.
  */
 function matches(db, guildId, rule, { now = Date.now() } = {}) {
   const scope = { departmentId: rule.department_id ?? null, now };

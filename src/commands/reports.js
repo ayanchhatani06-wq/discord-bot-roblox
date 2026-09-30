@@ -29,7 +29,7 @@ function days(ms) {
  */
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('report')
+    .setName('reports')
     .setDescription('Filters and reports over the studio\'s own records')
     .addSubcommand((sub) =>
       sub
@@ -89,7 +89,7 @@ module.exports = {
           .setDescription(Object.entries(counts)
             .map(([filter, count]) => `${count > 0 ? '•' : '·'} **${count}** — ${reports.FILTER_LABELS[filter]}`)
             .join('\n'))
-          .setFooter({ text: 'Open any of these with /report filter which:<one>' })],
+          .setFooter({ text: 'Open any of these with /reports filter which:<one>' })],
       }));
       return;
     }

@@ -247,7 +247,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
         content:
           `⚠️ Problem reported on **${task.code} · ${task.title}**:\n> ${body.slice(0, 800)}\n` +
           `${references ? `References: ${references}\n` : ''}` +
-          `Triage it with \`/issues decide id:${request.id}\`.`,
+          `Triage it with \`/problems decide id:${request.id}\`.`,
       }).catch(() => null);
     }
     return;
@@ -477,7 +477,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
           `${parsed.items.length > 0 ? `Matched: ${parsed.items.map((item) => `${item.count} × ${item.departmentName}`).join(', ')}\n` : '⚠️ Could not match it to departments.\n'}` +
           `${budget ? `Budget as stated: ${budget}\n` : ''}` +
           `${suggestion ? `Mostly ${suggestion.departmentName}.\n` : ''}` +
-          `Draft a quote with \`/enquiry draft-quote enquiry:${enquiry.code}\`.`,
+          `Draft a quote with \`/quotes draft-quote enquiry:${enquiry.code}\`.`,
       }).catch(() => null);
     }
     return;
@@ -582,7 +582,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       await notifyUser(interaction.client, db, guildId, config.owner_user_id, {
         content: `✅ Client approved **${task.code} · ${task.title}** (v${submission.version}). Payment state: ${afterPayment?.payment_state.replace(/_/g, ' ')}.` +
           (earned.length > 0
-            ? `\n🏅 ${earned.map(({ award, rule }) => `<@${award.user_id}> reached: ${rule.label}`).join('\n🏅 ')}\nDecide with \`/bonus pending\`.`
+            ? `\n🏅 ${earned.map(({ award, rule }) => `<@${award.user_id}> reached: ${rule.label}`).join('\n🏅 ')}\nDecide with \`/bonuses pending\`.`
             : ''),
       }).catch(() => null);
     }
@@ -644,7 +644,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
           `> ${body.slice(0, 800)}\n` +
           `${references ? `References: ${references}\n` : ''}` +
           `${beyondScope ? '⚠️ Beyond the agreed revision rounds — wait for the owner before doing the work.\n' : ''}` +
-          `Resubmit with \`/work submit task:${updated.code}\`.`,
+          `Resubmit with \`/my-work submit task:${updated.code}\`.`,
       }).catch(() => null);
     }
 
@@ -653,7 +653,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       await notifyUser(interaction.client, db, guildId, config.owner_user_id, {
         content:
           `⚠️ Client change request on **${updated.code} · ${updated.title}** is beyond the agreed ` +
-          `${agreedRounds} revision round(s). Decide whether it is in scope or a new paid task — \`/manage flags\`.`,
+          `${agreedRounds} revision round(s). Decide whether it is in scope or a new paid task — \`/change flags\`.`,
       }).catch(() => null);
     }
     return;

@@ -97,7 +97,7 @@ async function handleMessage(discordClient, db, message) {
       cancelledPromotional > 0
         ? `\n_${cancelledPromotional} queued promotional message(s) cancelled so we are not talking over them._`
         : '',
-      '\nAutomated messages to this client are paused until you mark it handled — `/outreach replies`.',
+      '\nAutomated messages to this client are paused until you mark it handled — `/messages replies`.',
     ].filter(Boolean).join('\n'),
   }).catch(() => null);
 

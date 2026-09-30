@@ -22,7 +22,7 @@ function rightsBadge(rights) {
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('archive')
+    .setName('files')
     .setDescription('Search past work and manage portfolio permission')
     .addSubcommand((sub) =>
       sub
@@ -62,7 +62,7 @@ module.exports = {
       sub
         .setName('asset-rights')
         .setDescription('Override portfolio permission for one file')
-        .addIntegerOption((opt) => opt.setName('asset').setDescription('Asset id from /archive search').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('asset').setDescription('Asset id from /files search').setRequired(true))
         .addBooleanOption((opt) => opt.setName('staff').setDescription('Artists may show it').setRequired(true))
         .addBooleanOption((opt) => opt.setName('studio').setDescription('The studio may show it').setRequired(true))
         .addStringOption((opt) => opt.setName('from').setDescription('Permission starts on YYYY-MM-DD').setRequired(false))
@@ -77,7 +77,7 @@ module.exports = {
       sub
         .setName('roblox-id')
         .setDescription('Record the Roblox asset ID a file was uploaded as')
-        .addIntegerOption((opt) => opt.setName('asset').setDescription('Asset id from /archive search').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('asset').setDescription('Asset id from /files search').setRequired(true))
         .addStringOption((opt) => opt.setName('id').setDescription('The Roblox asset ID, or a link containing it').setRequired(true))
     )
     .addSubcommand((sub) =>
@@ -172,7 +172,7 @@ module.exports = {
           .setTitle('Publishable in the studio portfolio')
           .setColor(0x57f287)
           .setDescription(publishable.length === 0
-            ? 'Nothing yet. Work becomes publishable once a client\'s permission is recorded with `/archive rights` and any start date has passed.'
+            ? 'Nothing yet. Work becomes publishable once a client\'s permission is recorded with `/files rights` and any start date has passed.'
             : publishable.map((row) =>
                 `**${row.project_code}** ${row.task_title} · ${row.asset_type || 'file'}` +
                 `${row.rights.restrictions ? `\n┗ ⚠️ ${row.rights.restrictions}` : ''}`
@@ -198,7 +198,7 @@ module.exports = {
           .setDescription(
             uploaded.length === 0
               ? 'No Roblox asset IDs recorded on this order yet.\n\n' +
-                '_Record one with `/archive roblox-id` after a file is uploaded. ' +
+                '_Record one with `/files roblox-id` after a file is uploaded. ' +
                 'The ID is what a script needs and what stays findable when the original file does not._'
               : uploaded.map((asset) =>
                 `**${asset.roblox_asset_id}** — ${asset.label || asset.task_title || 'unnamed file'}` +
@@ -252,7 +252,7 @@ module.exports = {
         fromUtc ? `• Not before ${discordTimestamp(fromUtc, 'D')}` : '• Effective immediately',
         restrictions ? `• Client restriction: ${restrictions}` : null,
         '',
-        `This covers ${summary.total} file(s) on the project. Override any single file with \`/archive asset-rights\`.`,
+        `This covers ${summary.total} file(s) on the project. Override any single file with \`/files asset-rights\`.`,
       ].filter(Boolean).join('\n')));
       return;
     }
@@ -304,7 +304,7 @@ module.exports = {
 
       if (!result.ok) {
         const reasons = {
-          not_found: '❌ No file with that number. Find it with `/archive search`.',
+          not_found: '❌ No file with that number. Find it with `/files search`.',
           not_an_id: '❌ I could not find a Roblox asset ID in that. Paste the ID itself, ' +
             'or a link with the ID in it — it is the long run of digits.',
         };

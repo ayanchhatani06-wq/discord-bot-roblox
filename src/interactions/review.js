@@ -161,7 +161,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       await notifyUser(interaction.client, db, guildId, updated.artist_user_id, {
         content:
           `🔁 <@${interaction.user.id}> asked for changes on **${updated.code} · ${updated.title}** before it goes to the client:\n` +
-          `> ${notes.slice(0, 1000)}\n\nSubmit again with \`/work submit task:${updated.code}\`.`,
+          `> ${notes.slice(0, 1000)}\n\nSubmit again with \`/my-work submit task:${updated.code}\`.`,
       }).catch(() => null);
     }
 

@@ -68,7 +68,7 @@ function personalActions(db, guildId, userId, { now = Date.now() } = {}) {
       icon: '🔴',
       count: overdue.length,
       text: `${overdue.length} of your task${overdue.length === 1 ? ' is' : 's are'} past the deadline: ${overdue.map((t) => t.code).join(', ')}`,
-      command: '`/work progress` to say where it stands, or `/work blocked` if something is in the way',
+      command: '`/my-work progress` to say where it stands, or `/my-work blocked` if something is in the way',
     }));
   }
 
@@ -79,7 +79,7 @@ function personalActions(db, guildId, userId, { now = Date.now() } = {}) {
       icon: '🟡',
       count: dueSoon.length,
       text: `${dueSoon.length} of your task${dueSoon.length === 1 ? ' is' : 's are'} due within two days`,
-      command: '`/work submit` when ready',
+      command: '`/my-work submit` when ready',
     }));
   }
 
@@ -90,7 +90,7 @@ function personalActions(db, guildId, userId, { now = Date.now() } = {}) {
       icon: '🔁',
       count: revisions.length,
       text: `${revisions.length} task${revisions.length === 1 ? '' : 's'} came back for changes`,
-      command: '`/work history task:<code>` to see what was asked for',
+      command: '`/my-work history task:<code>` to see what was asked for',
     }));
   }
 
@@ -104,7 +104,7 @@ function personalActions(db, guildId, userId, { now = Date.now() } = {}) {
       icon: '💬',
       count: quiet.length,
       text: `${quiet.length} of your task${quiet.length === 1 ? ' has' : 's have'} had no update in five days`,
-      command: '`/work progress` — a line is enough to stop anybody chasing',
+      command: '`/my-work progress` — a line is enough to stop anybody chasing',
     }));
   }
 
@@ -123,7 +123,7 @@ function personalActions(db, guildId, userId, { now = Date.now() } = {}) {
       icon: '📋',
       count: unreadProcedures.length,
       text: `${unreadProcedures.length} studio procedure${unreadProcedures.length === 1 ? '' : 's'} you have not acknowledged`,
-      command: '`/procedure list`',
+      command: '`/staff-rules list`',
     }));
   }
 
@@ -197,7 +197,7 @@ function leaderActions(db, guildId, actor, { now = Date.now() } = {}) {
       icon: '🔴',
       count: overdue.length,
       text: `${overdue.length} task${overdue.length === 1 ? '' : 's'} in your department ${overdue.length === 1 ? 'is' : 'are'} overdue`,
-      command: '`/report filter which:overdue`',
+      command: '`/reports filter which:overdue`',
     }));
   }
 
@@ -241,7 +241,7 @@ function ownerActions(db, guildId, actor, { now = Date.now() } = {}) {
       icon: '💸',
       count: unpaid.length,
       text: `${unpaid.length} approved task${unpaid.length === 1 ? '' : 's'} still ${unpaid.length === 1 ? 'owes' : 'owe'} somebody money`,
-      command: '`/report payouts`',
+      command: '`/reports payouts`',
     }));
   }
 
@@ -255,7 +255,7 @@ function ownerActions(db, guildId, actor, { now = Date.now() } = {}) {
       icon: '⚠️',
       count: flagged,
       text: `${flagged} task${flagged === 1 ? '' : 's'} flagged for a decision about scope or compensation`,
-      command: '`/manage flags`',
+      command: '`/change flags`',
     }));
   }
 
@@ -266,7 +266,7 @@ function ownerActions(db, guildId, actor, { now = Date.now() } = {}) {
       icon: '💬',
       count: replies.length,
       text: `${replies.length} client${replies.length === 1 ? ' has' : 's have'} written in and nobody has answered — their automated messages are paused until somebody does`,
-      command: '`/outreach replies`',
+      command: '`/messages replies`',
     }));
   }
 
@@ -277,7 +277,7 @@ function ownerActions(db, guildId, actor, { now = Date.now() } = {}) {
       icon: '🏅',
       count: bonuses.length,
       text: `${bonuses.length} bonus milestone${bonuses.length === 1 ? '' : 's'} reached and waiting on your approval`,
-      command: '`/bonus pending`',
+      command: '`/bonuses pending`',
     }));
   }
 

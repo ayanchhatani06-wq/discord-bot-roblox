@@ -20,7 +20,7 @@ const CURRENCY_CHOICES = Object.keys(CURRENCIES).map((code) => ({ name: code, va
  */
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('bonus')
+    .setName('bonuses')
     .setDescription('Milestone bonuses: rules, what has been earned, and approvals')
     .addSubcommand((sub) =>
       sub
@@ -51,13 +51,13 @@ module.exports = {
       sub
         .setName('approve')
         .setDescription('Agree a bonus is owed')
-        .addIntegerOption((opt) => opt.setName('id').setDescription('Award number from /bonus pending').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('id').setDescription('Award number from /bonuses pending').setRequired(true))
     )
     .addSubcommand((sub) =>
       sub
         .setName('decline')
         .setDescription('Decide a bonus is not owed, with a reason')
-        .addIntegerOption((opt) => opt.setName('id').setDescription('Award number from /bonus pending').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('id').setDescription('Award number from /bonuses pending').setRequired(true))
         .addStringOption((opt) => opt.setName('reason').setDescription('Why, for the record').setRequired(true))
     )
     .addSubcommand((sub) =>
@@ -142,7 +142,7 @@ module.exports = {
           .setDescription(rules.map((rule) =>
             `${rule.active ? '🟢' : '⚪'} **${rule.key}** — ${rule.label}\n` +
             `┗ every ${rule.threshold} approved${rule.department_id ? ` in ${departmentName.get(rule.department_id) || 'a department'}` : ''} → ${formatAmount(rule.amount_minor, rule.currency)}`
-          ).join('\n') || '_No rules yet. Add one with `/bonus rule-set`._')],
+          ).join('\n') || '_No rules yet. Add one with `/bonuses rule-set`._')],
       }));
       return;
     }
@@ -206,7 +206,7 @@ module.exports = {
             `**#${award.id}** <@${award.user_id}> — ${award.rule_label}\n` +
             `┗ ${formatAmount(award.amount_minor, award.currency)} · ${award.qualifying_count} approved · flagged ${discordTimestamp(award.created_at, 'R')}`
           ).join('\n') || '_Nothing waiting._')
-          .setFooter({ text: 'Approve with /bonus approve id:<number>' })],
+          .setFooter({ text: 'Approve with /bonuses approve id:<number>' })],
       }));
       return;
     }
@@ -229,7 +229,7 @@ module.exports = {
       await interaction.reply(priv(
         approve
           ? `✅ Approved **${formatAmount(award.amount_minor, award.currency)}** for <@${award.user_id}> (${award.rule_label}).\n` +
-            `Record it once paid: \`/bonus pay id:${award.id}\`.`
+            `Record it once paid: \`/bonuses pay id:${award.id}\`.`
           : `✅ Award #${award.id} declined. <@${award.user_id}> has been told the reason.`
       ));
 

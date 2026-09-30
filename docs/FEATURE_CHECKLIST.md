@@ -72,16 +72,16 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 
 | Item | Status |
 | --- | --- |
-| Configurable automatic messages (confirmation, production start, previews, delivery, chase) | ✅ (`/outreach template-set`, attached to events) |
+| Configurable automatic messages (confirmation, production start, previews, delivery, chase) | ✅ (`/messages template-set`, attached to events) |
 | Digest for bulk orders instead of per-item spam | ✅ (previews and deliveries are held briefly and folded into one message) |
 | Post-delivery check-ins and review requests | ✅ (daily sweep, 7 and 14 days after the last delivery) |
 | Repeat-order reminders | ✅ (opted-in past clients with nothing live, at most once a quarter) |
-| Cross-service offers (rigging after modelling, VFX with animation) | ✅ (`/outreach offer`, owner-triggered per order) |
+| Cross-service offers (rigging after modelling, VFX with animation) | ✅ (`/messages offer`, owner-triggered per order) |
 | Owner-approved templates only | ✅ (a draft never sends; rewriting withdraws the approval) |
-| Promotional opt-in, easy stop, configured send limit | ✅ (`/outreach prefs`; a recorded stop beats a stale opt-in) |
+| Promotional opt-in, easy stop, configured send limit | ✅ (`/messages prefs`; a recorded stop beats a stale opt-in) |
 | Pause offers during complaints or delivery problems | ✅ (an unresolved problem blocks every automated message, not just offers) |
 | Client reply pauses the sequence and notifies staff | ✅ (queued promotional messages are cancelled; the follow-up owner is told) |
-| Sent-message history, duplicate prevention, failures flagged | ✅ (`/outreach history` and `queue`; the dedupe key is a database constraint) |
+| Sent-message history, duplicate prevention, failures flagged | ✅ (`/messages history` and `queue`; the dedupe key is a database constraint) |
 
 ## 4. New enquiries and quotes
 
@@ -101,10 +101,10 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 | Order history per client | ✅ |
 | Project preferences and recurring requirements | ✅ (`/clients add-requirement`; shown on the task and on the offer, not buried in the client record) |
 | Approved communication contacts | ✅ |
-| Follow-up preferences | ✅ (`/outreach prefs`: opt-in, weekly limit, pause, follow-up owner) |
-| Duplicate a previous order as a draft | ✅ (`/repeat from`; a draft is its own thing, invisible to queues, boards and the ledger) |
+| Follow-up preferences | ✅ (`/messages prefs`: opt-in, weekly limit, pause, follow-up owner) |
+| Duplicate a previous order as a draft | ✅ (`/reorder from`; a draft is its own thing, invisible to queues, boards and the ledger) |
 | Confirm new scope, price and deadline on duplication | ✅ (each confirmed separately and stamped with who confirmed it; last time's price and deadline are never carried over) |
-| Finder attribution, agreed compensation, follow-up ownership | ✅ (finder carries across repeat orders; follow-up owner set with `/outreach prefs`) |
+| Finder attribution, agreed compensation, follow-up ownership | ✅ (finder carries across repeat orders; follow-up owner set with `/messages prefs`) |
 | Flag possible duplicate client records | ✅ |
 
 ## 6. Better task planning
@@ -116,8 +116,8 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 | Dependencies (Model → Rig → Animation) | ✅ |
 | Notify the next group when required files are ready | ✅ |
 | Flag affected downstream deadlines without changing them | ✅ |
-| Artist "I'm Blocked" button with reason and attachment | ✅ (`/work blocked`, surfaced on every desk) |
-| Deadline-extension requests preserving the previous date and approver | ✅ (`/plan deadline-request` and `decide`; `previous_deadline` and `decided_by` are both kept) |
+| Artist "I'm Blocked" button with reason and attachment | ✅ (`/my-work blocked`, surfaced on every desk) |
+| Deadline-extension requests preserving the previous date and approver | ✅ (`/deadlines deadline-request` and `decide`; `previous_deadline` and `decided_by` are both kept) |
 | Capacity and workload views for leaders | ✅ (Group Desk) |
 
 ## 7. Shared work and compensation
@@ -128,8 +128,8 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 | Owner-approved separate compensation per contribution | ✅ (leader proposes with `/contrib pay`, owner approves) |
 | Each contributor sees only their own terms | ✅ (`/contrib list` hides colleagues' figures from non-finance staff) |
 | Client revenue, artist pay, leader/finder shares, bonuses, studio allocations kept distinct | ✅ |
-| Prevent allocations silently exceeding the configured budget | ✅ (refused outright; `/finance budget-override` is the only way past, and it is recorded) |
-| Configurable bonus milestones (e.g. every 10 approved videos) | ✅ (`/bonus rule-set`) |
+| Prevent allocations silently exceeding the configured budget | ✅ (refused outright; `/pay budget-override` is the only way past, and it is recorded) |
+| Configurable bonus milestones (e.g. every 10 approved videos) | ✅ (`/bonuses rule-set`) |
 | Milestones flagged for owner approval, no double counting | ✅ (milestone index is unique per rule and person) |
 
 ## 8. Staff onboarding and trials
@@ -137,7 +137,7 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 | Item | Status |
 | --- | --- |
 | Onboarding collecting profile, timezone, specialties, software, portfolio, availability | ✅ already built |
-| Show procedures and record acknowledgement of the current version | ✅ (`/procedure`; an edit raises the version and makes earlier acknowledgements stale) |
+| Show procedures and record acknowledgement of the current version | ✅ (`/staff-rules`; an edit raises the version and makes earlier acknowledgements stale) |
 | Trial briefs with explicit terms, deadlines, submissions, feedback | ✅ (`/trial`; accepted terms are snapshotted) |
 | Leader recommendations; promotion follows configured permissions | ✅ (`/recommend`; the bot never grants a Discord role) |
 | Temporary backup leaders with expiry and recorded responsibilities | ✅ (`/people stand-in`; expiry is checked on every permission lookup) |
@@ -181,8 +181,8 @@ approval, Roblox asset IDs, capacity forecast). **522 tests passing.**
 | Item | Status |
 | --- | --- |
 | Scheduled summaries | ✅ already built |
-| Filters: deliverables, overdue, waiting time, unassigned, revisions, payouts, repeat orders, enquiries | ✅ (`/report filter`, nine filters phrased as plain questions) |
-| Separate client-caused waiting from artist delay | ✅ (`/report waiting`, reconstructed from the audit trail) |
+| Filters: deliverables, overdue, waiting time, unassigned, revisions, payouts, repeat orders, enquiries | ✅ (`/reports filter`, nine filters phrased as plain questions) |
+| Separate client-caused waiting from artist delay | ✅ (`/reports waiting`, reconstructed from the audit trail) |
 | Avoid ranking staff on task counts alone | ✅ (no score exists to sort by; the team list is in name order and says so) |
 | Owner-configurable automation rules with effect preview | ✅ (`/automation`; rules start off, a preview costs one command, and each task is acted on once per rule) |
 
@@ -237,17 +237,17 @@ by name rather than something that seemed like a good idea.
 | Filed proof included in backups | ✅ (`/backup now` copies the files next to the database; `deploy/backup-offsite.sh` tars and ships them, and reads the archive back) |
 | Dispute evidence pack | ✅ (`/proof record` — terms, submissions, releases, decisions, money both ways, hashes, audit trail) |
 | The pack states what is **missing**, not just what is there | ✅ (gaps such as "no record of anybody accepting the terms" are listed in the document) |
-| Deposits with named milestones | ✅ (`/deposit add label:`; receipts fill parts in order) |
+| Deposits with named milestones | ✅ (`/money-in add label:`; receipts fill parts in order) |
 | Payable when the deposit covers that artist's pay | ✅ (the rule the owner chose; a deposit funds work up to its own value and no further) |
 | Parts in a second currency refused | ✅ (no rate exists, so such a part could never be paid off) |
 | Overpayment and mismatched totals reported, not absorbed | ✅ (both usually mean a missing part or a double payment) |
 | Budget guard measures against the parts | ✅ (otherwise an order priced only through deposits would have no budget and the guard would stop guarding) |
-| Robux sent vs landed | ✅ (`/finance confirm-received`, `/finance mark-failed`, `/finance sent`) |
+| Robux sent vs landed | ✅ (`/pay confirm-received`, `/pay mark-failed`, `/pay sent`) |
 | A failed payment is kept on the record, not deleted | ✅ (it stops counting as paid, so the artist is owed again; excluded from every money total) |
 | One search across everything | ✅ (`/find`, scoped by the same capabilities the target commands use) |
-| Bulk approve proposed pay | ✅ (`/finance approve-all`, each figure budget-checked in turn; refuses only what does not fit) |
-| Roblox asset IDs recorded and searchable | ✅ (`/archive roblox-id`, `/archive roblox-ids`; digits extracted from a pasted URL) |
-| Capacity forecast — who is free next week | ✅ (`/free`) |
+| Bulk approve proposed pay | ✅ (`/pay approve-all`, each figure budget-checked in turn; refuses only what does not fit) |
+| Roblox asset IDs recorded and searchable | ✅ (`/files roblox-id`, `/files roblox-ids`; digits extracted from a pasted URL) |
+| Capacity forecast — who is free next week | ✅ (`/who-is-free`) |
 | Forecast states what it cannot know | ✅ (uses the department task cap where one is set; names the departments with no cap rather than inventing a threshold; undated work is counted, not assumed finished) |
 
 Not built, and deliberately:
@@ -255,7 +255,7 @@ Not built, and deliberately:
 | Item | Why not |
 | --- | --- |
 | Reversing a client receipt (a chargeback) | The columns exist but nothing sets them. Un-receiving money would retroactively unfund artists already paid, and how to handle that is the owner's call to make, not a default to guess. Stated here rather than half-built. |
-| A per-person workload limit | Departments carry a task cap; individuals do not. `/free` uses the department cap where set and names the departments without one, rather than judging anybody against a number nobody chose. |
+| A per-person workload limit | Departments carry a task cap; individuals do not. `/who-is-free` uses the department cap where set and names the departments without one, rather than judging anybody against a number nobody chose. |
 
 ---
 

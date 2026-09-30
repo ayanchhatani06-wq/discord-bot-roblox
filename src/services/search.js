@@ -90,7 +90,7 @@ function searchProjects(db, guildId, query, actor, { limit = 6 } = {}) {
       id: project.id,
       title: `${project.code} · ${project.name}`,
       subtitle: [project.status, project.client_name].filter(Boolean).join(' · '),
-      command: `/project view project:${project.code}`,
+      command: `/orders view project:${project.code}`,
     }));
 }
 
@@ -147,7 +147,7 @@ function searchAssets(db, guildId, query, actor, { limit = 6 } = {}) {
         asset.task_code,
         asset.roblox_asset_id ? `Roblox ${asset.roblox_asset_id}` : null,
       ].filter(Boolean).join(' · '),
-      command: asset.task_code ? `/archive task task:${asset.task_code}` : '/archive search',
+      command: asset.task_code ? `/files task task:${asset.task_code}` : '/files search',
     }));
 }
 
@@ -163,7 +163,7 @@ function searchEnquiries(db, guildId, query, actor, { limit = 4 } = {}) {
       id: enquiry.id,
       title: `${enquiry.code} · ${enquiry.service_request}`,
       subtitle: [enquiry.status, enquiry.contact_ref].filter(Boolean).join(' · '),
-      command: `/enquiry view code:${enquiry.code}`,
+      command: `/quotes view code:${enquiry.code}`,
     }));
 }
 

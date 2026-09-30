@@ -33,7 +33,7 @@ function contextForMember(db, guildId, userId, departments, actor) {
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('procedure')
+    .setName('staff-rules')
     .setDescription('Studio procedures and acknowledgements')
     .addSubcommand((sub) => sub.setName('list').setDescription('Procedures that apply to you, and which you still owe'))
     .addSubcommand((sub) =>
@@ -108,7 +108,7 @@ module.exports = {
         }).join('\n') || '_No procedures apply to you yet._');
 
       if (outstanding.length > 0) {
-        embed.setFooter({ text: `${outstanding.length} still to read. Open one with /procedure read key:<key>` });
+        embed.setFooter({ text: `${outstanding.length} still to read. Open one with /staff-rules read key:<key>` });
       }
 
       await interaction.reply(priv({ embeds: [embed] }));

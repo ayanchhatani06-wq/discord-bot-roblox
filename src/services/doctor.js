@@ -242,7 +242,7 @@ function checkWebsite(db, guildId) {
       SEVERITY.RISKY,
       `${drafts.length} message template(s) written but none approved`,
       'Nothing will send to a client. A draft never goes out, by design.',
-      '`/outreach template-approve key:`'
+      '`/messages template-approve key:`'
     ));
   }
 

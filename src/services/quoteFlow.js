@@ -64,7 +64,7 @@ function draftFromEnquiry(db, guildId, enquiry, { currency = null } = {}) {
         currency: null,
         needsPrice: true,
       });
-      warnings.push(`No price template for ${item.departmentName} — set one with \`/enquiry template\` or price it by hand.`);
+      warnings.push(`No price template for ${item.departmentName} — set one with \`/quotes template\` or price it by hand.`);
       continue;
     }
 

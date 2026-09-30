@@ -12,7 +12,7 @@ const { CATEGORIES, CATEGORY_LABELS } = escalationsRepo;
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('escalate')
+    .setName('concern')
     .setDescription('Raise a concern privately, or handle raised concerns')
     .addSubcommand((sub) =>
       sub
@@ -93,7 +93,7 @@ module.exports = {
         // Said plainly, because the value of this route is that it does not
         // go through the person it might be about.
         'Your group leader has **not** been told, and the details are not in the shared audit trail.',
-        'Track it with `/escalate mine`.',
+        'Track it with `/concern mine`.',
       ].join('\n')));
 
       if (config.owner_user_id) {
@@ -107,7 +107,7 @@ module.exports = {
               { name: 'Raised by', value: `<@${userId}>`, inline: true },
               ...(task ? [{ name: 'Task', value: `${task.code} · ${task.title}`, inline: true }] : [])
             )
-            .setFooter({ text: `Reply with /escalate respond id:${escalation.id}` })],
+            .setFooter({ text: `Reply with /concern respond id:${escalation.id}` })],
         }).catch(() => null);
       }
       return;
@@ -154,7 +154,7 @@ module.exports = {
             return `**#${row.id}** ${row.subject}\n` +
               `┗ ${CATEGORY_LABELS[row.category]} · <@${row.raised_by}>${task ? ` · ${task.code}` : ''} · ${row.status} · ${discordTimestamp(row.created_at, 'R')}`;
           }).join('\n').slice(0, 4000))
-          .setFooter({ text: 'Full text with /escalate respond, or read it in the DM I sent you.' })],
+          .setFooter({ text: 'Full text with /concern respond, or read it in the DM I sent you.' })],
       }));
       return;
     }

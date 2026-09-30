@@ -24,7 +24,7 @@ const CURRENCY_CHOICES = Object.keys(CURRENCIES).map((code) => ({ name: code, va
  */
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('deposit')
+    .setName('money-in')
     .setDescription('Split what a client owes into named parts, and see what has arrived')
     .addSubcommand((sub) =>
       sub
@@ -46,20 +46,20 @@ module.exports = {
       sub
         .setName('invoiced')
         .setDescription('Record that you have asked the client for this part')
-        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /deposit list').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /money-in list').setRequired(true))
     )
     .addSubcommand((sub) =>
       sub
         .setName('waive')
         .setDescription('Decide not to charge a part — it stops counting as owed')
-        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /deposit list').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /money-in list').setRequired(true))
         .addStringOption((opt) => opt.setName('reason').setDescription('Why, for the record').setRequired(true).setMaxLength(200))
     )
     .addSubcommand((sub) =>
       sub
         .setName('remove')
         .setDescription('Delete a part that was entered by mistake')
-        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /deposit list').setRequired(true))
+        .addIntegerOption((opt) => opt.setName('id').setDescription('Number from /money-in list').setRequired(true))
     ),
 
   async autocomplete(interaction) {
@@ -159,7 +159,7 @@ module.exports = {
             .setDescription(
               `${paymentSchedule.describe(schedule)}\n\n` +
               '_No parts set on this order, so it is treated as one payment. ' +
-              'Split it with `/deposit add` if the client is paying in stages._'
+              'Split it with `/money-in add` if the client is paying in stages._'
             )],
         }));
         return;
@@ -204,7 +204,7 @@ module.exports = {
     const id = interaction.options.getInteger('id', true);
     const milestone = paymentSchedule.getMilestone(db, guildId, id);
     if (!milestone) {
-      await interaction.reply(priv('❌ No part with that number. Check `/deposit list`.'));
+      await interaction.reply(priv('❌ No part with that number. Check `/money-in list`.'));
       return;
     }
 
@@ -249,7 +249,7 @@ module.exports = {
       if (milestone.invoiced_at) {
         await interaction.reply(priv(
           `❌ **${milestone.label}** has already been asked for, so it is not a mistake to delete — ` +
-          'waive it with `/deposit waive` instead, which keeps the record of what happened.'
+          'waive it with `/money-in waive` instead, which keeps the record of what happened.'
         ));
         return;
       }

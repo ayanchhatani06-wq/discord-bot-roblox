@@ -40,9 +40,9 @@ Three options, in the order I would take them:
 
 | Option | What it costs |
 |---|---|
-| **Take a deposit** that covers the artist pay on the tasks you start | Nothing. This is what the milestone feature was built for — `/deposit add` |
+| **Take a deposit** that covers the artist pay on the tasks you start | Nothing. This is what the milestone feature was built for — `/money-in add` |
 | **Change §3** to "once the task is approved and the client's payment for it has been received" | Honest, but it moves the risk onto your artists, who will notice |
-| **Pay out of studio funds** when a client is slow | `/finance mark-payable` with your reason on the record. Fine occasionally, dangerous as a habit |
+| **Pay out of studio funds** when a client is slow | `/pay mark-payable` with your reason on the record. Fine occasionally, dangerous as a habit |
 
 Whichever you pick, §3 and the bot should say the same thing.
 
@@ -91,7 +91,7 @@ Say the word and I will build the first one.
 
 **The bot does:** lead reviews the work (`/review decide`) → the client's
 decision is recorded (`/review client`) → the owner authorises release
-(`/deliver release`).
+(`/send release`).
 
 The owner's involvement is real, but it is at a different point. The owner
 approves the **pay** before work is offered, and authorises the **delivery** at
@@ -122,11 +122,11 @@ Builder set:
 
 | Promised channel | What replaced it |
 |---|---|
-| `task-progress` | `/work progress` — private, DMs the lead |
+| `task-progress` | `/my-work progress` — private, DMs the lead |
 | `[team]-reviews` | `/review queue` |
-| `completed-work`, `projects-done` | `/archive`, `/archive portfolio` |
-| `task-payments`, `payment-logs` | `/finance ledger`, `/finance outstanding`, `#studio-audit` |
-| `client-feedback` | Recorded against the version approved; `/work history` |
+| `completed-work`, `projects-done` | `/files`, `/files portfolio` |
+| `task-payments`, `payment-logs` | `/pay ledger`, `/pay outstanding`, `#studio-audit` |
+| `client-feedback` | Recorded against the version approved; `/my-work history` |
 | `[team]-applications` | `#apply` + `/recommend new` |
 | `[team]-chat` | `#staff-chat`, or one channel per craft if you want them |
 
@@ -186,10 +186,10 @@ the way**, the rate is unconfirmed, and JOTAKA has said he will not absorb it.
 
 That is a sent-versus-landed problem, and the bot now records exactly that:
 
-- `/finance pay` — you sent it
-- `/finance confirm-received` — they say it arrived
-- `/finance mark-failed` — it was sent and never arrived
-- `/finance sent` — everything nobody has confirmed either way
+- `/pay pay` — you sent it
+- `/pay confirm-received` — they say it arrived
+- `/pay mark-failed` — it was sent and never arrived
+- `/pay sent` — everything nobody has confirmed either way
 
 So when an artist receives $18 of a $20 payment, you record $20 sent, they
 confirm what landed, and the gap is on the record instead of being an argument

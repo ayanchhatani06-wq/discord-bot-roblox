@@ -407,7 +407,7 @@ module.exports = {
         await interaction.reply(priv(
           `❌ ${budget.describeBudgetFailure(check)}\n\n` +
           `Lower the figure, raise the recorded client payment, or allow it deliberately with ` +
-          `\`/finance budget-override project:${check.project.code} reason:...\`.`
+          `\`/pay budget-override project:${check.project.code} reason:...\`.`
         ));
         return;
       }
@@ -458,7 +458,7 @@ module.exports = {
         await interaction.reply(priv(
           `❌ ${budget.describeBudgetFailure(check)}\n\n` +
           `Lower the figure, raise the recorded client payment, or allow it deliberately with ` +
-          `\`/finance budget-override project:${check.project.code} reason:...\`.`
+          `\`/pay budget-override project:${check.project.code} reason:...\`.`
         ));
         return;
       }

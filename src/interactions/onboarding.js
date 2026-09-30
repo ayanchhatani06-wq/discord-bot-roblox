@@ -37,7 +37,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
   if (procedure.version !== Number(version)) {
     await interaction.reply(priv(
       `❌ This button is for version ${version}, but **${procedure.title}** is now at version ${procedure.version}.\n` +
-      `Open it again with \`/procedure read key:${procedure.key}\` and read the current text.`
+      `Open it again with \`/staff-rules read key:${procedure.key}\` and read the current text.`
     ));
     return;
   }

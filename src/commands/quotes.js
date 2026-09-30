@@ -15,7 +15,7 @@ const { STATUSES, STATUS_LABELS } = enquiriesRepo;
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('enquiry')
+    .setName('quotes')
     .setDescription('Incoming work enquiries and quotes')
     .addSubcommand((sub) =>
       sub
@@ -156,7 +156,7 @@ module.exports = {
           .setTitle('Pricing templates')
           .setColor(0x5865f2)
           .setDescription(templates.length === 0
-            ? 'None yet. Add one with `/enquiry template`.\nWithout templates, quotes have to be priced by hand every time.'
+            ? 'None yet. Add one with `/quotes template`.\nWithout templates, quotes have to be priced by hand every time.'
             : templates.map((row) =>
                 `**${row.label}** (\`${row.key}\`) — ${row.unit_amount_minor === null ? 'no price' : formatAmount(row.unit_amount_minor, row.currency)} each` +
                 `${row.turnaround_days ? ` · ${row.turnaround_days} day(s)` : ''}` +
@@ -243,12 +243,12 @@ module.exports = {
         parsed.errors.length > 0 ? `Not understood: ${parsed.errors.join(' ')}` : null,
         suggestion ? `Routed to ${`<@&${suggestion.leaderRoleId}>`} as the largest part of the job.` : null,
         '',
-        `Next: \`/enquiry draft-quote enquiry:${enquiry.code}\`.`,
+        `Next: \`/quotes draft-quote enquiry:${enquiry.code}\`.`,
       ].filter((line) => line !== null).join('\n')));
 
       if (suggestion && config.owner_user_id) {
         await notifyUser(interaction.client, db, guildId, config.owner_user_id, {
-          content: `📥 New enquiry **${enquiry.code}**: ${service}\nMostly ${suggestion.departmentName}. Draft a quote with \`/enquiry draft-quote enquiry:${enquiry.code}\`.`,
+          content: `📥 New enquiry **${enquiry.code}**: ${service}\nMostly ${suggestion.departmentName}. Draft a quote with \`/quotes draft-quote enquiry:${enquiry.code}\`.`,
         }).catch(() => null);
       }
       return;
@@ -372,7 +372,7 @@ module.exports = {
       if (!draft.ok && !overrideText) {
         await interaction.reply(priv(
           `❌ Could not build a draft: ${draft.detail}\n` +
-          `Give a total yourself: \`/enquiry draft-quote enquiry:${enquiry.code} total:250\`.`
+          `Give a total yourself: \`/quotes draft-quote enquiry:${enquiry.code} total:250\`.`
         ));
         return;
       }
@@ -407,7 +407,7 @@ module.exports = {
         `${quote.turnaround_days ? ` · ${quote.turnaround_days} working day(s)` : ''}`,
         '',
         '⚠️ **This is a draft and has not been sent.** It needs your approval first:',
-        `\`/enquiry approve-quote enquiry:${enquiry.code}\``,
+        `\`/quotes approve-quote enquiry:${enquiry.code}\``,
       ].join('\n')));
 
       if (config.owner_user_id && config.owner_user_id !== userId) {
@@ -415,7 +415,7 @@ module.exports = {
           content:
             `📝 <@${userId}> drafted quote v${quote.version} for **${enquiry.code}** at ` +
             `${formatAmount(quote.total_minor, quote.currency)}. It cannot be sent until you approve it: ` +
-            `\`/enquiry approve-quote enquiry:${enquiry.code}\`.`,
+            `\`/quotes approve-quote enquiry:${enquiry.code}\`.`,
         }).catch(() => null);
       }
       return;
@@ -439,7 +439,7 @@ module.exports = {
       await interaction.reply(priv(
         `✅ Quote v${approved.version} for **${enquiry.code}** approved at **${formatAmount(approved.total_minor, approved.currency)}**` +
         `${approved.turnaround_days ? ` over ${approved.turnaround_days} working day(s)` : ''}.\n` +
-        `Send it, then record that with \`/enquiry send-quote enquiry:${enquiry.code}\`.`
+        `Send it, then record that with \`/quotes send-quote enquiry:${enquiry.code}\`.`
       ));
 
       if (quote.prepared_by !== userId) {
@@ -491,7 +491,7 @@ module.exports = {
       await interaction.reply(priv(
         `✅ Recorded as sent: quote v${sent.version}, ${formatAmount(sent.total_minor, sent.currency)}.` +
         `${channel ? (posted ? ` Posted in <#${channel.id}>.` : ' ⚠️ Could not post it in that channel — send it yourself.') : ''}\n` +
-        `When they answer: \`/enquiry accept enquiry:${enquiry.code}\` or \`/enquiry decline\`.`
+        `When they answer: \`/quotes accept enquiry:${enquiry.code}\` or \`/quotes decline\`.`
       ));
       return;
     }

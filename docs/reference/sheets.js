@@ -56,7 +56,7 @@ const SHEETS = [
     startHere: [
       ['/desk group', 'Your queue, who is loaded, what needs reviewing, what is at risk.'],
       ['/task queue', 'Unassigned work, each with a button to pick an artist.'],
-      ['/free', 'Who has room before you promise anything.'],
+      ['/who-is-free', 'Who has room before you promise anything.'],
     ],
     closing: [
       ['You propose pay, the owner approves it', 'Nothing can be offered until they decide, so propose early.'],
@@ -81,7 +81,7 @@ const SHEETS = [
     ],
     closing: [
       ['The bot records money, it never moves it', 'And it never asks for a payment password, card number or wallet phrase. If anything ever does, it is not this bot.'],
-      ['Nothing is payable before the money is in', 'Unless you say so with `/finance mark-payable`, with your reason kept on the record.'],
+      ['Nothing is payable before the money is in', 'Unless you say so with `/pay mark-payable`, with your reason kept on the record.'],
       ['Back up somewhere else', '`/backup now` writes to the same disk as the database. That is a second copy, not a backup — see the hosting notes for the offsite job.'],
     ],
     layout: SERVER_LAYOUT,

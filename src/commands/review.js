@@ -346,11 +346,11 @@ module.exports = {
           afterPayment.payment_state === 'payable'
             ? '💰 Now **payable** — the client payment for this project is recorded as received.'
             : `💰 Payment stays **pending**: the client payment for ${project?.code} has not been recorded as received yet. ` +
-              'Record it with `/finance client-receipt`, or override with `/finance mark-payable`.'
+              'Record it with `/pay client-receipt`, or override with `/pay mark-payable`.'
         );
 
         for (const { award, rule } of earned) {
-          lines.push(`🏅 <@${award.user_id}> reached a milestone: ${rule.label}. Waiting on you — \`/bonus pending\`.`);
+          lines.push(`🏅 <@${award.user_id}> reached a milestone: ${rule.label}. Waiting on you — \`/bonuses pending\`.`);
         }
       } else {
         lines.push('The task is back with the artist.');
@@ -370,7 +370,7 @@ module.exports = {
             ? `✅ The client approved your work on **${task.code} · ${task.title}**. Nothing more to do — payment is tracked separately.`
             : `🔁 The client asked for revisions on **${task.code} · ${task.title}**.\n> ${(feedback || '').slice(0, 500)}\n` +
               `${beyondScope ? 'This is flagged as beyond the agreed scope, so wait for the owner before doing extra work.\n' : ''}` +
-              'Submit again with `/work submit` when it is ready.',
+              'Submit again with `/my-work submit` when it is ready.',
         }).catch(() => null);
       }
 

@@ -67,14 +67,14 @@ function draftEmbed(db, guildId, summary, departments) {
     )
     .setFooter({
       text: missing.length === 0
-        ? `Ready. Create it with /repeat create id:${draft.id}`
+        ? `Ready. Create it with /reorder create id:${draft.id}`
         : `Still to confirm: ${missing.join(', ')}`,
     });
 }
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('repeat')
+    .setName('reorder')
     .setDescription('Order a client something like last time')
     .addSubcommand((sub) =>
       sub
@@ -188,7 +188,7 @@ module.exports = {
             const missing = clientRecordsRepo.outstandingConfirmations(draft);
             return `**#${draft.id}** ${draft.name} — ${client?.display_name || 'unknown client'}\n` +
               `┗ ${missing.length === 0 ? '✅ ready to create' : `still to confirm: ${missing.join(', ')}`}`;
-          }).join('\n').slice(0, 4000) || '_No drafts. Start one with `/repeat from project:<code>`._')],
+          }).join('\n').slice(0, 4000) || '_No drafts. Start one with `/reorder from project:<code>`._')],
       }));
       return;
     }

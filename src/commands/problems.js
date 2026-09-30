@@ -20,7 +20,7 @@ const DECISION_LABELS = {
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('issues')
+    .setName('problems')
     .setDescription('Problems reported by clients')
     .addSubcommand((sub) =>
       sub
@@ -102,7 +102,7 @@ module.exports = {
               `${request.decision ? ` · judged **${DECISION_LABELS[request.decision]}**` : ' · **not yet judged**'}\n` +
               `┗ ${request.body.slice(0, 180)}`;
           }).join('\n').slice(0, 4000))
-          .setFooter({ text: 'Judge one with /issues decide id:<number>' })],
+          .setFooter({ text: 'Judge one with /problems decide id:<number>' })],
       }));
       return;
     }
@@ -165,7 +165,7 @@ module.exports = {
       if (request.decision) {
         await interaction.reply(priv(
           `Issue #${id} was already judged **${DECISION_LABELS[request.decision]}** by <@${request.decided_by}>. ` +
-          'Close it with `/issues close` instead.'
+          'Close it with `/problems close` instead.'
         ));
         return;
       }
@@ -229,7 +229,7 @@ module.exports = {
             content:
               `🔁 A client problem on **${reopened.code} · ${reopened.title}** was judged a correction we owe them:\n` +
               `> ${request.body.slice(0, 600)}\n` +
-              `Decision note: ${note}\nResubmit with \`/work submit task:${reopened.code}\`.`,
+              `Decision note: ${note}\nResubmit with \`/my-work submit task:${reopened.code}\`.`,
           }).catch(() => null);
         }
       }

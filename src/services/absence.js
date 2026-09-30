@@ -40,7 +40,7 @@ async function notifyLeadersOfAbsence(client, db, guildId, userId, { awayUntil =
         ...lines,
         '',
         pendingOffers > 0 ? `${pendingOffers} of these is an unanswered offer you can withdraw with \`/task withdraw\`.` : null,
-        'Nothing has been cancelled or reassigned. Use `/manage reassign` if you need to move work.',
+        'Nothing has been cancelled or reassigned. Use `/change reassign` if you need to move work.',
       ].filter((line) => line !== null).join('\n').slice(0, 2000),
     }).catch(() => ({ delivered: false }));
 

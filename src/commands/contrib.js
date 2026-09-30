@@ -115,7 +115,7 @@ module.exports = {
         const result = contributorsRepo.removeContributor(db, guildId, task.id, person.id, userId);
         if (!result.ok) {
           await interaction.reply(priv(result.reason === 'primary_contributor'
-            ? `❌ <@${person.id}> holds **${task.code}** itself. Move the task with \`/manage reassign\` instead.`
+            ? `❌ <@${person.id}> holds **${task.code}** itself. Move the task with \`/change reassign\` instead.`
             : `❌ <@${person.id}> is not on **${task.code}**.`));
           return;
         }
@@ -206,7 +206,7 @@ module.exports = {
         await interaction.reply(priv(
           `❌ ${budget.describeBudgetFailure(check)}\n\n` +
           'Lower the figure, raise the recorded client payment, or allow it deliberately with ' +
-          `\`/finance budget-override project:${check.project.code} reason:...\`.`
+          `\`/pay budget-override project:${check.project.code} reason:...\`.`
         ));
         return;
       }
@@ -231,7 +231,7 @@ module.exports = {
       await notifyUser(interaction.client, db, guildId, person.id, {
         content:
           `💰 Your pay for **${task.code} · ${task.title}** is **${formatAmount(amountMinor, currency)}**.\n` +
-          'This covers your part of the task only. See it any time with `/work earnings`.',
+          'This covers your part of the task only. See it any time with `/my-work earnings`.',
       }).catch(() => null);
     }
   },

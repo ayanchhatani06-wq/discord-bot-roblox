@@ -221,7 +221,7 @@ module.exports = {
             {
               name: 'Work shown publicly',
               value: portfolio.length === 0
-                ? '_Nothing cleared yet. Clients grant this per project or per file — `/archive rights`._'
+                ? '_Nothing cleared yet. Clients grant this per project or per file — `/files rights`._'
                 : `${portfolio.length} item(s), all with recorded client permission`,
               inline: false,
             },

@@ -16,7 +16,7 @@ const { priv } = require('../utils/reply');
  */
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('free')
+    .setName('who-is-free')
     .setDescription('Who has room for more work, and who has not')
     .addIntegerOption((opt) =>
       opt.setName('days').setDescription('How far ahead to look (default 7)').setRequired(false).setMinValue(1).setMaxValue(90))

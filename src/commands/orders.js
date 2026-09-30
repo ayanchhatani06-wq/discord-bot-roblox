@@ -44,7 +44,7 @@ function resolveDeadline(db, guildId, userId, text) {
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('project')
+    .setName('orders')
     .setDescription('Client projects and their tasks')
     .addSubcommand((sub) =>
       sub
@@ -176,8 +176,8 @@ module.exports = {
           ? `Mod: <@${project.mod_user_id}>.`
           : 'No mod recorded, so the mod share stays with you.',
         '',
-        `Add tasks with \`/project bulk project:${project.code} spec:"12 models, 4 vfx"\` or \`/task create\`.`,
-        `Add the brief with \`/project edit project:${project.code} brief:...\`.`,
+        `Add tasks with \`/orders bulk project:${project.code} spec:"12 models, 4 vfx"\` or \`/task create\`.`,
+        `Add the brief with \`/orders edit project:${project.code} brief:...\`.`,
       ].filter((line) => line !== null);
 
       await interaction.reply(priv(lines.join('\n')));
@@ -263,7 +263,7 @@ module.exports = {
     if (sub === 'tasks') {
       const tasks = tasksRepo.listTasksForProject(db, project.id);
       if (tasks.length === 0) {
-        await interaction.reply(priv(`**${project.code}** has no tasks yet. Add them with \`/project bulk\`.`));
+        await interaction.reply(priv(`**${project.code}** has no tasks yet. Add them with \`/orders bulk\`.`));
         return;
       }
 

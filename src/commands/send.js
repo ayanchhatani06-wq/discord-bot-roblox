@@ -15,7 +15,7 @@ const { priv } = require('../utils/reply');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('deliver')
+    .setName('send')
     .setDescription('Release finished work to a client')
     .addSubcommand((sub) =>
       sub
@@ -103,7 +103,7 @@ module.exports = {
               `${task.completed_at ? ` · approved ${discordTimestamp(task.completed_at, 'R')}` : ''}\n` +
               `┗ ${readiness.ok ? '✅ ready to release' : `⚠️ ${readiness.blockers[0]}`}`;
           }).join('\n').slice(0, 4000))
-          .setFooter({ text: 'Release with /deliver release task:<code>' })],
+          .setFooter({ text: 'Release with /send release task:<code>' })],
       }));
       return;
     }
@@ -194,7 +194,7 @@ module.exports = {
           ? `⚠️ Released despite: ${result.readiness.blockers.join(' ')} — that is on the record.`
           : null,
         project?.portfolio_staff_allowed === null || project?.portfolio_staff_allowed === undefined
-          ? `\nNo portfolio permission is recorded for ${project?.code}. Until it is, nobody may show this work — \`/archive rights project:${project?.code}\`.`
+          ? `\nNo portfolio permission is recorded for ${project?.code}. Until it is, nobody may show this work — \`/files rights project:${project?.code}\`.`
           : null,
       ].filter(Boolean).join('\n')));
 

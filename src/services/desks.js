@@ -104,7 +104,7 @@ function buildMyDesk(db, guildId, userId, { now = Date.now() } = {}) {
   if (revisions.length > 0) {
     embed.addFields({
       name: `🔁 Changes requested (${revisions.length})`,
-      value: truncate(revisions.map((task) => `**${task.code}** ${task.title} — resubmit with \`/work submit\``)),
+      value: truncate(revisions.map((task) => `**${task.code}** ${task.title} — resubmit with \`/my-work submit\``)),
       inline: false,
     });
   }
@@ -137,7 +137,7 @@ function buildMyDesk(db, guildId, userId, { now = Date.now() } = {}) {
     embed.addFields({
       name: `📋 Procedures to read (${outstandingProcedures.length})`,
       value: truncate(outstandingProcedures.map((procedure) =>
-        `**${procedure.title}** _(v${procedure.version})_ — \`/procedure read key:${procedure.key}\``
+        `**${procedure.title}** _(v${procedure.version})_ — \`/staff-rules read key:${procedure.key}\``
       )),
       inline: false,
     });
@@ -336,13 +336,13 @@ function buildOwnerDesk(db, guildId, { now = Date.now() } = {}) {
 
   const decisions = [
     payProposals.length > 0 ? `${payProposals.length} pay proposal(s) — \`/task approve-pay\`` : null,
-    draftQuotes.length > 0 ? `${draftQuotes.length} draft quote(s) awaiting your approval — \`/enquiry approve-quote\`` : null,
-    undecidedIssues.length > 0 ? `${undecidedIssues.length} client problem(s) not yet judged — \`/issues list\`` : null,
-    flagged.length > 0 ? `${flagged.length} task(s) flagged for scope or compensation — \`/manage flags\`` : null,
-    openEscalations.length > 0 ? `${openEscalations.length} staff concern(s) — \`/escalate list\`` : null,
-    pendingDelivery.length > 0 ? `${pendingDelivery.length} approved item(s) not yet released — \`/deliver pending\`` : null,
-    openBlockers.length > 0 ? `${openBlockers.length} blocker(s) stopping work — \`/plan blockers\`` : null,
-    deadlineRequests.length > 0 ? `${deadlineRequests.length} deadline request(s) — \`/plan extensions\`` : null,
+    draftQuotes.length > 0 ? `${draftQuotes.length} draft quote(s) awaiting your approval — \`/quotes approve-quote\`` : null,
+    undecidedIssues.length > 0 ? `${undecidedIssues.length} client problem(s) not yet judged — \`/problems list\`` : null,
+    flagged.length > 0 ? `${flagged.length} task(s) flagged for scope or compensation — \`/change flags\`` : null,
+    openEscalations.length > 0 ? `${openEscalations.length} staff concern(s) — \`/concern list\`` : null,
+    pendingDelivery.length > 0 ? `${pendingDelivery.length} approved item(s) not yet released — \`/send pending\`` : null,
+    openBlockers.length > 0 ? `${openBlockers.length} blocker(s) stopping work — \`/deadlines blockers\`` : null,
+    deadlineRequests.length > 0 ? `${deadlineRequests.length} deadline request(s) — \`/deadlines extensions\`` : null,
   ].filter(Boolean);
 
   const embed = new EmbedBuilder()

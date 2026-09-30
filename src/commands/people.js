@@ -15,7 +15,7 @@ const { priv } = require('../utils/reply');
  * Standing in for a leader, and leaving the studio.
  *
  * Both are about people rather than work, which is why they are not on
- * `/manage`. Both are also deliberately conservative: a stand-in's powers
+ * `/change`. Both are also deliberately conservative: a stand-in's powers
  * expire on a stated date without anything having to run, and offboarding
  * reports what somebody leaves behind rather than deleting it.
  */
@@ -314,7 +314,7 @@ module.exports = {
         `✅ <@${person.id}> is recorded as having left. They are off the boards and their profile is flagged, not deleted.\n` +
         `${withdrawn > 0 ? `${withdrawn} unanswered offer(s) withdrawn.\n` : ''}` +
         `${revoked > 0 ? `${revoked} stand-in grant(s) ended.\n` : ''}` +
-        `${report.unfinished.length > 0 ? `⚠️ Their ${report.unfinished.length} unfinished task(s) still need somebody — use \`/manage reassign\`.\n` : ''}` +
+        `${report.unfinished.length > 0 ? `⚠️ Their ${report.unfinished.length} unfinished task(s) still need somebody — use \`/change reassign\`.\n` : ''}` +
         `${report.pay.totals.size > 0 ? `⚠️ They are still owed **${formatTotals(report.pay.totals)}**. That does not go away.\n` : ''}` +
         `\n_Remove their Discord roles yourself — the bot does not change roles._`,
       embeds: [embed],

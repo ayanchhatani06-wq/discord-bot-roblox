@@ -126,7 +126,7 @@ register(NAMESPACE, async (interaction, { action, args }) => {
         '',
         `Department: ${department?.name || '—'}${project ? ` · Project: ${project.code}` : ''}`,
         '',
-        'Post updates with `/work progress` and submit with `/work submit` in the server.',
+        'Post updates with `/my-work progress` and submit with `/my-work submit` in the server.',
       ].join('\n'),
     });
     return;

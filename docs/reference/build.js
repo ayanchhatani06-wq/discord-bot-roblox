@@ -105,7 +105,7 @@ function resolve(commands) {
 
     // A command whose subcommands span several tiers says so in its heading.
     // Showing only the easiest way in would read as "anyone can do all of this",
-    // which is the opposite of true for /task, /finance and most of the rest.
+    // which is the opposite of true for /task, /pay and most of the rest.
     const order = ['anyone', 'artist', 'leader', 'manager', 'owner'];
     const present = [...new Set(rows.map((row) => row.role.tier))]
       .sort((a, b) => order.indexOf(a) - order.indexOf(b));

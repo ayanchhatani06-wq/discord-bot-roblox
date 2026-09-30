@@ -51,7 +51,7 @@ heading, `**` makes bold and `-#` makes small print once posted.
    🎲・off-topic
    🛠️・services                   no prices — quote on request
    📄・terms
-   🖼️・showcase                   only what /archive portfolio permits
+   🖼️・showcase                   only what /files portfolio permits
    ⭐・vouches                    clients write, everyone reads
    🎫・request-a-quote            read-only front door
    🤖・bot-commands
@@ -294,7 +294,7 @@ For proven scamming or stolen work we may also report the account to Roblox and
 to developer communities. Whether they act is their decision, not ours.
 
 **Think a decision was wrong?** Say so — in your order channel if you're a
-client, or `/escalate raise` if you're staff. That goes straight to the owner
+client, or `/concern raise` if you're staff. That goes straight to the owner
 and nobody else sees it.
 
 -# Arguing it out in #general is the one route that won't get it changed.
@@ -565,7 +565,7 @@ that too — we'd rather fix it than have it go around quietly.
 
 Our work, posted by staff.
 
-**Run `/archive portfolio` before posting.**
+**Run `/files portfolio` before posting.**
 
 That's the list of work clients have actually given permission to show, and it's
 the only list you may post from.
@@ -623,11 +623,11 @@ you're accepting.
 **5. It's offered to you** — by DM, with the brief, the deadline and the pay.
 Accept or decline. Declining is fine. Leaving it sitting is not.
 
-**6. You do the work** — post updates with `/work progress`.
-Stuck? `/work blocked`. That isn't admitting failure, it's how we see an order
+**6. You do the work** — post updates with `/my-work progress`.
+Stuck? `/my-work blocked`. That isn't admitting failure, it's how we see an order
 has stopped.
 
-**7. You submit** — `/work submit`, with the checklist for your craft.
+**7. You submit** — `/my-work submit`, with the checklist for your craft.
 
 **8. Your lead reviews it** — passes it on, or asks for changes. This happens
 privately. Nobody is corrected in front of the server.
@@ -635,7 +635,7 @@ privately. Nobody is corrected in front of the server.
 **9. The client decides** — their approval is recorded against the exact version
 they saw, so "I approved a different one" can't happen.
 
-**10. It's delivered and you're paid.** Check yours with `/work earnings`.
+**10. It's delivered and you're paid.** Check yours with `/my-work earnings`.
 ````
 
 ### Message 2
@@ -698,8 +698,8 @@ confidentiality, portfolio rights, and what happens if things go wrong.
 
 ## Acknowledging them
 
-Run **`/procedure list`** — it shows every procedure and which you still owe an
-acknowledgement on. Read each with `/procedure read`.
+Run **`/staff-rules list`** — it shows every procedure and which you still owe an
+acknowledgement on. Read each with `/staff-rules read`.
 
 That's how we know who has actually read what, which a pinned message can't tell
 us. If a handbook changes you'll be asked to acknowledge it again.
@@ -843,6 +843,6 @@ Terms are in #terms. Anything unclear, just ask here.
    whether your artists can actually be paid when your handbook says they will be.
 3. **Fill the pay guide.** The numbers are yours; the shape is there.
 4. **Retype every `#channel-name`** after pasting, so Discord links them.
-5. **Link both handbooks in `#staff-rules`**, and put them in `/procedure set` so
+5. **Link both handbooks in `#staff-rules`**, and put them in `/staff-rules set` so
    acknowledgements are tracked.
 6. **Run `/studio doctor`** afterwards to catch anything pointed at but unfinished.

@@ -21,7 +21,7 @@ const REASSIGNABLE = [TASK_STATES.OFFERED, TASK_STATES.IN_PROGRESS, TASK_STATES.
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('manage')
+    .setName('change')
     .setDescription('Reassign, hold, cancel and compensate')
     .addSubcommand((sub) =>
       sub
@@ -105,7 +105,7 @@ module.exports = {
             if (task.compensation_review_flag) reasons.push('work was done before this task moved or stopped');
             return `**${task.code}** ${task.title} · ${stateLabel(task.state)}\n┗ ${reasons.join('; ')}`;
           }).join('\n').slice(0, 4000))
-          .setFooter({ text: 'Settle pay with /manage compensate, or adjust the task and clear it with /manage flags.' })],
+          .setFooter({ text: 'Settle pay with /change compensate, or adjust the task and clear it with /change flags.' })],
       }));
       return;
     }
@@ -184,7 +184,7 @@ module.exports = {
           ? `They have been sent the offer${result.delivery.delivered ? '' : ' — but I could not reach them, so tell them directly'}. Nothing starts until they accept.`
           : `⚠️ The offer could not be sent: ${result.reason === 'pay_not_approved' ? 'the pay is not approved' : result.reason}.`,
         contribution.hasWork && previousArtist
-          ? `⚠️ <@${previousArtist}> had already submitted ${contribution.submissionCount} time(s). Their work is kept and the task is flagged for you to decide what they are owed — \`/manage compensate task:${task.code}\`.`
+          ? `⚠️ <@${previousArtist}> had already submitted ${contribution.submissionCount} time(s). Their work is kept and the task is flagged for you to decide what they are owed — \`/change compensate task:${task.code}\`.`
           : null,
         warnings.length > 0 ? `\nWorth knowing: ${warnings.join(' ')}` : null,
       ].filter((line) => line !== null).join('\n')));
@@ -279,7 +279,7 @@ module.exports = {
         `✅ **${cancelled.code}** cancelled. Reason recorded: ${reason}`,
         'Its history, submissions and any payments are kept.',
         contribution.hasWork && previousArtist
-          ? `⚠️ <@${previousArtist}> had submitted ${contribution.submissionCount} time(s). Record what they are owed with \`/manage compensate task:${cancelled.code} member:@them\`.`
+          ? `⚠️ <@${previousArtist}> had submitted ${contribution.submissionCount} time(s). Record what they are owed with \`/change compensate task:${cancelled.code} member:@them\`.`
           : null,
       ].filter((line) => line !== null).join('\n')));
 

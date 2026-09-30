@@ -23,19 +23,19 @@ const GROUPS = [
 const COMMAND_GROUPS = {
   go: 'start', help: 'start', find: 'start', desk: 'start',
 
-  task: 'work', work: 'work', plan: 'work', manage: 'work', review: 'work', free: 'work',
+  task: 'work', 'my-work': 'work', deadlines: 'work', change: 'work', review: 'work', 'who-is-free': 'work',
 
-  finance: 'money', deposit: 'money', bonus: 'money', contrib: 'money',
+  pay: 'money', 'money-in': 'money', bonuses: 'money', contrib: 'money',
 
   profile: 'people', time: 'people', people: 'people',
-  recommend: 'people', trial: 'people', procedure: 'people',
+  recommend: 'people', trial: 'people', 'staff-rules': 'people',
 
-  project: 'clients', clients: 'clients', enquiry: 'clients', repeat: 'clients',
-  outreach: 'clients', issues: 'clients', deliver: 'clients',
+  orders: 'clients', clients: 'clients', quotes: 'clients', reorder: 'clients',
+  messages: 'clients', problems: 'clients', send: 'clients',
 
-  archive: 'files', proof: 'files',
+  files: 'files', proof: 'files',
 
-  report: 'watch', summary: 'watch', escalate: 'watch',
+  reports: 'watch', summary: 'watch', concern: 'watch',
 
   studio: 'setup', web: 'setup', automation: 'setup', backup: 'setup',
 };
@@ -69,7 +69,7 @@ const PLACES = {
     },
     {
       where: 'Nowhere public',
-      what: 'Progress notes, submissions and reviews are not posted to a channel. /work progress replies to you privately ' +
+      what: 'Progress notes, submissions and reviews are not posted to a channel. /my-work progress replies to you privately ' +
         'and sends your leader a DM; your leader\u2019s decision comes back the same way.',
       note: 'So there is no "progress" channel to watch, and nothing you do lands in front of the whole server.',
     },
@@ -102,7 +102,7 @@ const PLACES = {
     {
       where: 'Nowhere public',
       what: 'Your review decisions go to the artist as a DM, not to a channel. Nobody is corrected in front of the server.',
-      note: 'The decision is still on the record — /work history shows every review on a task.',
+      note: 'The decision is still on the record — /my-work history shows every review on a task.',
     },
   ],
 

@@ -33,7 +33,7 @@ function extractLinks(text) {
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('work')
+    .setName('my-work')
     .setDescription('Post progress and submit finished work')
     .addSubcommand((sub) =>
       sub
@@ -226,7 +226,7 @@ module.exports = {
       if (existing.length > 0) {
         await interaction.reply(priv(
           `You already have an open blocker on **${task.code}** (#${existing[0].id}).\n` +
-          `> ${existing[0].reason.slice(0, 200)}\nClear it with \`/work unblock\` before raising another.`
+          `> ${existing[0].reason.slice(0, 200)}\nClear it with \`/my-work unblock\` before raising another.`
         ));
         return;
       }
@@ -244,7 +244,7 @@ module.exports = {
         await notifyUser(interaction.client, db, guildId, recipient, {
           content:
             `🚧 <@${userId}> is blocked on **${task.code} · ${task.title}**:\n> ${reason.slice(0, 600)}` +
-            `${link ? `\n${link}` : ''}\nClear it with \`/plan clear-blocker id:${blocker.id}\`.`,
+            `${link ? `\n${link}` : ''}\nClear it with \`/deadlines clear-blocker id:${blocker.id}\`.`,
         }).catch(() => null);
       }
       return;
