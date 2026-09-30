@@ -629,7 +629,20 @@ WEB_GUILD_ID=<your server id> npm run site
 
 Set `WEB_APP_URL` to wherever the live site runs and the static quote form will
 post to it. Without that, the quote page tells visitors to get in touch instead
-of showing a form that goes nowhere.
+of showing a form that goes nowhere. Set `SITE_URL` to the public address and
+the export also writes a `sitemap.xml` — without it there is no sitemap, because
+a sitemap pointing at the wrong domain is worse than none.
+
+### If you put a proxy in front
+
+Set `TRUST_PROXY=1` **only** when something really does sit in front and set
+`X-Forwarded-For` — Caddy, nginx, Cloudflare. Without a proxy, leave it unset:
+anybody can send that header, and believing it lets one sender walk straight
+past the rate limits by changing it on every request.
+
+`/healthz` answers `ok` or `unhealthy` for an uptime monitor, and deliberately
+says nothing else — a health check that leaks versions or row counts is free
+reconnaissance.
 
 ---
 
@@ -778,7 +791,7 @@ only discover you needed after losing them.
 npm test
 ```
 
-436 tests covering money parsing and per-currency totals, split exactness
+441 tests covering money parsing and per-currency totals, split exactness
 (including the worked $40/$25 example, the mixed-currency refusal and
 below-cost jobs), every legal and illegal task transition, repeat-click
 rejection, permission scoping, DST and quiet-hours edge cases, reminder

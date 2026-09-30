@@ -55,7 +55,7 @@ function copyAssets(outDir) {
  * Without it there is no server to receive a form, so the quote page says to
  * get in touch instead of rendering a form that silently goes nowhere.
  */
-function exportSite(db, guildId, { outDir = DEFAULT_OUT, appUrl = null, discordInvite = null } = {}) {
+function exportSite(db, guildId, { outDir = DEFAULT_OUT, appUrl = null, discordInvite = null, siteUrl = null } = {}) {
   const snapshot = content.publicSnapshot(db, guildId, { appUrl });
   fs.mkdirSync(outDir, { recursive: true });
 
@@ -69,6 +69,28 @@ function exportSite(db, guildId, { outDir = DEFAULT_OUT, appUrl = null, discordI
   ];
 
   const assets = copyAssets(outDir);
+
+  // Crawlers should find the public pages and nothing else. The static site has
+  // no client area at all, but saying so costs nothing and stays true if the
+  // same file is ever served in front of the live app.
+  fs.writeFileSync(
+    path.join(outDir, 'robots.txt'),
+    ['User-agent: *', 'Disallow: /client', 'Disallow: /staff', 'Allow: /', ''].join('\n'),
+    'utf8'
+  );
+
+  if (siteUrl) {
+    const base = siteUrl.replace(/\/$/, '');
+    const routes = ['/', '/work', '/about', '/quote'];
+    fs.writeFileSync(
+      path.join(outDir, 'sitemap.xml'),
+      '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+      routes.map((route) => `  <url><loc>${base}${route}</loc></url>`).join('\n') +
+      '\n</urlset>\n',
+      'utf8'
+    );
+  }
 
   // Static hosts have no router, so a missing address needs its own file.
   fs.writeFileSync(
@@ -91,6 +113,7 @@ function exportSite(db, guildId, { outDir = DEFAULT_OUT, appUrl = null, discordI
     placeholderServices: snapshot.services.some((service) => service.placeholder),
     hasAbout: Boolean(snapshot.about),
     quoteForm: Boolean(appUrl),
+    sitemap: Boolean(siteUrl),
   };
 }
 
@@ -105,6 +128,7 @@ if (require.main === module) {
     outDir: process.env.SITE_OUT || DEFAULT_OUT,
     appUrl: process.env.WEB_APP_URL || null,
     discordInvite: process.env.DISCORD_INVITE || null,
+    siteUrl: process.env.SITE_URL || null,
   });
 
   console.log(`Wrote ${result.pages} page(s) and ${result.assets.length} asset(s) to ${result.outDir}`);

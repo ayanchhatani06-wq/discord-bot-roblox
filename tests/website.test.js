@@ -608,3 +608,84 @@ test('a leader sees their own department and not another', async () => {
     assert.doesNotMatch(body, /Not my department/);
   });
 });
+
+test('a spoofed forwarded header cannot slip past the rate limiter', async () => {
+  const db = setup();
+
+  // Every request claims a different origin. Without a proxy in front, the
+  // header is just something the sender typed, so it must not be believed.
+  await withServer(db, async ({ post }) => {
+    const statuses = [];
+    for (let attempt = 0; attempt < 7; attempt += 1) {
+      const response = await post('/quote',
+        { name: 'Flood', contact: 'x', brief: 'y' },
+        { headers: { 'X-Forwarded-For': `10.0.0.${attempt}` } });
+      statuses.push(response.status);
+    }
+
+    assert.ok(statuses.includes(429), 'the limiter still bites despite the changing header');
+  });
+
+  const stored = enquiriesRepo.listEnquiries(db, GUILD, { status: 'all', limit: 50 });
+  assert.ok(stored.length <= 5, `one sender should not be able to file ${stored.length} enquiries`);
+});
+
+test('no POST route requires a session, which is what makes forged requests harmless', async () => {
+  const db = setup();
+  const client = makeClient(db);
+  makeOrder(db, client);
+  const token = httpLib.randomToken();
+  webRepo.issueLoginToken(db, GUILD, { clientId: client.id, tokenHash: httpLib.hashToken(token) });
+
+  // If a POST is ever added that acts on a signed-in session, this test should
+  // fail and whoever added it should add CSRF protection first. A cookie sent
+  // by a form on somebody else's page is still the victim's cookie.
+  await withServer(db, async ({ get, post }) => {
+    const entered = await get(`/client/enter?token=${token}`);
+    const cookie = entered.headers.get('set-cookie').split(';')[0];
+
+    for (const route of ['/client', '/client/sign-out', '/staff', '/staff/queue']) {
+      const response = await post(route, { anything: 'here' }, { headers: { Cookie: cookie } });
+      assert.equal(response.status, 404, `${route} should not accept a POST`);
+    }
+  });
+});
+
+test('the health check says up or down and nothing else', async () => {
+  const db = setup();
+  await withServer(db, async ({ get }) => {
+    const response = await get('/healthz');
+    const body = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.equal(body, 'ok');
+    // A health check that leaks versions, counts or table names is free
+    // reconnaissance, so it stays two words.
+    assert.ok(body.length < 20);
+  });
+});
+
+test('crawlers are kept out of the client and staff areas', async () => {
+  const db = setup();
+  await withServer(db, async ({ get }) => {
+    const body = await (await get('/robots.txt')).text();
+    assert.match(body, /Disallow: \/client/);
+    assert.match(body, /Disallow: \/staff/);
+  });
+});
+
+test('the static export writes robots.txt, and a sitemap once it knows its address', () => {
+  const db = setup();
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'studio-site-'));
+
+  exportSite(db, GUILD, { outDir: directory });
+  assert.ok(fs.existsSync(path.join(directory, 'robots.txt')));
+  assert.equal(fs.existsSync(path.join(directory, 'sitemap.xml')), false,
+    'a sitemap of the wrong domain is worse than none');
+
+  exportSite(db, GUILD, { outDir: directory, siteUrl: 'https://example.com' });
+  const sitemap = fs.readFileSync(path.join(directory, 'sitemap.xml'), 'utf8');
+  assert.match(sitemap, /<loc>https:\/\/example\.com\/work<\/loc>/);
+
+  fs.rmSync(directory, { recursive: true, force: true });
+});

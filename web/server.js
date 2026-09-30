@@ -34,6 +34,8 @@ const GUILD_ID = process.env.WEB_GUILD_ID || process.env.GUILD_ID || null;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const SESSION_COOKIE = 'studio_session';
 const SECURE = process.env.WEB_INSECURE !== '1';
+// Set TRUST_PROXY=1 only when something in front really does set the header.
+const TRUST_PROXY = process.env.TRUST_PROXY === '1';
 
 const STATIC_TYPES = Object.freeze({
   '.css': 'text/css; charset=utf-8',
@@ -82,11 +84,20 @@ function createLimiter({ max, windowMs }) {
 const quoteLimiter = createLimiter({ max: 5, windowMs: 60 * 60 * 1000 });
 const signInLimiter = createLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
 
+/**
+ * Who to count a request against.
+ *
+ * X-Forwarded-For is only believed when a proxy is known to be in front,
+ * because anybody can send that header. Trusting it unconditionally would let
+ * one script change it per request and walk straight past both rate limiters.
+ * With no proxy the socket address is the only thing the sender cannot choose.
+ */
 function clientIp(request) {
-  // Behind a reverse proxy the real address is in the forwarded header; the
-  // socket address is used when there is no proxy.
-  const forwarded = String(request.headers['x-forwarded-for'] || '').split(',')[0].trim();
-  return forwarded || request.socket.remoteAddress || 'unknown';
+  if (TRUST_PROXY) {
+    const forwarded = String(request.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    if (forwarded) return forwarded;
+  }
+  return request.socket.remoteAddress || 'unknown';
 }
 
 // ---------------------------------------------------------------------------
@@ -167,6 +178,49 @@ function buildRouter({ db, guildId }) {
     }, null);
 
     httpLib.send(response, 200, pages.quoteSent(snap, { reference: enquiry?.code ?? null }));
+  });
+
+  /**
+   * For an uptime monitor.
+   *
+   * Says whether the process is up and the database answers, and nothing else.
+   * A health check that leaks version numbers, counts or table names is a free
+   * reconnaissance endpoint, so this one is deliberately two words.
+   */
+  router.get('/healthz', (_request, response) => {
+    let ok = false;
+    try {
+      db.prepare('SELECT 1').get();
+      ok = true;
+    } catch {
+      ok = false;
+    }
+
+    const body = ok ? 'ok' : 'unhealthy';
+    response.writeHead(ok ? 200 : 503, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Content-Length': Buffer.byteLength(body),
+      'Cache-Control': 'no-store',
+    });
+    response.end(body);
+  });
+
+  router.get('/robots.txt', (_request, response) => {
+    // The public pages are meant to be found. Everything behind a sign-in is
+    // not, and saying so keeps client order pages out of search results.
+    const body = [
+      'User-agent: *',
+      'Disallow: /client',
+      'Disallow: /staff',
+      'Allow: /',
+      '',
+    ].join('\n');
+
+    response.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Content-Length': Buffer.byteLength(body),
+    });
+    response.end(body);
   });
 
   // ---- client area ----
