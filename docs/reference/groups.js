@@ -68,8 +68,10 @@ const PLACES = {
       note: 'Private to you — only you see the reply.',
     },
     {
-      where: 'The task channel or thread',
-      what: 'Progress updates you post with /work progress, so the people watching an order can see it move.',
+      where: 'Nowhere public',
+      what: 'Progress notes, submissions and reviews are not posted to a channel. /work progress replies to you privately ' +
+        'and sends your leader a DM; your leader\u2019s decision comes back the same way.',
+      note: 'So there is no "progress" channel to watch, and nothing you do lands in front of the whole server.',
     },
     {
       where: 'Your browser',
@@ -98,8 +100,9 @@ const PLACES = {
       what: 'Unassigned work in your departments, each with a button to pick an artist. This is where new tasks show up for you.',
     },
     {
-      where: 'The task channel or thread',
-      what: 'Your review decisions, so the artist and anybody watching can see what was asked for.',
+      where: 'Nowhere public',
+      what: 'Your review decisions go to the artist as a DM, not to a channel. Nobody is corrected in front of the server.',
+      note: 'The decision is still on the record — /work history shows every review on a task.',
     },
   ],
 
