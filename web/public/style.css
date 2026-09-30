@@ -1,0 +1,233 @@
+/*
+ * One stylesheet, no framework, no web fonts.
+ *
+ * A marketing site that loads nothing from anybody else cannot be slowed down,
+ * tracked or broken by anybody else. It also means the whole site is two files
+ * on any host that can serve static text, which is what makes free hosting
+ * realistic.
+ */
+
+:root {
+  --bg: #0f1115;
+  --surface: #161922;
+  --surface-2: #1d2130;
+  --line: #2a2f3d;
+  --text: #e8eaf0;
+  --muted: #9aa1b4;
+  --accent: #6c8cff;
+  --accent-ink: #0f1115;
+  --danger: #ff6b6b;
+  --ok: #4ecb71;
+  --radius: 14px;
+  --gutter: 16px;
+  --max: 1040px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg: #fbfbfd;
+    --surface: #ffffff;
+    --surface-2: #f3f4f8;
+    --line: #e2e5ee;
+    --text: #15181f;
+    --muted: #5b6377;
+    --accent: #3457d5;
+    --accent-ink: #ffffff;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0f1115;
+  --surface: #161922;
+  --text: #e8eaf0;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-wrap: break-word;
+}
+
+/* ---------------------------------------------------------------- layout */
+
+header.site, footer.site, main {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+header.site {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+header.site nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+header.site nav a {
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.94rem;
+}
+
+header.site nav a:hover { color: var(--text); background: var(--surface-2); }
+header.site nav a[aria-current='page'] { color: var(--text); background: var(--surface-2); }
+
+main { padding-top: 32px; padding-bottom: 56px; }
+
+section { margin-bottom: 40px; }
+
+footer.site {
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+  padding-bottom: 40px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+footer.site p { margin: 4px 0; }
+
+/* ------------------------------------------------------------ typography */
+
+h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; }
+h2 { font-size: clamp(1.3rem, 3vw, 1.6rem); letter-spacing: -0.01em; margin: 0 0 14px; }
+h3 { font-size: 1.05rem; margin: 0 0 6px; }
+
+p { margin: 0 0 14px; }
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 60ch; }
+.muted { color: var(--muted); }
+.error { color: var(--danger); }
+.ok { color: var(--ok); }
+
+a { color: var(--accent); }
+
+ol, ul { padding-left: 1.25rem; }
+li { margin-bottom: 8px; }
+
+/* ---------------------------------------------------------------- pieces */
+
+.hero { padding: 24px 0 8px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.card, .panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.card h3 { margin-top: 0; }
+.card p:last-child { margin-bottom: 0; }
+
+.panel { padding: 22px; }
+
+.button, button {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover, button:hover { filter: brightness(1.08); }
+
+.button.secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+/* ----------------------------------------------------------------- forms */
+
+form { margin-top: 18px; }
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+input, select, textarea {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 11px 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+textarea { resize: vertical; min-height: 120px; }
+
+/* ------------------------------------------------------------ status pills */
+
+.pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.pill.you { border-color: var(--accent); color: var(--accent); }
+.pill.done { border-color: var(--ok); color: var(--ok); }
+
+/* ------------------------------------------------------------------ table */
+
+table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+
+/* Tables are the one thing that cannot reflow, so they scroll on their own. */
+.scroll { overflow-x: auto; }
+
+@media (max-width: 520px) {
+  main { padding-top: 24px; }
+  .panel { padding: 16px; }
+}
