@@ -20,5 +20,8 @@
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
     "node-cron": "^4.6.0"
+  },
+  "allowScripts": {
+    "better-sqlite3": true
   }
 }
