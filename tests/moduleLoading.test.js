@@ -151,3 +151,28 @@ test('every command the doctor tells you to run actually exists', () => {
 
   assert.deepEqual([...new Set(unknown)], [], 'doctor names commands that do not exist');
 });
+
+test('every directory the bot writes files into is gitignored', () => {
+  // data/portfolio was added without this and would have committed staff
+  // portfolio pictures to a public repo on the next git add -A, the same way
+  // data/evidence would have committed client screenshots before it was listed.
+  const ROOT = path.join(__dirname, '..');
+  const ignored = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8')
+    .split('\n').map((line) => line.trim().replace(/\/$/, ''));
+
+  const written = new Set();
+  const scan = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { scan(full); continue; }
+      if (!entry.name.endsWith('.js')) continue;
+      const source = fs.readFileSync(full, 'utf8');
+      for (const match of source.matchAll(/'data',\s*'([a-z]+)'/g)) written.add(`data/${match[1]}`);
+    }
+  };
+  scan(SRC);
+
+  assert.ok(written.size > 0, 'expected at least one data directory');
+  const exposed = [...written].filter((dir) => !ignored.includes(dir));
+  assert.deepEqual(exposed, [], `directories the bot writes to but git does not ignore:\n${exposed.join('\n')}`);
+});

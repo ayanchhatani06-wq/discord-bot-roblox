@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
 const staffRepo = require('../db/repos/staff');
 const configRepo = require('../db/repos/config');
 const { contextFor, departmentFromRoles, roleIdsOf } = require('../services/actor');
@@ -7,6 +7,7 @@ const { refreshGuildBoards } = require('../services/staffBoard');
 const { notifyLeadersOfAbsence } = require('../services/absence');
 const { CAPABILITIES, assertCan } = require('../domain/permissions');
 const { isValidTimezone, searchTimezones, formatDateTimeInZone, parseDeadlineInput } = require('../utils/time');
+const portfolioImages = require('../services/portfolioImages');
 const { priv } = require('../utils/reply');
 
 /**
@@ -43,6 +44,35 @@ module.exports = {
     .setDescription('Your studio profile: timezone, availability, specialties and hours')
     .addSubcommand((sub) =>
       sub.setName('me').setDescription('Open your profile to fill in or edit it')
+    )
+    .addSubcommandGroup((group) =>
+      group
+        .setName('portfolio')
+        .setDescription('Pictures of your work, kept on the studio server')
+        .addSubcommand((sub) =>
+          sub
+            .setName('add')
+            .setDescription('Add a picture of your work')
+            .addAttachmentOption((opt) =>
+              opt.setName('image').setDescription('PNG, JPEG, GIF or WebP').setRequired(true)
+            )
+            .addStringOption((opt) =>
+              opt.setName('caption').setDescription('What it is').setRequired(false).setMaxLength(120)
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('list')
+            .setDescription('Your pictures, with their numbers')
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('remove')
+            .setDescription('Remove one of your pictures')
+            .addIntegerOption((opt) =>
+              opt.setName('id').setDescription('The number from /profile portfolio list').setRequired(true)
+            )
+        )
     )
     .addSubcommand((sub) =>
       sub
@@ -137,6 +167,70 @@ module.exports = {
       return;
     }
 
+    if (interaction.options.getSubcommandGroup(false) === 'portfolio') {
+      const userId = interaction.user.id;
+
+      if (sub === 'list') {
+        const images = portfolioImages.listFor(db, guildId, userId);
+        await interaction.reply(priv(
+          images.length === 0
+            ? 'You have no pictures yet. Add one with `/profile portfolio add`.'
+            : `**Your portfolio** — ${images.length} of ${portfolioImages.MAX_PER_PERSON}\n` +
+              images.map((image) =>
+                `**#${image.id}** ${image.caption || image.filename} · ${Math.round(image.bytes / 1024)} KB`
+              ).join('\n') +
+              '\n\n_Remove one with `/profile portfolio remove id:`._'
+        ));
+        return;
+      }
+
+      if (sub === 'remove') {
+        // Scoped to this user, so one person cannot clear another's portfolio.
+        const result = portfolioImages.remove(db, guildId, interaction.options.getInteger('id', true), userId);
+        await interaction.reply(priv(result.ok
+          ? `🗑️ Removed **${result.image.caption || result.image.filename}**.`
+          : '❌ No picture of yours with that number. Check `/profile portfolio list`.'));
+        return;
+      }
+
+      const attachment = interaction.options.getAttachment('image', true);
+      await interaction.deferReply({ flags: priv('').flags });
+
+      const response = await fetch(attachment.url).catch(() => null);
+      if (!response?.ok) {
+        await interaction.editReply('❌ Could not read that file from Discord. Try uploading it again.');
+        return;
+      }
+
+      const result = portfolioImages.add(db, guildId, userId, {
+        buffer: Buffer.from(await response.arrayBuffer()),
+        filename: attachment.name,
+        contentType: attachment.contentType,
+        caption: interaction.options.getString('caption'),
+      }, userId);
+
+      if (!result.ok) {
+        const says = {
+          empty: 'That file was empty.',
+          too_large: `Too big. The limit is ${portfolioImages.MAX_BYTES / 1024 / 1024} MB — crop it or export it smaller.`,
+          too_many: `You already have ${portfolioImages.MAX_PER_PERSON} pictures. Remove one first with \`/profile portfolio remove\`.`,
+          unsupported_type: 'Pictures only — PNG, JPEG, GIF or WebP.',
+        };
+        await interaction.editReply(`❌ ${says[result.reason] || 'That file could not be saved.'}`);
+        return;
+      }
+
+      refreshGuildBoards(interaction.client, db, guildId).catch(() => {});
+
+      await interaction.editReply(
+        result.created
+          ? `✅ Added **${result.image.caption || result.image.filename}** — picture ${portfolioImages.countFor(db, guildId, userId)} of ${portfolioImages.MAX_PER_PERSON}.\n` +
+            '_Kept on the studio server, so it stays up even when the Discord link expires._'
+          : 'That picture is already in your portfolio. One copy, not two.'
+      );
+      return;
+    }
+
     if (sub === 'view') {
       const target = interaction.options.getUser('member', true);
       const staff = staffRepo.getStaff(db, guildId, target.id);
@@ -153,6 +247,12 @@ module.exports = {
           activeCount: staffRepo.activeTaskCount(db, guildId, staff.user_id),
           nextDeadline: staffRepo.nextDeadlines(db, guildId).get(staff.user_id) || null,
         })],
+        files: portfolioImages.listFor(db, guildId, staff.user_id)
+          .map((image) => {
+            const file = portfolioImages.read(db, guildId, image.id);
+            return file?.buffer ? new AttachmentBuilder(file.buffer, { name: image.filename }) : null;
+          })
+          .filter(Boolean),
       }));
       return;
     }

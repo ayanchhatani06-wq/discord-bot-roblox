@@ -11,8 +11,10 @@ npm-debug.log*
 # records and sometimes its clients' property — they belong in the backups,
 # never in the repository.
 data/evidence/
+data/portfolio/
 data/backups/
 data/exports/
+data/site/
 
 # Build artifacts of `npm run reference`; the PDFs they produce are committed.
 docs/reference/commands.html

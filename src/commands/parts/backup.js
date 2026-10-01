@@ -4,6 +4,7 @@ const { openDatabase } = require('../../db');
 const { contextFor } = require('../../services/actor');
 const exporter = require('../../services/exporter');
 const evidenceRepo = require('../../db/repos/evidence');
+const portfolioImages = require('../../services/portfolioImages');
 const { recordAudit } = require('../../db/repos/core');
 const { CAPABILITIES, assertCan } = require('../../domain/permissions');
 const { discordTimestamp } = require('../../utils/time');
@@ -91,6 +92,14 @@ module.exports = {
           `${result.path.replace(/\.sqlite$/, '')}-evidence`
         );
 
+        // Portfolio pictures are files the database only points at, exactly as
+        // filed proof is. Left out of the backup, a restore gives every artist
+        // an empty portfolio and no error to explain it.
+        const portfolio = exporter.backupEvidence(
+          portfolioImages.portfolioDir(),
+          `${result.path.replace(/\.sqlite$/, '')}-portfolio`
+        );
+
         await interaction.editReply(
           `✅ Backup written to \`${result.path}\` (${Math.round(result.bytes / 1024)} KB) at ${discordTimestamp(result.takenAt, 'f')}.\n` +
           `${check.ok
@@ -98,7 +107,9 @@ module.exports = {
             : `⚠️ It was written but did **not** verify: ${check.reason}. Do not rely on it.`}\n` +
           `🔒 Filed proof: ${evidence.copied} file(s) copied` +
           `${evidence.skipped > 0 ? `, ${evidence.skipped} already there` : ''}` +
-          ` to \`${evidence.directory}\`.\n\n` +
+          ` to \`${evidence.directory}\`.\n` +
+          `🖼️ Portfolio pictures: ${portfolio.copied} file(s) copied` +
+          `${portfolio.skipped > 0 ? `, ${portfolio.skipped} already there` : ''}.\n\n` +
           '_Both of these are on the server, not in Discord. Copy them somewhere else, **together** — ' +
           'the database without the files gives you proof records with nothing behind them._'
         );

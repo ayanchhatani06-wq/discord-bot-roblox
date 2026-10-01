@@ -27,7 +27,11 @@ function buildProfileEmbed({ staff, department, activeCount = 0, nextDeadline = 
   if (staff.away_note) availabilityDetail.push(`_${staff.away_note}_`);
 
   embed.addFields(
-    { name: 'Department', value: department ? department.name : '_not set_', inline: true },
+    {
+      name: 'Department',
+      value: `${department ? department.name : '_not set_'}${staff.sub_role ? `\n**${staff.sub_role}**` : ''}`,
+      inline: true,
+    },
     {
       name: 'Group leader',
       value: staff.leader_user_id
@@ -50,6 +54,7 @@ function buildProfileEmbed({ staff, department, activeCount = 0, nextDeadline = 
     embed.addFields({ name: 'Local time', value: '_no timezone set — use the button below_', inline: false });
   }
 
+  if (staff.experience) embed.addFields({ name: 'Experience', value: staff.experience, inline: true });
   if (staff.specialties) embed.addFields({ name: 'Specialties', value: staff.specialties, inline: true });
   if (staff.software) embed.addFields({ name: 'Software', value: staff.software, inline: true });
   if (staff.portfolio_url) embed.addFields({ name: 'Portfolio', value: staff.portfolio_url, inline: false });
@@ -105,7 +110,12 @@ function buildProfileComponents(staff) {
       .setCustomId(customId(NAMESPACE, 'hours'))
       .setLabel('Hours & quiet hours')
       .setStyle(ButtonStyle.Secondary)
-      .setEmoji('🕒')
+      .setEmoji('🕒'),
+    new ButtonBuilder()
+      .setCustomId(customId(NAMESPACE, 'role'))
+      .setLabel(staff.sub_role ? 'Role & experience' : 'Add your role')
+      .setStyle(staff.sub_role ? ButtonStyle.Secondary : ButtonStyle.Primary)
+      .setEmoji('🏷️')
   ));
 
   rows.push(new ActionRowBuilder().addComponents(

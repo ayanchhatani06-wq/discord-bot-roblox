@@ -20,6 +20,7 @@ BACKUP_DIR="${BACKUP_DIR:-$APP_DIR/data/backups}"
 KEEP_LOCAL="${KEEP_LOCAL:-7}"
 DESTINATION="${BACKUP_DESTINATION:-}"
 EVIDENCE_DIR="${EVIDENCE_DIR:-$APP_DIR/data/evidence}"
+PORTFOLIO_DIR="${PORTFOLIO_DIR:-$APP_DIR/data/portfolio}"
 
 STAMP="$(date -u +%Y-%m-%dT%H-%M-%S)"
 TARGET="$BACKUP_DIR/studio-$STAMP.sqlite"
@@ -59,13 +60,30 @@ else
   echo "$(date -u +%FT%TZ) no filed proof to copy"
 fi
 
+# Portfolio pictures are the same shape of thing: files the database only points
+# at. Left behind, a restore gives every artist an empty portfolio and nothing
+# to explain where the pictures went.
+PORTFOLIO_ARCHIVE=""
+if [ -d "$PORTFOLIO_DIR" ] && [ -n "$(ls -A "$PORTFOLIO_DIR" 2>/dev/null)" ]; then
+  PORTFOLIO_ARCHIVE="$BACKUP_DIR/studio-$STAMP-portfolio.tar.gz"
+  tar -czf "$PORTFOLIO_ARCHIVE" -C "$PORTFOLIO_DIR" .
+  if ! tar -tzf "$PORTFOLIO_ARCHIVE" >/dev/null 2>&1; then
+    echo "$(date -u +%FT%TZ) FAILED: $PORTFOLIO_ARCHIVE did not read back" >&2
+    rm -f "$PORTFOLIO_ARCHIVE"
+    exit 1
+  fi
+  echo "$(date -u +%FT%TZ) wrote and verified $PORTFOLIO_ARCHIVE ($(du -h "$PORTFOLIO_ARCHIVE" | cut -f1))"
+else
+  echo "$(date -u +%FT%TZ) no portfolio pictures to copy"
+fi
+
 if [ -n "$DESTINATION" ]; then
   if command -v rclone >/dev/null && [[ "$DESTINATION" == *:* && "$DESTINATION" != *@*:* ]]; then
     rclone copy "$TARGET" "$DESTINATION"
-    if [ -n "$EVIDENCE_ARCHIVE" ]; then rclone copy "$EVIDENCE_ARCHIVE" "$DESTINATION"; fi
+    if [ -n "$EVIDENCE_ARCHIVE" "$PORTFOLIO_ARCHIVE" ]; then rclone copy "$EVIDENCE_ARCHIVE" "$PORTFOLIO_ARCHIVE" "$DESTINATION"; fi
   else
     scp -q "$TARGET" "$DESTINATION"
-    if [ -n "$EVIDENCE_ARCHIVE" ]; then scp -q "$EVIDENCE_ARCHIVE" "$DESTINATION"; fi
+    if [ -n "$EVIDENCE_ARCHIVE" "$PORTFOLIO_ARCHIVE" ]; then scp -q "$EVIDENCE_ARCHIVE" "$PORTFOLIO_ARCHIVE" "$DESTINATION"; fi
   fi
   echo "$(date -u +%FT%TZ) copied to $DESTINATION"
 else
@@ -76,3 +94,4 @@ fi
 # never deletes the last good backup.
 ls -1t "$BACKUP_DIR"/studio-*.sqlite 2>/dev/null | tail -n +"$((KEEP_LOCAL + 1))" | xargs -r rm --
 ls -1t "$BACKUP_DIR"/studio-*-evidence.tar.gz 2>/dev/null | tail -n +"$((KEEP_LOCAL + 1))" | xargs -r rm --
+ls -1t "$BACKUP_DIR"/studio-*-portfolio.tar.gz 2>/dev/null | tail -n +"$((KEEP_LOCAL + 1))" | xargs -r rm --

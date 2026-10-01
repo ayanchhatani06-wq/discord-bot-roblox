@@ -35,6 +35,10 @@ function renderStaffLine(staff, { activeCount = 0, now = new Date() } = {}) {
   if (staff.availability === staffRepo.AVAILABILITY.AWAY && staff.away_until) {
     extras.push(`away until ${discordTimestamp(staff.away_until, 'd')}`);
   }
+  // The title first, then how long they have done it: this is the order
+  // somebody reads when deciding who to put on a job.
+  if (staff.sub_role) extras.push(`**${staff.sub_role}**`);
+  if (staff.experience) extras.push(staff.experience);
   if (staff.specialties) extras.push(staff.specialties);
   if (staff.software) extras.push(`_${staff.software}_`);
 

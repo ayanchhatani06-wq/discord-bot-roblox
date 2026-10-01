@@ -62,6 +62,33 @@ function detailsModal(staff) {
     );
 }
 
+/**
+ * Kept apart from the details modal because Discord allows five fields and that
+ * one already has four — but also because these two are what somebody reads
+ * first when deciding who to put on a job, and they deserve their own prompt.
+ */
+function roleModal(staff) {
+  return new ModalBuilder()
+    .setCustomId(customId(NAMESPACE, 'roleModal'))
+    .setTitle('Your role and experience')
+    .addComponents(
+      textInput({
+        id: 'sub_role',
+        label: 'Your title in the department',
+        value: staff.sub_role,
+        placeholder: 'Interior Builder, Terrain Artist, UI Animator',
+        max: 60,
+      }),
+      textInput({
+        id: 'experience',
+        label: 'How long you have been doing it',
+        value: staff.experience,
+        placeholder: '10+ years, or 3 years with 1 on Roblox',
+        max: 60,
+      })
+    );
+}
+
 function hoursModal(staff) {
   return new ModalBuilder()
     .setCustomId(customId(NAMESPACE, 'hoursModal'))
@@ -147,6 +174,10 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       await interaction.showModal(detailsModal(staff));
       return;
 
+    case 'role':
+      await interaction.showModal(roleModal(staff));
+      return;
+
     case 'hours':
       await interaction.showModal(hoursModal(staff));
       return;
@@ -199,6 +230,18 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       markOnboardedIfComplete(db, guildId, userId);
       refreshBoards(interaction, db);
       await showPanel(interaction, ctx, '✅ Profile details updated.');
+      return;
+    }
+
+    case 'roleModal': {
+      staffRepo.updateStaff(db, guildId, userId, {
+        sub_role: interaction.fields.getTextInputValue('sub_role').trim() || null,
+        experience: interaction.fields.getTextInputValue('experience').trim() || null,
+      }, userId);
+
+      markOnboardedIfComplete(db, guildId, userId);
+      refreshBoards(interaction, db);
+      await showPanel(interaction, ctx, '✅ Role and experience updated.');
       return;
     }
 
