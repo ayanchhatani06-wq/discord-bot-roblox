@@ -14,7 +14,11 @@ const KIND_CHOICES = exporter.EXPORT_KINDS.map((kind) => ({
   value: kind,
 }));
 
-const BACKUP_DIR = process.env.BACKUP_DIR || path.join(__dirname, '..', '..', 'data', 'backups');
+// Three levels up, not two: this file sits in src/commands/parts/, and the
+// data directory is at the project root beside it. deploy/backup-offsite.sh
+// and .gitignore both assume that root path, so getting it wrong here writes
+// backups somewhere nothing collects and nothing ignores.
+const BACKUP_DIR = process.env.BACKUP_DIR || path.join(__dirname, '..', '..', '..', 'data', 'backups');
 
 /**
  * Backups and exports.

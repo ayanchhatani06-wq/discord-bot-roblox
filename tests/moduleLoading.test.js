@@ -96,3 +96,35 @@ test('every command a part is delegated to can reach that part', () => {
     assert.equal(typeof require(resolved).execute, 'function', `${from} delegates to ${target}, which has no execute`);
   }
 });
+
+test('every path built from __dirname lands in the project data directory', () => {
+  // The sibling of the require-depth bug: moving a file into a subfolder breaks
+  // path.join(__dirname, '..', ...) exactly as it breaks require('../..'), but
+  // silently — the code runs and writes to the wrong place. It put backups in
+  // src/data/backups, which deploy/backup-offsite.sh does not collect and
+  // .gitignore does not cover, so client payment records sat outside both.
+  const ROOT = path.join(__dirname, '..');
+  const wrong = [];
+
+  const scan = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { scan(full); continue; }
+      if (!entry.name.endsWith('.js')) continue;
+
+      const source = fs.readFileSync(full, 'utf8');
+      const pattern = /path\.join\(__dirname,\s*((?:'\.\.',\s*)+)'(data)'/g;
+
+      for (const match of source.matchAll(pattern)) {
+        const ups = match[1].match(/'\.\.'/g).length;
+        const resolved = path.join(path.dirname(full), ...Array(ups).fill('..'), 'data');
+        if (resolved !== path.join(ROOT, 'data')) {
+          wrong.push(`${path.relative(ROOT, full)}: ${ups} level(s) up reaches ${path.relative(ROOT, resolved)}`);
+        }
+      }
+    }
+  };
+
+  scan(SRC);
+  assert.deepEqual(wrong, [], `paths that miss the data directory:\n${wrong.join('\n')}`);
+});
