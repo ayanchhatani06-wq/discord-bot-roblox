@@ -128,3 +128,26 @@ test('every path built from __dirname lands in the project data directory', () =
   scan(SRC);
   assert.deepEqual(wrong, [], `paths that miss the data directory:\n${wrong.join('\n')}`);
 });
+
+test('every command the doctor tells you to run actually exists', () => {
+  // It pointed at /setup department-roles, which is not a subcommand. A fix
+  // hint naming a command that does not exist is worse than no hint: the
+  // person types it, Discord shows nothing, and they conclude the bot is
+  // broken rather than that the advice was.
+  const source = fs.readFileSync(path.join(SRC, 'services', 'doctor.js'), 'utf8');
+  const commands = new Map();
+
+  for (const name of fs.readdirSync(path.join(SRC, 'commands')).filter((f) => f.endsWith('.js'))) {
+    const built = require(path.join(SRC, 'commands', name)).data.toJSON();
+    commands.set(built.name, new Set((built.options || []).map((o) => o.name)));
+  }
+
+  const unknown = [];
+  for (const match of source.matchAll(/`\/([a-z-]+)(?:\s+([a-z-]+))?/g)) {
+    const [, command, sub] = match;
+    if (!commands.has(command)) { unknown.push(`/${command}`); continue; }
+    if (sub && !commands.get(command).has(sub)) unknown.push(`/${command} ${sub}`);
+  }
+
+  assert.deepEqual([...new Set(unknown)], [], 'doctor names commands that do not exist');
+});

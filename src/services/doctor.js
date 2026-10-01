@@ -47,7 +47,7 @@ function checkConfig(db, guildId) {
       SEVERITY.BREAKS,
       'No fallback channel',
       'Task offers and reminders go by DM. Anybody with DMs closed simply never receives them, and nothing tells you it happened.',
-      '`/setup channels`'
+      '`/setup channel`'
     ));
   }
 
@@ -56,7 +56,7 @@ function checkConfig(db, guildId) {
       SEVERITY.NOTE,
       'No staff board channel',
       'The per-department boards showing who is available and their local time have nowhere to post.',
-      '`/setup channels`'
+      '`/setup channel`'
     ));
   }
 
@@ -65,7 +65,7 @@ function checkConfig(db, guildId) {
       SEVERITY.NOTE,
       'No summary channel',
       'The weekly management digest has nowhere to go, so it is only ever seen by running `/reports now`.',
-      '`/setup channels`'
+      '`/setup channel`'
     ));
   }
 
@@ -93,7 +93,7 @@ function checkDepartments(db, guildId) {
       `${leaderless.length} department(s) have no leader role`,
       `${leaderless.map((d) => d.name).join(', ')} — nobody holds the power to assign work or review it there, ` +
       'so every task in them waits on you personally.',
-      '`/setup department-roles`'
+      '`/setup department key: leader_role: member_role:`'
     ));
   }
 
@@ -103,7 +103,7 @@ function checkDepartments(db, guildId) {
       SEVERITY.RISKY,
       `${memberless.length} department(s) have no member role`,
       `${memberless.map((d) => d.name).join(', ')} — the assignment shortlist for those will be empty.`,
-      '`/setup department-roles`'
+      '`/setup department key: leader_role: member_role:`'
     ));
   }
 
