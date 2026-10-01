@@ -412,3 +412,55 @@ test('guessing at codes is rate limited', async () => {
     assert.ok(limited, 'the code form should stop answering a grinder');
   });
 });
+
+// ---------------------------------------------------------------- the fallback refusal
+
+const notify = require('../src/services/notify');
+
+/** A client stub whose DMs always fail, with a fallback channel that records sends. */
+function clientWithClosedDms(posted) {
+  return {
+    users: { fetch: async () => ({ send: async () => null }) },
+    guilds: {
+      cache: new Map([[GUILD, {
+        channels: { cache: new Map([['fallback-1', {
+          isTextBased: () => true,
+          permissionsFor: () => ({ has: () => true }),
+          send: async (body) => { posted.push(body); return {}; },
+        }]]) },
+        members: { me: {} },
+      }]]),
+    },
+  };
+}
+
+test('an ordinary notification still falls back to the staff channel', async () => {
+  const db = setup();
+  configRepo.updateConfig(db, GUILD, { fallback_channel_id: 'fallback-1' }, OWNER);
+  const posted = [];
+
+  const result = await notify.notifyUser(
+    clientWithClosedDms(posted), db, GUILD, OWNER, { content: 'Your task is due tomorrow.' }
+  );
+
+  assert.equal(result.delivered, true);
+  assert.equal(result.via, 'fallback');
+  assert.equal(posted.length, 1);
+});
+
+test('a message carrying codes is never posted to a channel instead', async () => {
+  const db = setup();
+  configRepo.updateConfig(db, GUILD, { fallback_channel_id: 'fallback-1' }, OWNER);
+  const posted = [];
+
+  const result = await notify.notifyUser(
+    clientWithClosedDms(posted), db, GUILD, OWNER,
+    { content: 'CYL-7K4P-R2M9' },
+    { allowFallback: false }
+  );
+
+  assert.equal(result.delivered, false);
+  assert.equal(result.reason, 'dms_closed_and_fallback_refused');
+  // The whole point: a readable staff channel must not receive a credential.
+  assert.deepEqual(posted, []);
+});

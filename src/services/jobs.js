@@ -120,7 +120,7 @@ function startAll(client, db) {
         // One message, because a code per DM is how a code ends up in the
         // wrong conversation.
         const lines = issued.map((entry) => `• **${entry.name}** — \`${entry.code}\``);
-        await notifyUser(client, db, guildId, owner, {
+        const delivery = await notifyUser(client, db, guildId, owner, {
           content:
             `🔑 **This week's client access codes** (${settings.days} day(s))\n\n` +
             `${lines.join('\n')}\n\n` +
@@ -129,7 +129,18 @@ function startAll(client, db) {
               ? '_They sign in with their code and an email on their record._'
               : '⚠️ _A code alone signs somebody in. Treat these as passwords._'}\n` +
             '_Shown once — they are stored hashed. Reissue with `/setup web client-code`._',
-        });
+        }, { allowFallback: false });
+
+        // The codes are gone either way — they are hashed the moment they are
+        // minted. Saying so is the whole remedy: the owner reissues per client
+        // with /setup web client-code once their DMs are open.
+        if (!delivery.delivered) {
+          console.warn(
+            `Could not DM this week's client access codes to the owner (${delivery.reason}). ` +
+            `${issued.length} code(s) were minted and cannot be shown again — reissue them with ` +
+            '/setup web client-code, and open your DMs to this server.'
+          );
+        }
       }
     } catch (error) {
       console.error('Weekly client code rotation failed:', error);

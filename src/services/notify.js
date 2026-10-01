@@ -8,12 +8,20 @@ const configRepo = require('../db/repos/config');
  *
  * @returns {Promise<{delivered: boolean, via: 'dm'|'fallback'|null, reason?: string}>}
  */
-async function notifyUser(client, db, guildId, userId, payload, { fallbackNote = null } = {}) {
+async function notifyUser(client, db, guildId, userId, payload, { fallbackNote = null, allowFallback = true } = {}) {
   const user = await client.users.fetch(userId).catch(() => null);
 
   if (user) {
     const sent = await user.send(payload).catch(() => null);
     if (sent) return { delivered: true, via: 'dm' };
+  }
+
+  // The fallback posts the message in full, which is right for an offer or a
+  // reminder and wrong for anything that is itself a credential: a channel
+  // readable by the whole team is not a place to put a client's access code.
+  // Callers carrying secrets pass allowFallback: false and handle the miss.
+  if (!allowFallback) {
+    return { delivered: false, via: null, reason: 'dms_closed_and_fallback_refused' };
   }
 
   const config = configRepo.getConfig(db, guildId);
