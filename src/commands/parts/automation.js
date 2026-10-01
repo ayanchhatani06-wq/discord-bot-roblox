@@ -1,10 +1,10 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const configRepo = require('../db/repos/config');
-const { contextFor } = require('../services/actor');
-const automation = require('../services/automation');
-const { CAPABILITIES, assertCan } = require('../domain/permissions');
-const { discordTimestamp } = require('../utils/time');
-const { priv } = require('../utils/reply');
+const configRepo = require('../../db/repos/config');
+const { contextFor } = require('../../services/actor');
+const automation = require('../../services/automation');
+const { CAPABILITIES, assertCan } = require('../../domain/permissions');
+const { discordTimestamp } = require('../../utils/time');
+const { priv } = require('../../utils/reply');
 
 const TRIGGER_CHOICES = Object.entries(automation.TRIGGER_LABELS)
   .map(([value, name]) => ({ name: name.slice(0, 100), value }));

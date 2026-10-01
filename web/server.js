@@ -5,6 +5,7 @@ const path = require('node:path');
 const { getDatabase } = require('../src/db');
 const configRepo = require('../src/db/repos/config');
 const clientsRepo = require('../src/db/repos/clients');
+const clientCodes = require('../src/services/clientCodes');
 const projectsRepo = require('../src/db/repos/projects');
 const webRepo = require('../src/db/repos/web');
 const enquiriesRepo = require('../src/db/repos/enquiries');
@@ -234,6 +235,7 @@ function buildRouter({ db, guildId }) {
       // Only offered when it is actually configured, so nothing half-set-up
       // can half-work.
       discordUrl: discordAuth.isConfigured() ? '/client/discord' : null,
+      codeNeedsEmail: clientCodes.settingsFor(configRepo.getConfig(db, guildId) || {}).requireEmail,
     }));
   });
 
@@ -370,6 +372,64 @@ function buildRouter({ db, guildId }) {
       clientId: consumed.client_id,
       email: consumed.email,
       displayName: client?.display_name ?? null,
+    });
+
+    httpLib.redirect(response, '/client', {
+      'Set-Cookie': httpLib.cookie(SESSION_COOKIE, sessionToken, { secure: SECURE }),
+    });
+  });
+
+  /**
+   * Signing in with a week-long access code.
+   *
+   * Rate limited on the same bucket as the email form, because this one is
+   * guessable in a way a 32-byte token is not: without a limiter, a code of
+   * eight symbols is worth grinding at. Every failure says the same thing, so
+   * a wrong email cannot be told apart from a wrong code — otherwise a guessed
+   * code announces itself.
+   */
+  router.post('/client/code', async (request, response) => {
+    const studio = snapshot().studio.name;
+    const config = configRepo.getConfig(db, guildId) || {};
+    const settings = clientCodes.settingsFor(config);
+
+    const refuse = (status) => httpLib.send(response, status, clientPages.signIn({
+      studio,
+      codeNeedsEmail: settings.requireEmail,
+      error: 'That code is not valid, or it has expired. Ask us for a new one.',
+    }));
+
+    if (!signInLimiter(clientIp(request))) {
+      httpLib.send(response, 429, clientPages.signIn({
+        studio,
+        codeNeedsEmail: settings.requireEmail,
+        error: 'Too many attempts from here. Wait a little and try again.',
+      }));
+      return;
+    }
+
+    const form = httpLib.parseForm(await httpLib.readBody(request));
+    const result = clientCodes.verify(db, guildId, {
+      code: form.code,
+      email: form.email,
+      config,
+    });
+
+    if (!result.ok) {
+      refuse(result.reason === 'empty' ? 400 : 401);
+      return;
+    }
+
+    const client = clientsRepo.getClient(db, guildId, result.clientId);
+    if (!client) {
+      refuse(401);
+      return;
+    }
+
+    const sessionToken = startSession(db, guildId, {
+      clientId: result.clientId,
+      email: settings.requireEmail ? webRepo.normaliseEmail(form.email) : null,
+      displayName: client.display_name,
     });
 
     httpLib.redirect(response, '/client', {

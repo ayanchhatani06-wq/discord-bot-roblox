@@ -1,12 +1,13 @@
 const path = require('node:path');
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const configRepo = require('../db/repos/config');
-const clientsRepo = require('../db/repos/clients');
-const webRepo = require('../db/repos/web');
-const { contextFor } = require('../services/actor');
-const { CAPABILITIES, assertCan } = require('../domain/permissions');
-const { discordTimestamp } = require('../utils/time');
-const { priv } = require('../utils/reply');
+const configRepo = require('../../db/repos/config');
+const clientsRepo = require('../../db/repos/clients');
+const webRepo = require('../../db/repos/web');
+const clientCodes = require('../../services/clientCodes');
+const { contextFor } = require('../../services/actor');
+const { CAPABILITIES, assertCan } = require('../../domain/permissions');
+const { discordTimestamp } = require('../../utils/time');
+const { priv } = require('../../utils/reply');
 
 /**
  * The website, controlled from Discord.
@@ -86,6 +87,45 @@ module.exports = {
         .setDescription('Make a one-time sign-in link to send a client yourself')
         .addStringOption((opt) => opt.setName('client').setDescription('Client').setRequired(true).setAutocomplete(true))
         .addStringOption((opt) => opt.setName('email').setDescription('Which of their addresses').setRequired(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('client-code')
+        .setDescription('A code that lets a client sign in for the week')
+        .addStringOption((opt) => opt.setName('client').setDescription('Client').setRequired(true).setAutocomplete(true))
+        .addStringOption((opt) =>
+          opt
+            .setName('action')
+            .setDescription('What to do (default: issue a new code)')
+            .setRequired(false)
+            .addChoices(
+              { name: 'Issue a new code', value: 'issue' },
+              { name: 'Show what they have now', value: 'status' },
+              { name: 'Cut their access off now', value: 'revoke' }
+            )
+        )
+        .addIntegerOption((opt) =>
+          opt
+            .setName('days')
+            .setDescription('How long it lasts (default: your studio setting)')
+            .setRequired(false)
+            .setMinValue(1)
+            .setMaxValue(90)
+        )
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('client-code-settings')
+        .setDescription('How client codes work here — run with nothing to see the current ones')
+        .addBooleanOption((opt) =>
+          opt.setName('require-email').setDescription('Must they also type a known email? (recommended: yes)').setRequired(false)
+        )
+        .addBooleanOption((opt) =>
+          opt.setName('rotate-weekly').setDescription('Mint fresh codes every week on their own?').setRequired(false)
+        )
+        .addIntegerOption((opt) =>
+          opt.setName('days').setDescription('How many days a code lasts').setRequired(false).setMinValue(1).setMaxValue(90)
+        )
     ),
 
   async autocomplete(interaction) {
@@ -195,7 +235,7 @@ module.exports = {
     if (sub === 'status') {
       const config = configRepo.getConfig(db, guildId);
       const services = webRepo.listServices(db, guildId, { publishedOnly: false });
-      const assetsRepo = require('../db/repos/assets');
+      const assetsRepo = require('../../db/repos/assets');
       const portfolio = assetsRepo.publishablePortfolio(db, guildId, { limit: 200 });
 
       const published = services.filter((service) => service.published);
@@ -233,6 +273,40 @@ module.exports = {
           )
           .setFooter({ text: 'Publish changes by re-running the static export, or they stay on this box only.' })],
       }));
+      return;
+    }
+
+    if (sub === 'client-code-settings') {
+      const requireEmail = interaction.options.getBoolean('require-email');
+      const rotateWeekly = interaction.options.getBoolean('rotate-weekly');
+      const days = interaction.options.getInteger('days');
+
+      if (requireEmail === null && rotateWeekly === null && days === null) {
+        const current = clientCodes.settingsFor(configRepo.getConfig(db, guildId) || {});
+        await interaction.reply(priv(
+          '**How client codes work here**\n' +
+          `• Sign-in needs **${current.requireEmail ? 'the code and a known email' : 'the code only'}**\n` +
+          `• Fresh codes every week: **${current.rotateWeekly ? 'yes' : 'no'}**\n` +
+          `• A code lasts **${current.days} day(s)**\n\n` +
+          'Change any of them with `/setup web client-code-settings`.'
+        ));
+        return;
+      }
+
+      configRepo.updateConfig(db, guildId, {
+        ...(requireEmail === null ? {} : { client_code_require_email: requireEmail ? 1 : 0 }),
+        ...(rotateWeekly === null ? {} : { client_code_rotate_weekly: rotateWeekly ? 1 : 0 }),
+        ...(days === null ? {} : { client_code_days: days }),
+      }, userId);
+
+      await interaction.reply(priv(
+        '✅ Saved.\n' +
+        `${requireEmail === false
+          ? '⚠️ A code on its own now signs somebody in. Anybody who sees one is that client until it expires.\n'
+          : ''}` +
+        `${days !== null && days > 30 ? '⚠️ A code lasting over a month is most of the way to a permanent one.\n' : ''}` +
+        'Existing codes keep the rules they were issued under until they expire.'
+      ));
       return;
     }
 
@@ -292,7 +366,7 @@ module.exports = {
         return;
       }
 
-      const { randomToken, hashToken } = require('../../web/lib/http');
+      const { randomToken, hashToken } = require('../../../web/lib/http');
       const token = randomToken();
       const issued = webRepo.issueLoginToken(db, guildId, {
         clientId: client.id,
@@ -307,6 +381,70 @@ module.exports = {
         `\`\`\`\n${base.replace(/\/$/, '')}/client/enter?token=${token}\n\`\`\`\n` +
         `It works **once** and expires ${discordTimestamp(issued.expires_at, 'R')}.\n` +
         'Send it to them directly. Anybody holding this link is signed in as them, so do not post it anywhere public.'
+      ));
+      return;
+    }
+
+    if (sub === 'client-code') {
+      const action = interaction.options.getString('action') || 'issue';
+      const config = configRepo.getConfig(db, guildId) || {};
+      const settings = clientCodes.settingsFor(config);
+      const live = clientCodes.activeFor(db, client.id);
+
+      if (action === 'status') {
+        await interaction.reply(priv(
+          live
+            ? `**${client.display_name}** has a code ending **${live.display_hint}**.\n` +
+              `It stops working ${discordTimestamp(live.expires_at, 'R')}.\n` +
+              `Used **${live.use_count}** time(s)${live.last_used_at ? `, last ${discordTimestamp(live.last_used_at, 'R')}` : ' — not yet'}.\n\n` +
+              '_The code itself is stored hashed and cannot be shown again. Issue a new one if it is lost._'
+            : `**${client.display_name}** has no code right now.\n` +
+              'Give them one with `/setup web client-code action:issue`.'
+        ));
+        return;
+      }
+
+      if (action === 'revoke') {
+        const killed = clientCodes.revokeFor(db, client.id, { by: userId });
+        await interaction.reply(priv(
+          killed > 0
+            ? `✅ **${client.display_name}** can no longer sign in with their code.\n` +
+              'It stops working now, not when it would have expired.'
+            : `**${client.display_name}** had no live code to revoke.`
+        ));
+        return;
+      }
+
+      const days = interaction.options.getInteger('days') ?? settings.days;
+      const emails = webRepo.listClientEmails(db, client.id).filter((row) => !row.revoked_at);
+
+      // Issuing a code they cannot use is a silent dead end, so say so up front
+      // rather than after they have sent it on.
+      if (settings.requireEmail && emails.length === 0) {
+        await interaction.reply(priv(
+          `❌ **${client.display_name}** has no email on their record, and sign-in here needs the code **and** a known email.\n` +
+          'Add one with `/setup web client-email` first, or turn the requirement off with ' +
+          '`/setup web client-code-settings require-email:false` — which I would not.'
+        ));
+        return;
+      }
+
+      const issued = clientCodes.issue(db, guildId, {
+        clientId: client.id,
+        studioName: config.studio_name,
+        issuedBy: userId,
+        days,
+      });
+
+      await interaction.reply(priv(
+        `🔑 Access code for **${client.display_name}**:\n` +
+        `\`\`\`\n${issued.code}\n\`\`\`\n` +
+        `Works until ${discordTimestamp(issued.expiresAt, 'F')} (${issued.days} day(s)), then stops on its own.\n` +
+        `${live ? '♻️ Their previous code stopped working just now.\n' : ''}` +
+        `${settings.requireEmail
+          ? `They sign in with this **and** one of their addresses: ${emails.map((row) => `\`${row.email}\``).join(', ')}.`
+          : '⚠️ This code alone signs them in. Anybody who sees it is them until it expires.'}\n\n` +
+        '_Shown once — it is stored hashed. Lost it? Issue another._'
       ));
     }
   },

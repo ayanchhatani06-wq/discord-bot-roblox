@@ -5,16 +5,16 @@ const {
   ButtonBuilder,
   ButtonStyle,
 } = require('discord.js');
-const configRepo = require('../db/repos/config');
-const staffRepo = require('../db/repos/staff');
-const onboardingRepo = require('../db/repos/onboarding');
-const { contextFor } = require('../services/actor');
-const { notifyUser } = require('../services/notify');
-const { CAPABILITIES, can, assertCan, PermissionError } = require('../domain/permissions');
-const { parseAmount, formatAmount, isSupportedCurrency, CURRENCIES } = require('../domain/money');
-const { parseDeadlineInput, discordTimestamp } = require('../utils/time');
-const { customId } = require('../interactions/router');
-const { priv } = require('../utils/reply');
+const configRepo = require('../../db/repos/config');
+const staffRepo = require('../../db/repos/staff');
+const onboardingRepo = require('../../db/repos/onboarding');
+const { contextFor } = require('../../services/actor');
+const { notifyUser } = require('../../services/notify');
+const { CAPABILITIES, can, assertCan, PermissionError } = require('../../domain/permissions');
+const { parseAmount, formatAmount, isSupportedCurrency, CURRENCIES } = require('../../domain/money');
+const { parseDeadlineInput, discordTimestamp } = require('../../utils/time');
+const { customId } = require('../../interactions/router');
+const { priv } = require('../../utils/reply');
 
 const { TRIAL_STATES } = onboardingRepo;
 const CURRENCY_CHOICES = Object.keys(CURRENCIES).map((code) => ({ name: code, value: code }));

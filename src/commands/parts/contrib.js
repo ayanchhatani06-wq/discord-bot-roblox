@@ -1,13 +1,13 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const tasksRepo = require('../db/repos/tasks');
-const contributorsRepo = require('../db/repos/contributors');
-const { contextFor } = require('../services/actor');
-const budget = require('../services/budget');
-const paymentState = require('../services/paymentState');
-const { notifyUser } = require('../services/notify');
-const { CAPABILITIES, can, assertCan, PermissionError } = require('../domain/permissions');
-const { parseAmount, formatAmount, isSupportedCurrency, CURRENCIES } = require('../domain/money');
-const { priv } = require('../utils/reply');
+const tasksRepo = require('../../db/repos/tasks');
+const contributorsRepo = require('../../db/repos/contributors');
+const { contextFor } = require('../../services/actor');
+const budget = require('../../services/budget');
+const paymentState = require('../../services/paymentState');
+const { notifyUser } = require('../../services/notify');
+const { CAPABILITIES, can, assertCan, PermissionError } = require('../../domain/permissions');
+const { parseAmount, formatAmount, isSupportedCurrency, CURRENCIES } = require('../../domain/money');
+const { priv } = require('../../utils/reply');
 
 const CURRENCY_CHOICES = Object.keys(CURRENCIES).map((code) => ({ name: code, value: code }));
 

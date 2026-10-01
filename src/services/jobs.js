@@ -8,6 +8,8 @@ const clientMessaging = require('./clientMessaging');
 const messageTriggers = require('./messageTriggers');
 const automation = require('./automation');
 const webRepo = require('../db/repos/web');
+const clientCodes = require('./clientCodes');
+const { notifyUser } = require('./notify');
 const { pruneGuards } = require('../db/repos/core');
 
 const ENQUIRY_CRON = '*/2 * * * *';
@@ -18,6 +20,9 @@ const HOUSEKEEPING_CRON = '30 4 * * *';
 const OUTBOX_CRON = '*/5 * * * *';
 const CLIENT_SWEEP_CRON = '15 10 * * *';
 const AUTOMATION_CRON = '40 10 * * *';
+// Monday morning, before the week's work starts, so the owner has the codes in
+// hand when clients ask rather than after.
+const CLIENT_CODE_CRON = '50 8 * * 1';
 
 const summaryTasks = new Map();
 
@@ -87,6 +92,50 @@ function startAll(client, db) {
     }
   }, 'quote request alerts');
 
+  /**
+   * The week's client access codes.
+   *
+   * Codes go to the owner, never to the client: the bot has no way to reach
+   * somebody who is not in Discord, and guessing at an address to send an
+   * access code to is not a thing it should ever do. The owner passes them on
+   * however they already talk to that client.
+   */
+  safeSchedule(CLIENT_CODE_CRON, async () => {
+    try {
+      for (const config of configRepo.listConfiguredGuilds(db)) {
+        const guildId = config.guild_id;
+        const full = configRepo.getConfig(db, guildId) || {};
+        const settings = clientCodes.settingsFor(full);
+        if (!settings.rotateWeekly) continue;
+
+        const owner = full.owner_user_id;
+        if (!owner) continue;
+
+        const { issued, kept } = clientCodes.rotateWeekly(db, guildId, {
+          studioName: full.studio_name,
+          days: settings.days,
+        });
+        if (issued.length === 0) continue;
+
+        // One message, because a code per DM is how a code ends up in the
+        // wrong conversation.
+        const lines = issued.map((entry) => `• **${entry.name}** — \`${entry.code}\``);
+        await notifyUser(client, db, guildId, owner, {
+          content:
+            `🔑 **This week's client access codes** (${settings.days} day(s))\n\n` +
+            `${lines.join('\n')}\n\n` +
+            `${kept.length > 0 ? `_${kept.length} client(s) kept a code that still has time on it._\n` : ''}` +
+            `${settings.requireEmail
+              ? '_They sign in with their code and an email on their record._'
+              : '⚠️ _A code alone signs somebody in. Treat these as passwords._'}\n` +
+            '_Shown once — they are stored hashed. Reissue with `/setup web client-code`._',
+        });
+      }
+    } catch (error) {
+      console.error('Weekly client code rotation failed:', error);
+    }
+  }, 'client access codes');
+
   safeSchedule(REMINDER_CRON, async () => {
     try {
       const result = await runSweep(client, db);
@@ -106,10 +155,16 @@ function startAll(client, db) {
       const guards = pruneGuards(db);
       const sessions = webRepo.pruneSessions(db);
       const logins = webRepo.pruneLoginTokens(db);
+      // Kept a month past expiry, so "who signed in last week" is still
+      // answerable after the code itself has stopped working.
+      const codes = clientCodes.pruneExpired(db);
 
-      const removed = guards + sessions + logins;
+      const removed = guards + sessions + logins + codes;
       if (removed > 0) {
-        console.log(`Pruned ${guards} guard(s), ${sessions} expired session(s), ${logins} spent login link(s).`);
+        console.log(
+          `Pruned ${guards} guard(s), ${sessions} expired session(s), ` +
+          `${logins} spent login link(s), ${codes} long-expired access code(s).`
+        );
       }
     } catch (error) {
       console.error('Housekeeping failed:', error);
@@ -160,4 +215,4 @@ function stopAll() {
   summaryTasks.clear();
 }
 
-module.exports = { REMINDER_CRON, OUTBOX_CRON, CLIENT_SWEEP_CRON, AUTOMATION_CRON, startAll, stopAll, scheduleSummaryFor, scheduleAllSummaries, summaryTasks };
+module.exports = { REMINDER_CRON, OUTBOX_CRON, CLIENT_SWEEP_CRON, AUTOMATION_CRON, CLIENT_CODE_CRON, startAll, stopAll, scheduleSummaryFor, scheduleAllSummaries, summaryTasks };

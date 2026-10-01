@@ -40,7 +40,7 @@ function clientShell({ studio, title, body, signedInAs = null, current = null })
 }
 
 /** The sign-in page. Asks for an email and says nothing about whether it matched. */
-function signIn({ studio, sent = false, error = null, discordUrl = null }) {
+function signIn({ studio, sent = false, error = null, discordUrl = null, codeNeedsEmail = true }) {
   return layout({
     studio,
     title: 'Client sign in',
@@ -75,6 +75,19 @@ function signIn({ studio, sent = false, error = null, discordUrl = null }) {
             <label for="email">The email address we have for you</label>
             <input id="email" name="email" type="email" required maxlength="200" autocomplete="email">
             <button type="submit">Send me a sign-in link</button>
+          </form>
+
+          <p class="muted">Or, if we gave you an access code:</p>
+
+          <form method="post" action="/client/code">
+            <label for="code">Your access code</label>
+            <input id="code" name="code" type="text" required maxlength="40"
+                   autocomplete="off" spellcheck="false" placeholder="ABC-0000-0000">
+            ${codeNeedsEmail ? html`
+              <label for="code-email">And the email address we have for you</label>
+              <input id="code-email" name="email" type="email" required maxlength="200" autocomplete="email">
+            ` : ''}
+            <button type="submit">Sign in with my code</button>
           </form>
 
           <p class="muted">

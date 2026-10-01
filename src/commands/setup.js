@@ -210,6 +210,45 @@ module.exports = {
           .addStringOption((opt) => opt.setName('client').setDescription('Client').setRequired(true).setAutocomplete(true))
           .addStringOption((opt) => opt.setName('email').setDescription('Which of their addresses').setRequired(true))
       )
+      .addSubcommand((sub) =>
+        sub
+          .setName('client-code')
+          .setDescription('A code that lets a client sign in for the week')
+          .addStringOption((opt) => opt.setName('client').setDescription('Client').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) =>
+            opt
+              .setName('action')
+              .setDescription('What to do (default: issue a new code)')
+              .setRequired(false)
+              .addChoices(
+                { name: 'Issue a new code', value: 'issue' },
+                { name: 'Show what they have now', value: 'status' },
+                { name: 'Cut their access off now', value: 'revoke' }
+              )
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('days')
+              .setDescription('How long it lasts (default: your studio setting)')
+              .setRequired(false)
+              .setMinValue(1)
+              .setMaxValue(90)
+          )
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('client-code-settings')
+          .setDescription('How client codes work here — run with nothing to see the current ones')
+          .addBooleanOption((opt) =>
+            opt.setName('require-email').setDescription('Must they also type a known email? (recommended: yes)').setRequired(false)
+          )
+          .addBooleanOption((opt) =>
+            opt.setName('rotate-weekly').setDescription('Mint fresh codes every week on their own?').setRequired(false)
+          )
+          .addIntegerOption((opt) =>
+            opt.setName('days').setDescription('How many days a code lasts').setRequired(false).setMinValue(1).setMaxValue(90)
+          )
+      )
     )
 .addSubcommandGroup((group) =>
       group

@@ -1,13 +1,13 @@
 const path = require('node:path');
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const { openDatabase } = require('../db');
-const { contextFor } = require('../services/actor');
-const exporter = require('../services/exporter');
-const evidenceRepo = require('../db/repos/evidence');
-const { recordAudit } = require('../db/repos/core');
-const { CAPABILITIES, assertCan } = require('../domain/permissions');
-const { discordTimestamp } = require('../utils/time');
-const { priv } = require('../utils/reply');
+const { openDatabase } = require('../../db');
+const { contextFor } = require('../../services/actor');
+const exporter = require('../../services/exporter');
+const evidenceRepo = require('../../db/repos/evidence');
+const { recordAudit } = require('../../db/repos/core');
+const { CAPABILITIES, assertCan } = require('../../domain/permissions');
+const { discordTimestamp } = require('../../utils/time');
+const { priv } = require('../../utils/reply');
 
 const KIND_CHOICES = exporter.EXPORT_KINDS.map((kind) => ({
   name: exporter.EXPORTABLE[kind].label.slice(0, 100),

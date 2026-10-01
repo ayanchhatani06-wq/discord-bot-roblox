@@ -1,11 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const configRepo = require('../db/repos/config');
-const onboardingRepo = require('../db/repos/onboarding');
-const { contextFor } = require('../services/actor');
-const { notifyUser } = require('../services/notify');
-const { CAPABILITIES, can, assertCan, PermissionError } = require('../domain/permissions');
-const { discordTimestamp } = require('../utils/time');
-const { priv } = require('../utils/reply');
+const configRepo = require('../../db/repos/config');
+const onboardingRepo = require('../../db/repos/onboarding');
+const { contextFor } = require('../../services/actor');
+const { notifyUser } = require('../../services/notify');
+const { CAPABILITIES, can, assertCan, PermissionError } = require('../../domain/permissions');
+const { discordTimestamp } = require('../../utils/time');
+const { priv } = require('../../utils/reply');
 
 /**
  * A leader putting somebody forward.
