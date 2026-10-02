@@ -1,5 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const staffRepo = require('../db/repos/staff');
+const { declinedSet } = require('./profileAnswers');
 const { customId } = require('../interactions/router');
 const {
   formatDateTimeInZone,
@@ -57,11 +58,24 @@ function buildProfileEmbed({ staff, department, activeCount = 0, nextDeadline = 
     embed.addFields({ name: 'Local time', value: '_no timezone set — use the button below_', inline: false });
   }
 
-  if (staff.experience) embed.addFields({ name: 'Experience', value: staff.experience, inline: true });
-  if (staff.specialties) embed.addFields({ name: 'Specialties', value: staff.specialties, inline: true });
-  if (staff.software) embed.addFields({ name: 'Software', value: staff.software, inline: true });
-  if (staff.portfolio_url) embed.addFields({ name: 'Portfolio', value: staff.portfolio_url, inline: false });
-  if (staff.roblox_username) embed.addFields({ name: 'Roblox', value: staff.roblox_username, inline: true });
+  // A question answered "none" is shown as answered, so whoever reads the
+  // profile can tell "said they have none" apart from "never filled it in".
+  const declined = declinedSet(staff);
+  const answer = (key, value) => value || (declined.has(key) ? '_none_' : null);
+
+  for (const [key, name, inline] of [
+    ['experience', 'Experience', true],
+    ['specialties', 'Specialties', true],
+    ['software', 'Software', true],
+    ['portfolio_url', 'Portfolio', false],
+    ['roblox_username', 'Roblox', true],
+  ]) {
+    const value = answer(key, staff[key]);
+    if (value) embed.addFields({ name, value: String(value).slice(0, 1024), inline });
+  }
+  if (!staff.working_start_minute && staff.working_start_minute !== 0 && declined.has('hours')) {
+    embed.addFields({ name: 'Usual hours', value: '_no fixed hours_', inline: true });
+  }
 
   if (staff.working_start_minute !== null && staff.working_start_minute !== undefined) {
     const days = formatWorkingDays(staff.working_days);
@@ -106,7 +120,9 @@ function buildProfileComponents(staff) {
       .setEmoji('🌍'),
     new ButtonBuilder()
       .setCustomId(customId(NAMESPACE, 'details'))
-      .setLabel('Edit details')
+      // Says what is inside, because "details" alone is how people missed that
+      // role and experience were asked for at all.
+      .setLabel('Title, experience & skills')
       .setStyle(ButtonStyle.Secondary)
       .setEmoji('📝'),
     new ButtonBuilder()
@@ -115,10 +131,10 @@ function buildProfileComponents(staff) {
       .setStyle(ButtonStyle.Secondary)
       .setEmoji('🕒'),
     new ButtonBuilder()
-      .setCustomId(customId(NAMESPACE, 'role'))
-      .setLabel(staff.sub_role ? 'Role & experience' : 'Add your role')
-      .setStyle(staff.sub_role ? ButtonStyle.Secondary : ButtonStyle.Primary)
-      .setEmoji('🏷️')
+      .setCustomId(customId(NAMESPACE, 'roblox'))
+      .setLabel('Roblox name')
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji('🎮')
   ));
 
   rows.push(new ActionRowBuilder().addComponents(

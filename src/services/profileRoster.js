@@ -1,6 +1,7 @@
 const staffRepo = require('../db/repos/staff');
 const configRepo = require('../db/repos/config');
 const portfolioImages = require('./portfolioImages');
+const { declinedSet } = require('./profileAnswers');
 const { gmtLabelFor } = require('../utils/time');
 
 /**
@@ -19,33 +20,72 @@ const { gmtLabelFor } = require('../utils/time');
  * ignore it.
  */
 
+// `where` is the answer to "what's remaining?" — said in the words of the
+// button or command that fixes it, so the reply can be acted on rather than
+// merely read.
 const FIELDS = Object.freeze([
-  { key: 'timezone', label: 'timezone', required: true, has: (staff) => Boolean(staff.timezone) },
-  { key: 'department', label: 'department', required: true, has: (staff) => Boolean(staff.department_id) },
-  { key: 'sub_role', label: 'role title', has: (staff) => Boolean(staff.sub_role) },
-  { key: 'experience', label: 'experience', has: (staff) => Boolean(staff.experience) },
-  { key: 'specialties', label: 'specialties', has: (staff) => Boolean(staff.specialties) },
-  { key: 'software', label: 'software', has: (staff) => Boolean(staff.software) },
-  { key: 'portfolio_url', label: 'portfolio link', has: (staff) => Boolean(staff.portfolio_url) },
-  { key: 'roblox_username', label: 'Roblox name', has: (staff) => Boolean(staff.roblox_username) },
+  {
+    key: 'timezone', label: 'timezone', required: true, where: '🌍 Set timezone',
+    has: (staff) => Boolean(staff.timezone),
+  },
+  {
+    key: 'department', label: 'department', required: true, where: 'ask a manager — `/profile assign`',
+    has: (staff) => Boolean(staff.department_id),
+  },
+  { key: 'sub_role', label: 'role title', where: '📝 Edit details', has: (staff) => Boolean(staff.sub_role) },
+  { key: 'experience', label: 'experience', where: '📝 Edit details', has: (staff) => Boolean(staff.experience) },
+  { key: 'specialties', label: 'specialties', where: '📝 Edit details', has: (staff) => Boolean(staff.specialties) },
+  { key: 'software', label: 'software', where: '📝 Edit details', has: (staff) => Boolean(staff.software) },
+  { key: 'portfolio_url', label: 'portfolio link', where: '📝 Edit details', has: (staff) => Boolean(staff.portfolio_url) },
+  { key: 'roblox_username', label: 'Roblox name', where: '🎮 Roblox name', has: (staff) => Boolean(staff.roblox_username) },
   {
     key: 'hours',
     label: 'working hours',
+    where: '🕒 Hours & quiet hours',
     has: (staff) => staff.working_start_minute !== null && staff.working_start_minute !== undefined,
   },
-  { key: 'pictures', label: 'portfolio pictures', has: (staff, extra) => extra.pictures > 0 },
+  {
+    key: 'pictures',
+    label: 'portfolio pictures',
+    where: '`/profile portfolio add` — or `/profile portfolio none` if you have none to show',
+    has: (staff, extra) => extra.pictures > 0,
+  },
 ]);
 
 const OPTIONAL_COUNT = FIELDS.filter((field) => !field.required).length;
 
+/**
+ * What is still unanswered.
+ *
+ * A question answered "no" is answered: somebody with no fixed hours or nothing
+ * to show yet has told us so, and listing them as missing would be the roster
+ * being wrong in a way they can see and cannot fix.
+ */
 function assess(staff, extra) {
-  const missing = FIELDS.filter((field) => !field.has(staff, extra));
+  const declined = declinedSet(staff);
+  const missing = FIELDS.filter((field) => !field.has(staff, extra) && !declined.has(field.key));
   return {
     missing: missing.map((field) => field.label),
     missingRequired: missing.filter((field) => field.required).map((field) => field.label),
     optionalFilled: OPTIONAL_COUNT - missing.filter((field) => !field.required).length,
     optionalTotal: OPTIONAL_COUNT,
+    // Kept alongside the labels so a caller can say where each one is fixed.
+    missingFields: missing,
   };
+}
+
+/** "What's remaining?", answered as things to press. */
+function nextSteps(person) {
+  if (!person || person.missing.length === 0) return null;
+
+  // One line per place, not per field: four boxes in the same form are one
+  // thing to open, and listing them four times reads like four chores.
+  const byWhere = new Map();
+  for (const field of person.missingFields) {
+    if (!byWhere.has(field.where)) byWhere.set(field.where, []);
+    byWhere.get(field.where).push(field.label);
+  }
+  return [...byWhere.entries()].map(([where, labels]) => `• **${labels.join(', ')}** — ${where}`).join('\n');
 }
 
 /**
@@ -119,4 +159,4 @@ function describe(person) {
   return `${head}\n┗ ${bits.join(' · ')}${missing}`;
 }
 
-module.exports = { FIELDS, OPTIONAL_COUNT, assess, roster, describe };
+module.exports = { FIELDS, OPTIONAL_COUNT, assess, nextSteps, roster, describe };

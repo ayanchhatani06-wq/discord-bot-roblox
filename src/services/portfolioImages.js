@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { declinedSet, withDecline } = require('./profileAnswers');
 
 /**
  * Pictures of a staff member's work, kept as files on the server.
@@ -101,6 +102,15 @@ function add(db, guildId, userId, { buffer, filename, contentType = null, captio
       (guild_id, user_id, filename, stored_path, content_type, bytes, sha256, caption, sort_order, added_by, added_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *
   `).get(guildId, userId, filename, relative, type, buffer.length, sha256, caption, nextOrder, actorUserId, Date.now());
+
+  // Having a picture is the answer to "I have none", so that answer goes. Done
+  // here rather than in the command so no way of adding a picture can leave a
+  // profile saying both.
+  const staff = db.prepare('SELECT profile_declined FROM staff WHERE guild_id = ? AND user_id = ?').get(guildId, userId);
+  if (staff && declinedSet(staff).has('pictures')) {
+    db.prepare('UPDATE staff SET profile_declined = ?, updated_at = ? WHERE guild_id = ? AND user_id = ?')
+      .run(withDecline(staff, 'pictures', false), Date.now(), guildId, userId);
+  }
 
   return { ok: true, created: true, image };
 }

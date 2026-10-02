@@ -176,3 +176,27 @@ test('every directory the bot writes files into is gitignored', () => {
   const exposed = [...written].filter((dir) => !ignored.includes(dir));
   assert.deepEqual(exposed, [], `directories the bot writes to but git does not ignore:\n${exposed.join('\n')}`);
 });
+
+test('every board refresh passes the guild before the database', () => {
+  // /profile portfolio add called refreshGuildBoards(client, db, guildId) — the
+  // signature is (client, guildId, db). It was wrapped in .catch(() => {}), so
+  // the failure was swallowed and adding a picture simply never refreshed the
+  // board. Nothing reported it because nothing could.
+  const calls = [];
+  const scan = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { scan(full); continue; }
+      if (!entry.name.endsWith('.js')) continue;
+      const source = fs.readFileSync(full, 'utf8');
+      for (const match of source.matchAll(/refreshGuildBoards\(([^,()]+),\s*([^,()]+),\s*([^,()]+)\)/g)) {
+        calls.push({ file: path.relative(SRC, full), second: match[2].trim(), third: match[3].trim() });
+      }
+    }
+  };
+  scan(SRC);
+
+  assert.ok(calls.length > 3, 'expected to find the existing callers');
+  const swapped = calls.filter((call) => /\bdb\b/.test(call.second) || /guild/i.test(call.third));
+  assert.deepEqual(swapped, [], `arguments in the wrong order:\n${swapped.map((c) => `${c.file}: (…, ${c.second}, ${c.third})`).join('\n')}`);
+});

@@ -8,6 +8,7 @@ const { notifyLeadersOfAbsence } = require('../services/absence');
 const { CAPABILITIES, assertCan } = require('../domain/permissions');
 const { isValidTimezone, searchTimezones, formatDateTimeInZone, parseDeadlineInput, gmtLabelFor } = require('../utils/time');
 const portfolioImages = require('../services/portfolioImages');
+const { readAnswer, withDecline } = require('../services/profileAnswers');
 const { priv } = require('../utils/reply');
 
 /**
@@ -67,6 +68,11 @@ module.exports = {
         )
         .addSubcommand((sub) =>
           sub
+            .setName('none')
+            .setDescription('Say you have no pictures to show yet')
+        )
+        .addSubcommand((sub) =>
+          sub
             .setName('remove')
             .setDescription('Remove one of your pictures')
             .addIntegerOption((opt) =>
@@ -117,10 +123,19 @@ module.exports = {
     .addSubcommand((sub) =>
       sub
         .setName('assign')
-        .setDescription('Put a staff member in a department (managers only)')
+        .setDescription('Fill in somebody else\'s profile for them (managers only)')
         .addUserOption((opt) => opt.setName('member').setDescription('The staff member').setRequired(true))
         .addStringOption((opt) =>
-          opt.setName('department').setDescription('Department key').setRequired(true).setAutocomplete(true)
+          opt.setName('department').setDescription('Their department').setRequired(false).setAutocomplete(true)
+        )
+        .addStringOption((opt) =>
+          opt.setName('timezone').setDescription('Type GMT+5 or a city, then pick').setRequired(false).setAutocomplete(true)
+        )
+        .addStringOption((opt) =>
+          opt.setName('title').setDescription('Their title, e.g. Interior Builder').setRequired(false).setMaxLength(60)
+        )
+        .addStringOption((opt) =>
+          opt.setName('experience').setDescription('e.g. 10+ years').setRequired(false).setMaxLength(60)
         )
     ),
 
@@ -175,6 +190,20 @@ module.exports = {
     if (interaction.options.getSubcommandGroup(false) === 'portfolio') {
       const userId = interaction.user.id;
 
+      if (sub === 'none') {
+        // An answer, not a gap: the roster stops listing pictures as missing.
+        // Adding one later takes it back automatically.
+        const staff = staffRepo.ensureStaff(db, guildId, userId, interaction.member?.displayName || interaction.user.username);
+        staffRepo.updateStaff(db, guildId, userId, {
+          profile_declined: withDecline(staff, 'pictures', true),
+        }, userId);
+        await interaction.reply(priv(
+          '✅ Noted — no pictures to show yet. Your profile no longer lists them as missing.\n' +
+          '_When you have some, `/profile portfolio add` and this clears itself._'
+        ));
+        return;
+      }
+
       if (sub === 'list') {
         const images = portfolioImages.listFor(db, guildId, userId);
         await interaction.reply(priv(
@@ -225,7 +254,7 @@ module.exports = {
         return;
       }
 
-      refreshGuildBoards(interaction.client, db, guildId).catch(() => {});
+      refreshGuildBoards(interaction.client, guildId, db).catch(() => {});
 
       await interaction.editReply(
         result.created
@@ -334,18 +363,58 @@ module.exports = {
       assertCan(actor, CAPABILITIES.STAFF_MANAGE);
 
       const target = interaction.options.getUser('member', true);
-      const key = interaction.options.getString('department', true);
-      const department = configRepo.getDepartmentByKey(db, guildId, key);
-      if (!department) {
-        await interaction.reply(priv(`❌ No department with key \`${key}\`.`));
+      const key = interaction.options.getString('department');
+      const timezone = interaction.options.getString('timezone');
+      const title = interaction.options.getString('title');
+      const experience = interaction.options.getString('experience');
+
+      if (!key && !timezone && !title && !experience) {
+        await interaction.reply(priv('Give at least one of `department`, `timezone`, `title` or `experience`.'));
         return;
       }
 
-      staffRepo.ensureStaff(db, guildId, target.id, target.displayName || target.username);
-      staffRepo.updateStaff(db, guildId, target.id, { department_id: department.id }, interaction.user.id);
+      // Every value is checked before any is written, so a bad timezone does
+      // not leave somebody with a new department and an error message.
+      const department = key ? configRepo.getDepartmentByKey(db, guildId, key) : null;
+      if (key && !department) {
+        await interaction.reply(priv(`❌ No department with key \`${key}\`.`));
+        return;
+      }
+      if (timezone && !isValidTimezone(timezone)) {
+        const suggestions = searchTimezones(timezone, 5);
+        await interaction.reply(priv(
+          `❌ \`${timezone}\` is not a timezone I can store.` +
+          `${suggestions.length > 0 ? `\nDid you mean: ${suggestions.map((tz) => `\`${tz}\``).join(', ')}?` : ''}\n` +
+          '_Type their offset — `GMT+5` — or their city, and pick from the list._'
+        ));
+        return;
+      }
 
-      await interaction.reply(priv(`✅ <@${target.id}> is now in **${department.name}**.`));
-      refreshBoardsInBackground(interaction, db);
+      const staff = staffRepo.ensureStaff(db, guildId, target.id, target.displayName || target.username);
+      const patch = {};
+      let declined = { profile_declined: staff.profile_declined };
+      if (department) patch.department_id = department.id;
+      if (timezone) patch.timezone = timezone;
+      for (const [column, raw] of [['sub_role', title], ['experience', experience]]) {
+        if (raw === null) continue;
+        const { value, declined: no } = readAnswer(raw);
+        patch[column] = value;
+        declined = { profile_declined: withDecline(declined, column, no) };
+      }
+      patch.profile_declined = declined.profile_declined;
+
+      staffRepo.updateStaff(db, guildId, target.id, patch, interaction.user.id);
+      refreshGuildBoards(interaction.client, guildId, db).catch(() => {});
+
+      const done = [
+        department && `department **${department.name}**`,
+        timezone && `timezone **${gmtLabelFor(timezone) || timezone}** (\`${timezone}\`)`,
+        title !== null && `title **${title}**`,
+        experience !== null && `experience **${experience}**`,
+      ].filter(Boolean);
+
+      await interaction.reply(priv(`✅ Set for <@${target.id}>: ${done.join(', ')}.`));
+      return;
     }
   },
 };

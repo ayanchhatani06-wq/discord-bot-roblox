@@ -21,6 +21,9 @@ const {
   formatDateTimeInZone,
 } = require('../utils/time');
 const { priv } = require('../utils/reply');
+const { declinedSet, withDecline, readAnswer, isDecline } = require('../services/profileAnswers');
+const profileRoster = require('../services/profileRoster');
+const portfolioImages = require('../services/portfolioImages');
 
 function textInput({ id, label, value, placeholder, required = false, max = 200, style = TextInputStyle.Short }) {
   const input = new TextInputBuilder()
@@ -50,43 +53,84 @@ function timezoneModal(staff) {
     );
 }
 
+/** A box shows "none" again when somebody answered no, so they see their answer. */
+function prefill(staff, key) {
+  if (staff[key]) return staff[key];
+  return declinedSet(staff).has(key) ? 'none' : null;
+}
+
+/**
+ * The five questions a leader reads first when deciding who gets a job.
+ *
+ * Role title and experience used to sit behind a separate button, and people
+ * filled this form in, saw nothing else asked, and reasonably asked what was
+ * left. Discord allows five boxes; these are the five that matter, and the
+ * Roblox name — optional, and asked of fewer people — has its own button.
+ */
 function detailsModal(staff) {
   return new ModalBuilder()
     .setCustomId(customId(NAMESPACE, 'detailsModal'))
     .setTitle('Edit your profile details')
     .addComponents(
-      textInput({ id: 'specialties', label: 'Specialties', value: staff.specialties, placeholder: 'Hard-surface models, stylised textures', max: 200 }),
-      textInput({ id: 'software', label: 'Software you use', value: staff.software, placeholder: 'Blender, Substance Painter', max: 200 }),
-      textInput({ id: 'portfolio_url', label: 'Portfolio link', value: staff.portfolio_url, placeholder: 'https://...', max: 300 }),
-      textInput({ id: 'roblox_username', label: 'Roblox username (optional)', value: staff.roblox_username, max: 64 })
+      textInput({ id: 'sub_role', label: 'Your title (or "none")', value: prefill(staff, 'sub_role'), placeholder: 'Interior Builder, UI Designer, Terrain Artist', max: 60 }),
+      textInput({ id: 'experience', label: 'Experience (or "none")', value: prefill(staff, 'experience'), placeholder: '10+ years, or 2 years with 1 on Roblox', max: 60 }),
+      textInput({ id: 'specialties', label: 'Specialties (or "none")', value: prefill(staff, 'specialties'), placeholder: 'Hard-surface models, stylised textures', max: 200 }),
+      textInput({ id: 'software', label: 'Software you use (or "none")', value: prefill(staff, 'software'), placeholder: 'Blender, Substance Painter, Roblox Studio', max: 200 }),
+      textInput({ id: 'portfolio_url', label: 'Portfolio link (or "none")', value: prefill(staff, 'portfolio_url'), placeholder: 'https://...', max: 300 })
+    );
+}
+
+function robloxModal(staff) {
+  return new ModalBuilder()
+    .setCustomId(customId(NAMESPACE, 'robloxModal'))
+    .setTitle('Your Roblox name')
+    .addComponents(
+      textInput({ id: 'roblox_username', label: 'Roblox username (or "none")', value: prefill(staff, 'roblox_username'), max: 64 })
     );
 }
 
 /**
- * Kept apart from the details modal because Discord allows five fields and that
- * one already has four — but also because these two are what somebody reads
- * first when deciding who to put on a job, and they deserve their own prompt.
+ * Reads a box that may not be there.
+ *
+ * Somebody with an old panel open can still submit the form it opened, which
+ * has a different set of boxes; discord.js throws on a missing one. Undefined
+ * means "not asked", which is different from blank, which means "cleared".
  */
-function roleModal(staff) {
-  return new ModalBuilder()
-    .setCustomId(customId(NAMESPACE, 'roleModal'))
-    .setTitle('Your role and experience')
-    .addComponents(
-      textInput({
-        id: 'sub_role',
-        label: 'Your title in the department',
-        value: staff.sub_role,
-        placeholder: 'Interior Builder, Terrain Artist, UI Animator',
-        max: 60,
-      }),
-      textInput({
-        id: 'experience',
-        label: 'How long you have been doing it',
-        value: staff.experience,
-        placeholder: '10+ years, or 3 years with 1 on Roblox',
-        max: 60,
-      })
-    );
+function field(interaction, id) {
+  try {
+    return interaction.fields.getTextInputValue(id);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Turns submitted boxes into one update, "no" answers included.
+ *
+ * The decline list is threaded through each answer in turn so two boxes in the
+ * same form both land, rather than the second overwriting the first.
+ */
+function answersPatch(staff, keys, interaction, { validate = {} } = {}) {
+  const patch = {};
+  const problems = [];
+  let running = { profile_declined: staff.profile_declined };
+
+  for (const key of keys) {
+    const raw = field(interaction, key);
+    if (raw === undefined) continue;
+
+    const { value, declined } = readAnswer(raw);
+    if (value && validate[key]) {
+      const problem = validate[key](value);
+      if (problem) { problems.push(problem); continue; }
+    }
+
+    patch[key] = value;
+    running = { profile_declined: withDecline(running, key, declined) };
+  }
+
+  patch.profile_declined = running.profile_declined;
+  return { patch, problems };
 }
 
 function hoursModal(staff) {
@@ -94,7 +138,7 @@ function hoursModal(staff) {
     .setCustomId(customId(NAMESPACE, 'hoursModal'))
     .setTitle('Working and quiet hours')
     .addComponents(
-      textInput({ id: 'working_days', label: 'Working days', value: staff.working_days, placeholder: 'mon,tue,wed,thu,fri', max: 40 }),
+      textInput({ id: 'working_days', label: 'Working days (or "none")', value: staff.working_days || (declinedSet(staff).has('hours') ? 'none' : null), placeholder: 'mon,tue,wed,thu,fri — or none for no fixed hours', max: 40 }),
       textInput({ id: 'working_start', label: 'Start time (24h, your timezone)', value: formatClockMinutes(staff.working_start_minute), placeholder: '09:00', max: 5 }),
       textInput({ id: 'working_end', label: 'End time (24h, your timezone)', value: formatClockMinutes(staff.working_end_minute), placeholder: '17:00', max: 5 }),
       textInput({ id: 'quiet_start', label: 'Quiet hours start (optional)', value: formatClockMinutes(staff.quiet_start_minute), placeholder: '22:00', max: 5 }),
@@ -122,10 +166,14 @@ function awayModal(staff) {
 async function showPanel(interaction, { db, guildId }, message) {
   const staff = staffRepo.getStaff(db, guildId, interaction.user.id);
   const department = staff.department_id ? configRepo.getDepartment(db, guildId, staff.department_id) : null;
-  const missing = missingProfileFields(staff);
+  // The whole list, not just the two fields that break routing: somebody who
+  // has filled in a form and is told nothing else is missing reasonably
+  // believes they are done, and then asks why the roster disagrees.
+  const person = profileRoster.assess(staff, { pictures: portfolioImages.countFor(db, guildId, staff.user_id) });
+  const steps = profileRoster.nextSteps(person);
 
   const body = {
-    content: `${message}${missing.length > 0 ? `\nStill missing: **${missing.join(', ')}**.` : ''}`,
+    content: `${message}${steps ? `\n\n**Still to fill in:**\n${steps}` : '\n\n🟢 **Your profile is complete.**'}`.slice(0, 2000),
     embeds: [buildProfileEmbed({
       staff,
       department,
@@ -174,8 +222,14 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       await interaction.showModal(detailsModal(staff));
       return;
 
+    // Older panels carry a 'role' button from when role and experience had a
+    // form of their own; they now live in the details form, so send them there.
     case 'role':
-      await interaction.showModal(roleModal(staff));
+      await interaction.showModal(detailsModal(staff));
+      return;
+
+    case 'roblox':
+      await interaction.showModal(robloxModal(staff));
       return;
 
     case 'hours':
@@ -214,35 +268,34 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       return;
     }
 
-    case 'detailsModal': {
-      const patch = {
-        specialties: interaction.fields.getTextInputValue('specialties').trim() || null,
-        software: interaction.fields.getTextInputValue('software').trim() || null,
-        portfolio_url: interaction.fields.getTextInputValue('portfolio_url').trim() || null,
-        roblox_username: interaction.fields.getTextInputValue('roblox_username').trim() || null,
-      };
+    // Every form that sets free-text answers goes through answersPatch, which
+    // reads only the boxes the form actually had. That matters for somebody
+    // submitting a form an older panel opened, whose boxes differ from today's.
+    case 'detailsModal':
+    case 'roleModal':
+    case 'robloxModal': {
+      const { patch, problems } = answersPatch(
+        staff,
+        ['sub_role', 'experience', 'specialties', 'software', 'portfolio_url', 'roblox_username'],
+        interaction,
+        {
+          validate: {
+            portfolio_url: (value) => (/^https?:\/\//i.test(value)
+              ? null
+              : 'The portfolio link must start with `http://` or `https://` — or write **none** if you don\'t have one.'),
+          },
+        }
+      );
 
-      if (patch.portfolio_url && !/^https?:\/\//i.test(patch.portfolio_url)) {
-        await interaction.reply(priv('❌ The portfolio link must start with http:// or https://'));
+      if (problems.length > 0) {
+        await interaction.reply(priv(`❌ ${problems.join('\n')}`));
         return;
       }
 
       staffRepo.updateStaff(db, guildId, userId, patch, userId);
       markOnboardedIfComplete(db, guildId, userId);
       refreshBoards(interaction, db);
-      await showPanel(interaction, ctx, '✅ Profile details updated.');
-      return;
-    }
-
-    case 'roleModal': {
-      staffRepo.updateStaff(db, guildId, userId, {
-        sub_role: interaction.fields.getTextInputValue('sub_role').trim() || null,
-        experience: interaction.fields.getTextInputValue('experience').trim() || null,
-      }, userId);
-
-      markOnboardedIfComplete(db, guildId, userId);
-      refreshBoards(interaction, db);
-      await showPanel(interaction, ctx, '✅ Role and experience updated.');
+      await showPanel(interaction, ctx, '✅ Saved.');
       return;
     }
 
@@ -254,6 +307,16 @@ register(NAMESPACE, async (interaction, { action, args }) => {
         quietStart: interaction.fields.getTextInputValue('quiet_start').trim(),
         quietEnd: interaction.fields.getTextInputValue('quiet_end').trim(),
       };
+
+      // "no" in the days or start box means no fixed hours — an answer, so the
+      // roster stops asking. The time fields stay empty rather than holding the
+      // word, because the reminder scheduler reads them and expects a time.
+      const noFixedHours = isDecline(raw.days) || isDecline(raw.start);
+      if (noFixedHours) {
+        raw.days = '';
+        raw.start = '';
+        raw.end = '';
+      }
 
       const problems = [];
       const patch = {};
@@ -291,9 +354,13 @@ register(NAMESPACE, async (interaction, { action, args }) => {
         return;
       }
 
+      patch.profile_declined = withDecline(staff, 'hours', noFixedHours);
+
       staffRepo.updateStaff(db, guildId, userId, patch, userId);
       refreshBoards(interaction, db);
-      await showPanel(interaction, ctx, '✅ Hours updated. They are read in your own timezone.');
+      await showPanel(interaction, ctx, noFixedHours
+        ? '✅ Saved — no fixed hours.'
+        : '✅ Hours updated. They are read in your own timezone.');
       return;
     }
 
@@ -337,4 +404,6 @@ register(NAMESPACE, async (interaction, { action, args }) => {
   }
 });
 
-module.exports = { NAMESPACE };
+// The form builders and answer reader are exported for the tests that drive
+// them with the boxes an old panel would submit.
+module.exports = { NAMESPACE, detailsModal, robloxModal, hoursModal, answersPatch, field };

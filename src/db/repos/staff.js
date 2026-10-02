@@ -21,7 +21,7 @@ const AVAILABILITY_EMOJI = Object.freeze({
 
 const EDITABLE_FIELDS = [
   'display_name', 'department_id', 'leader_user_id', 'timezone', 'specialties',
-  'sub_role', 'experience',
+  'sub_role', 'experience', 'profile_declined',
   'software', 'portfolio_url', 'roblox_username', 'working_days',
   'working_start_minute', 'working_end_minute', 'quiet_start_minute', 'quiet_end_minute',
 ];
