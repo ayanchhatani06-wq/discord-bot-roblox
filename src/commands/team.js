@@ -300,6 +300,41 @@ module.exports = {
         embed.addFields({ name: '\u200b', value: chunk.join('\n\n'), inline: false });
       }
 
+      // The half the roster cannot see: people in the server with no staff
+      // record at all. They are invisible to every other view precisely
+      // because the bot has never heard of them, which is the one case an
+      // owner cannot spot by reading a list of who it has.
+      if (seesEverything) {
+        try {
+          const known = new Set(profileRoster.roster(db, guildId, {}).people.map((person) => person.staff.user_id));
+          const strangers = (await interaction.guild.members.fetch())
+            .filter((member) => !member.user.bot && !known.has(member.id))
+            .map((member) => `<@${member.id}>`);
+
+          if (strangers.length > 0) {
+            // Clients, friends and lurkers are in a Discord server too, so this
+            // is named as a question rather than a list of people in trouble.
+            const shown = strangers.slice(0, 30);
+            embed.addFields({
+              name: `❔ Never used the bot (${strangers.length})`,
+              value: `${shown.join(', ')}${strangers.length > shown.length ? ` and ${strangers.length - shown.length} more` : ''}`
+                .slice(0, 1024)
+                + '\n_Anyone here who works for you: `/profile assign` puts them on the books now._',
+              inline: false,
+            });
+          }
+        } catch {
+          // Fetching the member list can fail on permissions or a slow gateway.
+          // The roster above is still the answer to what was asked, so it is
+          // reported rather than thrown.
+          embed.addFields({
+            name: '❔ Never used the bot',
+            value: '_Could not read the server member list just now._',
+            inline: false,
+          });
+        }
+      }
+
       embed.setFooter({ text: 'One person in detail: /profile view member: — they fill theirs in with /profile me' });
       await interaction.reply(priv({ embeds: [embed] }));
       return;
