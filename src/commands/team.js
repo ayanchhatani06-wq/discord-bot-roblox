@@ -4,6 +4,7 @@ const configRepo = require('../db/repos/config');
 const staffRepo = require('../db/repos/staff');
 const onboardingRepo = require('../db/repos/onboarding');
 const { contextFor } = require('../services/actor');
+const profileRoster = require('../services/profileRoster');
 const recruiterFee = require('../services/recruiterFee');
 const offboarding = require('../services/offboarding');
 const { withdrawOffer } = require('../services/offerFlow');
@@ -26,7 +27,18 @@ const CURRENCY_CHOICES = Object.keys(CURRENCIES).map((code) => ({ name: code, va
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('team')
-    .setDescription('Stand-in leaders and offboarding')
+    .setDescription('Stand-in leaders, offboarding and who has filled in their profile')
+    .addSubcommand((sub) =>
+      sub
+        .setName('profiles')
+        .setDescription('Who has filled in their profile, and what is still missing')
+        .addStringOption((opt) =>
+          opt.setName('department').setDescription('One department only').setRequired(false).setAutocomplete(true)
+        )
+        .addBooleanOption((opt) =>
+          opt.setName('missing').setDescription('Only show people with something missing').setRequired(false)
+        )
+    )
     .addSubcommandGroup((group) =>
       group
         .setName('stand-in')
@@ -227,6 +239,61 @@ module.exports = {
     const group = interaction.options.getSubcommandGroup();
     const sub = interaction.options.getSubcommand();
     const userId = interaction.user.id;
+
+    // Read-only, so it sits behind the management view rather than behind
+    // staff management, which is for changing people rather than reading them.
+    // That is owner and manager by default — group leaders do not hold it. A
+    // studio that wants its leaders chasing their own department's profiles
+    // grants it with /setup capability rather than being given it unasked.
+    if (!group && sub === 'profiles') {
+      assertCan(actor, CAPABILITIES.SUMMARY_VIEW);
+
+      const departmentId = interaction.options.getString('department');
+      const result = profileRoster.roster(db, guildId, {
+        departmentId: departmentId ? Number(departmentId) : undefined,
+        onlyIncomplete: interaction.options.getBoolean('missing') === true,
+      });
+
+      if (result.total === 0) {
+        await interaction.reply(priv('Nobody has a staff profile yet. They each start one with `/profile me`.'));
+        return;
+      }
+
+      const embed = new EmbedBuilder()
+        .setTitle('Profiles')
+        .setColor(result.blocked > 0 ? 0xed4245 : result.complete === result.total ? 0x57f287 : 0xfaa61a)
+        .setDescription(
+          `**${result.complete} of ${result.total}** complete.` +
+          `${result.blocked > 0
+            ? `\n🔴 **${result.blocked}** missing a timezone or a department — their deadlines read wrong and they appear on no board.`
+            : ''}` +
+          `${result.hidden > 0 ? `\n_${result.hidden} complete profile(s) hidden._` : ''}`
+        );
+
+      // Embeds cap at 1024 characters per field, so the roster is split rather
+      // than silently truncated at whoever happens to fall on the boundary.
+      const lines = result.people.map((person) => profileRoster.describe(person));
+      let chunk = [];
+      let length = 0;
+
+      for (const line of lines) {
+        if (length + line.length > 1000 || chunk.length >= 8) {
+          embed.addFields({ name: '\u200b', value: chunk.join('\n\n'), inline: false });
+          chunk = [];
+          length = 0;
+        }
+        chunk.push(line);
+        length += line.length + 2;
+        if (embed.data.fields?.length >= 20) break;
+      }
+      if (chunk.length > 0 && (embed.data.fields?.length ?? 0) < 25) {
+        embed.addFields({ name: '\u200b', value: chunk.join('\n\n'), inline: false });
+      }
+
+      embed.setFooter({ text: 'One person in detail: /profile view member: — they fill theirs in with /profile me' });
+      await interaction.reply(priv({ embeds: [embed] }));
+      return;
+    }
 
     assertCan(actor, CAPABILITIES.STAFF_MANAGE);
     const departmentName = new Map(departments.map((dept) => [dept.id, dept.name]));
