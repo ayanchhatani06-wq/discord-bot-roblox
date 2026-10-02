@@ -9,7 +9,7 @@ const recruiterFee = require('../services/recruiterFee');
 const offboarding = require('../services/offboarding');
 const { withdrawOffer } = require('../services/offerFlow');
 const { notifyUser } = require('../services/notify');
-const { CAPABILITIES, assertCan } = require('../domain/permissions');
+const { CAPABILITIES, assertCan, can } = require('../domain/permissions');
 const { formatTotals } = require('../domain/money');
 const { parseDeadlineInput, discordTimestamp } = require('../utils/time');
 const { priv } = require('../utils/reply');
@@ -240,17 +240,27 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
     const userId = interaction.user.id;
 
-    // Read-only, so it sits behind the management view rather than behind
-    // staff management, which is for changing people rather than reading them.
-    // That is owner and manager by default — group leaders do not hold it. A
-    // studio that wants its leaders chasing their own department's profiles
-    // grants it with /setup capability rather than being given it unasked.
+    // Read-only, so it sits behind the management view rather than staff
+    // management, which is for changing people rather than reading them.
+    //
+    // A group leader gets in too, but sees only the departments they lead. The
+    // alternative was granting them SUMMARY_VIEW, which search and the desks
+    // read as "sees the whole studio" — that would have shown every leader
+    // every other department's work to answer a question about their own.
     if (!group && sub === 'profiles') {
-      assertCan(actor, CAPABILITIES.SUMMARY_VIEW);
+      const leads = actor.leadDepartmentIds || [];
+      const seesEverything = can(actor, CAPABILITIES.SUMMARY_VIEW);
+      if (!seesEverything && leads.length === 0) assertCan(actor, CAPABILITIES.SUMMARY_VIEW);
 
-      const departmentId = interaction.options.getString('department');
+      const chosen = interaction.options.getString('department');
+      if (!seesEverything && chosen && !leads.includes(Number(chosen))) {
+        await interaction.reply(priv('❌ You can only see the departments you lead.'));
+        return;
+      }
+
       const result = profileRoster.roster(db, guildId, {
-        departmentId: departmentId ? Number(departmentId) : undefined,
+        departmentId: chosen ? Number(chosen) : undefined,
+        departmentIds: seesEverything ? null : leads,
         onlyIncomplete: interaction.options.getBoolean('missing') === true,
       });
 

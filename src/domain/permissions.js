@@ -42,6 +42,24 @@ const DEPARTMENT_SCOPED = Object.freeze([
 ]);
 
 /**
+ * Scoped only for a leader.
+ *
+ * Different from DEPARTMENT_SCOPED, which is absolute: reviewing work is a
+ * department act however you came by the capability, so granting it to a role
+ * does not let somebody review outside a department they lead.
+ *
+ * These two are not like that. The owner may well want a manager who can open
+ * and close work across the whole studio, and scoping an explicit grant would
+ * make that impossible to express. So the limit follows the leader rather than
+ * the capability: held because you lead a department, it stops at that
+ * department's edge; granted to your role on purpose, it does not.
+ */
+const LEADER_SCOPED = Object.freeze([
+  CAPABILITIES.TASK_CREATE,
+  CAPABILITIES.TASK_CANCEL,
+]);
+
+/**
  * Defaults chosen by the studio owner: pay, payments, the ledger and client
  * decisions are owner-only. Leaders run their own departments and may propose
  * pay, but cannot approve it.
@@ -53,7 +71,18 @@ const DEFAULT_LEADER_CAPABILITIES = Object.freeze([
   CAPABILITIES.TASK_PAY_PROPOSE,
   CAPABILITIES.REVIEW_INTERNAL,
   CAPABILITIES.TASK_EDIT,
+  // A leader who cannot create work in their own department has to ask for
+  // every job to be typed up by somebody else, which is not running a
+  // department. Scoped, so it is their department and no other.
+  CAPABILITIES.TASK_CREATE,
+  CAPABILITIES.TASK_CANCEL,
 ]);
+
+// Deliberately NOT here: SUMMARY_VIEW. It is read as "sees the whole studio"
+// by search and the desks, so granting it to leaders would quietly show every
+// leader every other department's work. Where a leader needs to read something
+// about their own department, the command scopes it to the departments they
+// lead instead.
 
 const DEFAULT_MANAGER_CAPABILITIES = Object.freeze([
   CAPABILITIES.PROJECT_CREATE,
@@ -107,8 +136,15 @@ function resolveActor({
     for (const capability of ALL_CAPABILITIES) capabilities.add(capability);
   }
 
+  // Tracked apart from the set, because where a capability came from decides
+  // how far it reaches. One the owner granted to a role is theirs everywhere;
+  // one that arrived because somebody leads a department stops at its edge.
+  const granted = new Set();
   for (const grant of roleCapabilities) {
-    if (roleIds.includes(grant.role_id)) capabilities.add(grant.capability);
+    if (roleIds.includes(grant.role_id)) {
+      capabilities.add(grant.capability);
+      granted.add(grant.capability);
+    }
   }
 
   // Somebody standing in for a leader gets the same department-scoped powers,
@@ -118,14 +154,20 @@ function resolveActor({
   const standIn = [...new Set(standInDepartmentIds)].filter((id) => known.has(id));
   const leadDepartments = [...new Set([...ledDepartmentIds({ roleIds, departments }), ...standIn])];
 
+  const fromLeadership = new Set();
   if (leadDepartments.length > 0) {
-    for (const capability of DEFAULT_LEADER_CAPABILITIES) capabilities.add(capability);
+    for (const capability of DEFAULT_LEADER_CAPABILITIES) {
+      capabilities.add(capability);
+      fromLeadership.add(capability);
+    }
   }
 
   return {
     userId,
     isOwner: owner,
     capabilities,
+    grantedCapabilities: granted,
+    leaderCapabilities: fromLeadership,
     leadDepartmentIds: leadDepartments,
     standInDepartmentIds: standIn,
   };
@@ -144,6 +186,15 @@ function can(actor, capability, context = {}) {
   if (DEPARTMENT_SCOPED.includes(capability)) {
     // A leader acting on a department they do not lead is refused even though
     // they hold the capability in general.
+    if (context.departmentId === null || context.departmentId === undefined) return false;
+    return actor.leadDepartmentIds.includes(context.departmentId);
+  }
+
+  // Held through leadership and not granted outright, so it reaches exactly as
+  // far as the leadership does.
+  if (LEADER_SCOPED.includes(capability)
+    && actor.leaderCapabilities?.has(capability)
+    && !actor.grantedCapabilities?.has(capability)) {
     if (context.departmentId === null || context.departmentId === undefined) return false;
     return actor.leadDepartmentIds.includes(context.departmentId);
   }
@@ -207,6 +258,7 @@ module.exports = {
   ALL_CAPABILITIES,
   canClaimStudio,
   DEPARTMENT_SCOPED,
+  LEADER_SCOPED,
   DEFAULT_LEADER_CAPABILITIES,
   DEFAULT_MANAGER_CAPABILITIES,
   PermissionError,

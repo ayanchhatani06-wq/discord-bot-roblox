@@ -167,3 +167,31 @@ test('somebody with nothing set is marked red', () => {
   assert.match(line, /🔴/);
   assert.match(line, /timezone/);
 });
+
+test('a leader reading the roster sees only the departments they lead', () => {
+  const db = setup();
+  completePerson(db, 'builder-1', 'Builder');
+
+  staffRepo.ensureStaff(db, GUILD, 'animator-1', 'Ani');
+  staffRepo.updateStaff(db, GUILD, 'animator-1', {
+    department_id: departmentId(db, 'animation'),
+  }, OWNER);
+
+  const scoped = roster.roster(db, GUILD, { departmentIds: [departmentId(db)] });
+
+  assert.deepEqual(scoped.people.map((p) => p.staff.user_id), ['builder-1']);
+  // The totals describe what they can see, not the studio, so a leader is not
+  // told "1 of 2 complete" about somebody they cannot look at.
+  assert.equal(scoped.total, 1);
+  assert.equal(scoped.complete, 1);
+});
+
+test('an empty scope shows nobody rather than everybody', () => {
+  // The failure that matters: a leader who leads nothing must not fall through
+  // to the whole studio.
+  const db = setup();
+  completePerson(db, 'builder-1');
+  const scoped = roster.roster(db, GUILD, { departmentIds: [] });
+  assert.equal(scoped.total, 0);
+  assert.deepEqual(scoped.people, []);
+});

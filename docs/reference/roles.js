@@ -76,6 +76,10 @@ const ROLES = Object.freeze({
   TASK_REASSIGN_DEPT: { tier: TIERS.LEADER, who: 'Group leader (own department)', capability: CAPABILITIES.TASK_REASSIGN },
   REVIEW_INTERNAL_DEPT: { tier: TIERS.LEADER, who: 'Group leader (own department)', capability: CAPABILITIES.REVIEW_INTERNAL },
   TASK_CREATE: { tier: TIERS.MANAGER, who: 'Manager or owner', capability: CAPABILITIES.TASK_CREATE },
+  // A leader holds this for the departments they run; a manager granted it
+  // outright holds it everywhere. Both are shown the command.
+  TASK_CREATE_DEPT: { tier: TIERS.LEADER, who: 'Group leader (own department), manager or owner', capability: CAPABILITIES.TASK_CREATE },
+  TASK_CANCEL_DEPT: { tier: TIERS.LEADER, who: 'Group leader (own department), manager or owner', capability: CAPABILITIES.TASK_CANCEL },
   SUMMARY_VIEW: { tier: TIERS.MANAGER, who: 'Manager or owner', capability: CAPABILITIES.SUMMARY_VIEW },
   LEADER_OR_SUMMARY: {
     tier: TIERS.LEADER,

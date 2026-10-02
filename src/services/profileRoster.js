@@ -54,10 +54,17 @@ function assess(staff, extra) {
  * the alphabet put them — a list that has to be read to the bottom to find the
  * problem does not get read to the bottom.
  */
-function roster(db, guildId, { departmentId = undefined, onlyIncomplete = false } = {}) {
+function roster(db, guildId, { departmentId = undefined, departmentIds = null, onlyIncomplete = false } = {}) {
   const departments = new Map(configRepo.listDepartments(db, guildId).map((dept) => [dept.id, dept]));
 
-  const people = staffRepo.listStaff(db, guildId, { departmentId }).map((staff) => {
+  // departmentIds limits the whole roster, counts included, so a leader reading
+  // it is told how their own department is doing rather than being given the
+  // studio's totals with somebody else's gaps folded in.
+  const allowed = departmentIds ? new Set(departmentIds) : null;
+
+  const people = staffRepo.listStaff(db, guildId, { departmentId })
+    .filter((staff) => !allowed || allowed.has(staff.department_id))
+    .map((staff) => {
     const pictures = portfolioImages.countFor(db, guildId, staff.user_id);
     return {
       staff,

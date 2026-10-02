@@ -45,12 +45,13 @@ module.exports = {
   change: { default: 'TASK_EDIT_DEPT', subs: {
     flags: 'SUMMARY_VIEW', reassign: 'TASK_REASSIGN_DEPT',
     hold: 'TASK_HOLD_DEPT', resume: 'TASK_HOLD_DEPT',
-    cancel: 'TASK_CANCEL', compensate: 'PAYMENT_RECORD',
+    cancel: 'TASK_CANCEL_DEPT', compensate: 'PAYMENT_RECORD',
   } },
   messages: { default: 'CLIENT_RECORD', subs: {
     placeholders: 'ANYONE', 'template-approve': 'CLIENT_RECORD+CONFIG_MANAGE',
   } },
   team: { default: 'STAFF_MANAGE', subs: {
+    profiles: 'LEADER_OR_MANAGER',
     'trial mine': 'ANYONE',
     'trial submit': 'TRIAL_OWNER',
     'recommend new': 'LEADER_OR_MANAGER',
@@ -89,7 +90,7 @@ module.exports = {
     'backup restore': 'CONFIG_MANAGE+FINANCE_VIEW_ALL',
   } },
   task: { default: 'TASK_OFFER_DEPT', subs: {
-    create: 'TASK_CREATE', mine: 'ANYONE', view: 'TASK_VIEW',
+    create: 'TASK_CREATE_DEPT', mine: 'ANYONE', view: 'TASK_VIEW',
     pay: 'PAY_SET_OR_PROPOSE', 'approve-pay': 'TASK_PAY_APPROVE',
     edit: 'TASK_EDIT_DEPT',
     'helpers add': 'TASK_EDIT_DEPT',

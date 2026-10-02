@@ -190,3 +190,75 @@ test('an owner role claims it even without Discord server permissions', () => {
     true
   );
 });
+
+// ---------------------------------------------------------------- leader-scoped capabilities
+
+test('a leader can create and cancel work in the department they run', () => {
+  const leader = actorFor({ userId: 'lead-model', roleIds: ['role-lead-model'] });
+
+  for (const capability of [C.TASK_CREATE, C.TASK_CANCEL]) {
+    assert.equal(can(leader, capability, { departmentId: MODELLING.id }), true, capability);
+    assert.equal(can(leader, capability, { departmentId: VFX.id }), false, `${capability} outside their department`);
+    // Without a department named there is nothing to check the leadership
+    // against, so the safe answer is no.
+    assert.equal(can(leader, capability), false, `${capability} with no department`);
+  }
+});
+
+test('a capability granted outright is not narrowed to a department', () => {
+  // The point of the distinction: an owner may want a manager who opens and
+  // closes work across the whole studio, and that has to be expressible.
+  const manager = actorFor({
+    userId: 'manager-1',
+    roleIds: ['role-manager'],
+    roleCapabilities: [
+      { role_id: 'role-manager', capability: C.TASK_CREATE },
+      { role_id: 'role-manager', capability: C.TASK_CANCEL },
+    ],
+  });
+
+  assert.equal(can(manager, C.TASK_CREATE, { departmentId: VFX.id }), true);
+  assert.equal(can(manager, C.TASK_CREATE, { departmentId: MODELLING.id }), true);
+  assert.equal(can(manager, C.TASK_CREATE), true, 'no department named is fine for an outright grant');
+  assert.equal(can(manager, C.TASK_CANCEL, { departmentId: VFX.id }), true);
+});
+
+test('a leader granted it outright keeps the wider reach', () => {
+  const both = actorFor({
+    userId: 'lead-model',
+    roleIds: ['role-lead-model', 'role-manager'],
+    roleCapabilities: [{ role_id: 'role-manager', capability: C.TASK_CREATE }],
+  });
+
+  assert.equal(can(both, C.TASK_CREATE, { departmentId: VFX.id }), true, 'the explicit grant wins');
+  // The ones scoped absolutely are unaffected by holding another role.
+  assert.equal(can(both, C.REVIEW_INTERNAL, { departmentId: VFX.id }), false);
+});
+
+test('leaders are not given sight of the whole studio', () => {
+  // SUMMARY_VIEW is read as "sees everything" by search and the desks, so a
+  // leader holding it would see every other department's work.
+  const leader = actorFor({ userId: 'lead-model', roleIds: ['role-lead-model'] });
+  assert.equal(leader.capabilities.has(C.SUMMARY_VIEW), false);
+  assert.equal(can(leader, C.SUMMARY_VIEW), false);
+});
+
+test('an actor records which capabilities came from leading and which were granted', () => {
+  const leader = actorFor({
+    userId: 'lead-model',
+    roleIds: ['role-lead-model', 'role-helper'],
+    roleCapabilities: [{ role_id: 'role-helper', capability: C.PROJECT_CREATE }],
+  });
+
+  assert.equal(leader.leaderCapabilities.has(C.TASK_CREATE), true);
+  assert.equal(leader.grantedCapabilities.has(C.TASK_CREATE), false);
+  assert.equal(leader.grantedCapabilities.has(C.PROJECT_CREATE), true);
+  assert.equal(leader.leaderCapabilities.has(C.PROJECT_CREATE), false);
+});
+
+test('somebody who leads nothing gets none of it', () => {
+  const artist = actorFor({ userId: 'artist-1', roleIds: ['role-model'] });
+  for (const capability of [C.TASK_CREATE, C.TASK_CANCEL, C.TASK_OFFER]) {
+    assert.equal(can(artist, capability, { departmentId: MODELLING.id }), false, capability);
+  }
+});
