@@ -4,6 +4,7 @@ const { customId } = require('../interactions/router');
 const {
   formatDateTimeInZone,
   formatOffsetLabel,
+  formatGmtLabel,
   getOffsetMinutes,
   discordTimestamp,
   formatClockMinutes,
@@ -47,7 +48,9 @@ function buildProfileEmbed({ staff, department, activeCount = 0, nextDeadline = 
     const offset = getOffsetMinutes(staff.timezone, now);
     embed.addFields({
       name: 'Local time',
-      value: `**${formatDateTimeInZone(staff.timezone, now)}**\n\`${staff.timezone}\` (${formatOffsetLabel(offset)})`,
+      // The offset first because it is what gets read, the zone name after
+      // because it is what gets typed back into /profile timezone.
+      value: `**${formatDateTimeInZone(staff.timezone, now)}**\n${formatGmtLabel(offset)} · \`${staff.timezone}\``,
       inline: false,
     });
   } else {

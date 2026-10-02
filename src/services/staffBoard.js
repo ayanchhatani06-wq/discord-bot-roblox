@@ -4,6 +4,8 @@ const staffRepo = require('../db/repos/staff');
 const {
   formatTimeInZone,
   formatOffsetLabel,
+  formatGmtLabel,
+  gmtLabelFor,
   getOffsetMinutes,
   discordTimestamp,
   formatClockMinutes,
@@ -22,7 +24,7 @@ function renderStaffLine(staff, { activeCount = 0, now = new Date() } = {}) {
   const parts = [`${emoji} <@${staff.user_id}>`];
 
   if (staff.timezone) {
-    parts.push(`${formatTimeInZone(staff.timezone, now)} · \`${staff.timezone}\``);
+    parts.push(`${formatTimeInZone(staff.timezone, now)} · ${gmtLabelFor(staff.timezone) || staff.timezone}`);
   } else {
     parts.push('_no timezone set_');
   }
@@ -129,7 +131,7 @@ function departmentTimeLines(staffRows, { now = new Date() } = {}) {
 
   const lines = sorted.map(({ staff, offset }) => {
     const emoji = staffRepo.AVAILABILITY_EMOJI[staff.availability] || '⚪';
-    return `${emoji} <@${staff.user_id}> — **${formatTimeInZone(staff.timezone, now)}** · \`${staff.timezone}\` (${formatOffsetLabel(offset)})`;
+    return `${emoji} <@${staff.user_id}> — **${formatTimeInZone(staff.timezone, now)}** · ${formatGmtLabel(offset)}`;
   });
 
   for (const staff of withoutZone) {

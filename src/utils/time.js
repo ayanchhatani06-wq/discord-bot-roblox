@@ -102,6 +102,37 @@ function formatOffsetLabel(offsetMinutes) {
   return `UTC${sign}${hours}:${minutes}`;
 }
 
+/**
+ * The short form people actually say: GMT+5, GMT-5, GMT+5:30, GMT.
+ *
+ * `Asia/Karachi` is the correct thing to store — it survives daylight saving,
+ * which a fixed offset does not — but it is not what somebody means when they
+ * ask where a colleague is. This is for reading; the zone name stays the truth.
+ *
+ * Computed at render time rather than stored, so a zone that moves for summer
+ * shows the offset that is true today instead of the one true when it was set.
+ */
+function formatGmtLabel(offsetMinutes) {
+  if (offsetMinutes === 0) return 'GMT';
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const abs = Math.abs(offsetMinutes);
+  const hours = Math.floor(abs / 60);
+  const minutes = abs % 60;
+  // Half-hour and 45-minute zones are real (India, Nepal, parts of Australia),
+  // so the minutes are kept when there are any and dropped when there are not.
+  return `GMT${sign}${hours}${minutes > 0 ? `:${String(minutes).padStart(2, '0')}` : ''}`;
+}
+
+/** The same label straight from a zone name, for callers that have no offset. */
+function gmtLabelFor(timeZone, at = new Date()) {
+  if (!timeZone) return null;
+  try {
+    return formatGmtLabel(getOffsetMinutes(timeZone, at));
+  } catch {
+    return null;
+  }
+}
+
 function formatTimeInZone(timeZone, at = new Date()) {
   const time = new Intl.DateTimeFormat('en-US', {
     timeZone,
@@ -326,6 +357,8 @@ module.exports = {
   getZonedParts,
   getOffsetMinutes,
   formatOffsetLabel,
+  formatGmtLabel,
+  gmtLabelFor,
   formatTimeInZone,
   formatDateTimeInZone,
   discordTimestamp,

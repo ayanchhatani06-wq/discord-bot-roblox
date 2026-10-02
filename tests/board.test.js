@@ -28,7 +28,10 @@ test('a staff line shows identity, local time and workload', () => {
 
   assert.match(line, /<@artist-1>/);
   assert.match(line, /2:30 PM \(Mon\)/);
-  assert.match(line, /Asia\/Karachi/);
+  // Read as GMT+5 rather than Asia/Karachi: the zone name is what is stored,
+  // the offset is what somebody scanning a board is asking.
+  assert.match(line, /GMT\+5/);
+  assert.doesNotMatch(line, /Asia\/Karachi/);
   assert.match(line, /3 active/);
   assert.match(line, /🟢/);
 });
@@ -146,7 +149,7 @@ test('department time view sorts west to east and flags missing zones', () => {
   assert.match(lines[1], /<@london>/);
   assert.match(lines[2], /<@karachi>/);
   assert.match(lines[3], /no timezone set/);
-  assert.match(lines[2], /UTC\+05:00/);
+  assert.match(lines[2], /GMT\+5/);
 });
 
 test('line chunking respects both the count and character limits', () => {
@@ -160,4 +163,25 @@ test('line chunking respects both the count and character limits', () => {
     assert.ok(page.join('\n').length <= 3800);
   }
   assert.deepEqual(board.chunkLines([]), [[]]);
+});
+
+test('a half-hour zone keeps its minutes and UTC reads as plain GMT', () => {
+  // India and Nepal are not on whole hours, so dropping the minutes would put
+  // somebody half an hour out — which is exactly the kind of quiet error a
+  // readable label is supposed to prevent.
+  const { formatGmtLabel, gmtLabelFor } = require('../src/utils/time');
+
+  assert.equal(formatGmtLabel(0), 'GMT');
+  assert.equal(formatGmtLabel(300), 'GMT+5');
+  assert.equal(formatGmtLabel(-300), 'GMT-5');
+  assert.equal(formatGmtLabel(330), 'GMT+5:30');
+  assert.equal(formatGmtLabel(345), 'GMT+5:45');
+  assert.equal(formatGmtLabel(-210), 'GMT-3:30');
+
+  assert.equal(gmtLabelFor('Asia/Kolkata'), 'GMT+5:30');
+  assert.equal(gmtLabelFor('Asia/Kathmandu'), 'GMT+5:45');
+  assert.equal(gmtLabelFor('UTC'), 'GMT');
+  // A stored zone that is no longer valid must not take a board down with it.
+  assert.equal(gmtLabelFor('Not/AZone'), null);
+  assert.equal(gmtLabelFor(null), null);
 });

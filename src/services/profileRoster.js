@@ -1,6 +1,7 @@
 const staffRepo = require('../db/repos/staff');
 const configRepo = require('../db/repos/config');
 const portfolioImages = require('./portfolioImages');
+const { gmtLabelFor } = require('../utils/time');
 
 /**
  * Who has filled in what.
@@ -105,7 +106,9 @@ function describe(person) {
 
   const bits = [];
   if (person.department) bits.push(person.department.name);
-  if (staff.timezone) bits.push(`\`${staff.timezone}\``);
+  // GMT+5 rather than Asia/Karachi: the zone name is what is stored, the
+  // offset is what somebody reading a roster is actually asking.
+  if (staff.timezone) bits.push(gmtLabelFor(staff.timezone) || staff.timezone);
   if (person.pictures > 0) bits.push(`🖼️ ${person.pictures}`);
   bits.push(`${person.optionalFilled}/${person.optionalTotal} details`);
 
