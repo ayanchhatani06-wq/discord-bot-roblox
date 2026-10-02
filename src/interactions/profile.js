@@ -199,9 +199,10 @@ register(NAMESPACE, async (interaction, { action, args }) => {
       if (!isValidTimezone(timezone)) {
         const suggestions = searchTimezones(timezone, 5);
         await interaction.reply(priv(
-          `❌ \`${timezone}\` is not a recognised IANA timezone.` +
+          `❌ \`${timezone}\` is not a timezone I can store.` +
           `${suggestions.length > 0 ? `\nDid you mean: ${suggestions.map((tz) => `\`${tz}\``).join(', ')}?` : ''}\n` +
-          'Abbreviations such as `PST` are rejected because they carry no daylight-saving rules.'
+          '_Tip: type your offset — `GMT+5` — or your city, and pick from the list that appears._\n' +
+          'A bare offset is not stored because it carries no daylight-saving rules; the place it belongs to does.'
         ));
         return;
       }

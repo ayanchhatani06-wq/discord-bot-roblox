@@ -6,7 +6,7 @@ const { buildProfileEmbed, buildProfileComponents, missingProfileFields } = requ
 const { refreshGuildBoards } = require('../services/staffBoard');
 const { notifyLeadersOfAbsence } = require('../services/absence');
 const { CAPABILITIES, assertCan } = require('../domain/permissions');
-const { isValidTimezone, searchTimezones, formatDateTimeInZone, parseDeadlineInput } = require('../utils/time');
+const { isValidTimezone, searchTimezones, formatDateTimeInZone, parseDeadlineInput, gmtLabelFor } = require('../utils/time');
 const portfolioImages = require('../services/portfolioImages');
 const { priv } = require('../utils/reply');
 
@@ -128,8 +128,13 @@ module.exports = {
     const focused = interaction.options.getFocused(true);
 
     if (focused.name === 'timezone') {
+      // The offset is in the label because that is how people know where they
+      // are. The zone name is still the value, because that is what is stored.
       const matches = searchTimezones(focused.value, 25);
-      await interaction.respond(matches.map((tz) => ({ name: tz, value: tz })));
+      await interaction.respond(matches.map((tz) => {
+        const label = gmtLabelFor(tz);
+        return { name: `${tz}${label ? ` — ${label}` : ''}`.slice(0, 100), value: tz };
+      }));
       return;
     }
 
@@ -262,7 +267,8 @@ module.exports = {
       if (!isValidTimezone(timezone)) {
         const suggestions = searchTimezones(timezone, 5);
         await interaction.reply(priv(
-          `❌ \`${timezone}\` is not a recognised IANA timezone.${suggestions.length > 0 ? `\nDid you mean: ${suggestions.map((tz) => `\`${tz}\``).join(', ')}?` : ''}\n` +
+          `❌ \`${timezone}\` is not a timezone I can store.${suggestions.length > 0 ? `\nDid you mean: ${suggestions.map((tz) => `\`${tz}\``).join(', ')}?` : ''}\n` +
+          '_Tip: type your offset — `GMT+5` — or your city, and pick from the list that appears._\n' +
           'Abbreviations like `PST` are not accepted because they do not describe daylight saving.'
         ));
         return;

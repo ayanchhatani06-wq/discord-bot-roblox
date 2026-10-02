@@ -28,7 +28,100 @@ function isValidTimezone(timezone) {
   return VALID_TIMEZONE_SET.has(timezone);
 }
 
+/**
+ * Reads `GMT+5`, `utc+5:30`, `+5` and `gmt5` as an offset in minutes.
+ *
+ * People think in offsets and the studio's boards are written in them, so the
+ * search has to take one. What it must not do is store one: a fixed offset
+ * has no daylight-saving rules, so this turns the offset into a list of real
+ * places at that offset and lets somebody say which they are in.
+ *
+ * Returns null for anything that is not an offset, including a plain number,
+ * which is far more likely to be somebody part-way through typing a name.
+ */
+function parseOffsetQuery(query) {
+  const cleaned = String(query ?? '').trim().toLowerCase().replace(/\s+/g, '');
+  if (cleaned === 'gmt' || cleaned === 'utc') return 0;
+
+  const match = cleaned.match(/^(?:gmt|utc)?([+-])?(\d{1,2})(?::?([0-5]\d))?$/);
+  if (!match) return null;
+
+  const [, sign, hours, minutes] = match;
+  // A bare number is ambiguous, so an offset must say so: either a sign or a
+  // GMT/UTC prefix. `5` stays a name search; `+5` and `gmt5` are offsets.
+  const prefixed = /^(?:gmt|utc)/.test(String(query ?? '').trim().toLowerCase());
+  if (!sign && !prefixed) return null;
+
+  const total = Number(hours) * 60 + Number(minutes || 0);
+  if (total > 14 * 60) return null;
+  return sign === '-' ? -total : total;
+}
+
+/**
+ * Zones people actually live in, floated to the top of an offset search.
+ *
+ * Alphabetical order answers "GMT+5" with Antarctica/Mawson, which is correct
+ * and useless. This is not a complete list and is not meant to be: it is the
+ * places a studio's staff are likely to be, so the right answer is visible
+ * without scrolling. Anything missing is still in the list below it.
+ */
+const COMMON_TIMEZONES = Object.freeze([
+  'Pacific/Auckland', 'Australia/Sydney', 'Australia/Brisbane', 'Australia/Perth',
+  'Asia/Tokyo', 'Asia/Seoul', 'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Singapore',
+  'Asia/Manila', 'Asia/Jakarta', 'Asia/Bangkok', 'Asia/Saigon',
+  'Asia/Dhaka', 'Asia/Katmandu', 'Asia/Calcutta', 'Asia/Colombo',
+  'Asia/Karachi', 'Asia/Tashkent', 'Asia/Dubai', 'Asia/Tehran', 'Asia/Baghdad',
+  'Asia/Riyadh', 'Asia/Jerusalem', 'Europe/Istanbul', 'Africa/Cairo',
+  'Africa/Johannesburg', 'Africa/Nairobi', 'Africa/Lagos', 'Africa/Casablanca',
+  'Europe/Moscow', 'Europe/Athens', 'Europe/Kiev', 'Europe/Bucharest',
+  'Europe/Berlin', 'Europe/Paris', 'Europe/Madrid', 'Europe/Rome',
+  'Europe/Amsterdam', 'Europe/Warsaw', 'Europe/Belgrade', 'Europe/Stockholm',
+  'Europe/London', 'Europe/Dublin', 'Europe/Lisbon',
+  'America/Sao_Paulo', 'America/Buenos_Aires', 'America/Santiago',
+  'America/New_York', 'America/Toronto', 'America/Bogota', 'America/Lima',
+  'America/Guayaquil', 'America/Chicago', 'America/Mexico_City',
+  'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage',
+  'Pacific/Honolulu', 'UTC',
+]);
+
+const COMMON_RANK = new Map(COMMON_TIMEZONES.map((tz, index) => [tz, index]));
+
+// Regions where almost nobody works, kept but pushed below the rest.
+const THIN_REGIONS = /^(Antarctica|Etc|Indian|Pacific|Atlantic|Arctic)\//;
+
+/** Every zone sitting at that offset right now, most likely answers first. */
+function timezonesAtOffset(offsetMinutes, limit = 25, at = new Date()) {
+  const matches = [];
+  for (const tz of VALID_TIMEZONES) {
+    let offset;
+    try {
+      offset = getOffsetMinutes(tz, at);
+    } catch {
+      continue;
+    }
+    // Collected in full before sorting: stopping at the limit first would rank
+    // whatever the alphabet happened to reach, which is the bug this fixes.
+    if (offset === offsetMinutes) matches.push(tz);
+  }
+
+  const score = (tz) => {
+    if (COMMON_RANK.has(tz)) return COMMON_RANK.get(tz);
+    return THIN_REGIONS.test(tz) ? 20000 : 10000;
+  };
+
+  matches.sort((a, b) => (score(a) - score(b)) || a.localeCompare(b));
+  return matches.slice(0, limit);
+}
+
 function searchTimezones(query, limit = 25) {
+  // An offset is answered with the places at it, so somebody who thinks in
+  // GMT+5 never has to know that the stored answer is called Asia/Karachi.
+  const offset = parseOffsetQuery(query);
+  if (offset !== null) {
+    const matches = timezonesAtOffset(offset, limit);
+    if (matches.length > 0) return matches;
+  }
+
   const normalized = String(query ?? '').trim().toLowerCase().replace(/\s+/g, '_');
   if (!normalized) return VALID_TIMEZONES.slice(0, limit);
 
@@ -359,6 +452,9 @@ module.exports = {
   formatOffsetLabel,
   formatGmtLabel,
   gmtLabelFor,
+  parseOffsetQuery,
+  timezonesAtOffset,
+  COMMON_TIMEZONES,
   formatTimeInZone,
   formatDateTimeInZone,
   discordTimestamp,

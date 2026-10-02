@@ -185,3 +185,38 @@ test('a half-hour zone keeps its minutes and UTC reads as plain GMT', () => {
   assert.equal(gmtLabelFor('Not/AZone'), null);
   assert.equal(gmtLabelFor(null), null);
 });
+
+test('typing an offset finds the places at it', () => {
+  const { searchTimezones, parseOffsetQuery } = require('../src/utils/time');
+
+  // People think in offsets. The search takes one and answers with real
+  // places, so nobody has to know the stored answer is called Asia/Karachi.
+  assert.equal(searchTimezones('GMT+5', 1)[0], 'Asia/Karachi');
+  assert.equal(searchTimezones('+4', 1)[0], 'Asia/Dubai');
+  assert.equal(searchTimezones('+5:30', 1)[0], 'Asia/Calcutta');
+  assert.equal(searchTimezones('+5:45', 1)[0], 'Asia/Katmandu');
+  assert.equal(searchTimezones('GMT', 1)[0], 'UTC');
+
+  // Alphabetical order would answer GMT+5 with Antarctica, which is correct
+  // and useless, so the whole set is ranked before it is cut to the limit.
+  assert.doesNotMatch(searchTimezones('GMT+5', 5).join(','), /Antarctica/);
+
+  for (const spelling of ['gmt+5', 'utc+5', '+5', 'gmt5', 'GMT +5']) {
+    assert.equal(parseOffsetQuery(spelling), 300, spelling);
+  }
+
+  // A bare number is far more likely to be a half-typed name than an offset.
+  assert.equal(parseOffsetQuery('5'), null);
+  assert.equal(parseOffsetQuery('Karachi'), null);
+  assert.equal(parseOffsetQuery('+99'), null);
+  assert.equal(searchTimezones('Karachi', 1)[0], 'Asia/Karachi');
+});
+
+test('every zone the search prefers is one this build actually has', () => {
+  // The list was written with modern names — Asia/Kolkata, Europe/Kyiv — and
+  // this build ships the legacy ones. Every entry that does not exist is a
+  // place silently missing from the top of its own offset's results.
+  const { COMMON_TIMEZONES, isValidTimezone } = require('../src/utils/time');
+  const missing = COMMON_TIMEZONES.filter((tz) => !isValidTimezone(tz));
+  assert.deepEqual(missing, [], `preferred zones this build does not have:\n${missing.join('\n')}`);
+});
